@@ -159,6 +159,14 @@ h1, h2, h3 { font-family: var(--f-display); font-weight: 700; text-wrap: balance
   .stamp { min-width: 100px; }
   .stamp .big { font-size: 26px; }
 }
+.tipcard { border: 2px dashed var(--stamp); border-radius: 8px; padding: 10px 12px; margin: 12px 0; background: rgba(236, 210, 122, 0.25); }
+.tipcard .hand { font-size: 18px; color: var(--stamp); }
+.tipcard p { margin: 4px 0 8px; font-size: 14px; }
+details.guide { border-bottom: 1px dashed var(--line); padding: 8px 0; }
+details.guide summary { cursor: pointer; font-weight: 700; }
+details.guide p { margin: 6px 0 2px; font-size: 14px; }
+.scene { margin: 10px 0 0; }
+.scene svg { width: 100%; height: auto; display: block; max-height: 170px; }
 </style>
 </head>
 <body>
@@ -166,7 +174,7 @@ h1, h2, h3 { font-family: var(--f-display); font-weight: 700; text-wrap: balance
 <script>
 (function () {
 'use strict';
-
+// ---- 00-data.js ----
 /* ================= 資料表 ================= */
 // 時間單位：遊戲內分鐘，0 = 08:00，600 = 18:00 爆發
 const OUTBREAK = 600;
@@ -204,7 +212,7 @@ const ITEMS = {
   battery:  { n: '家用儲電站', cat: 'equip', w: 0, note: '存 10 度電 · 送貨到府' },
   freezer:  { n: '冰櫃', cat: 'equip', w: 0, note: '耗電 1 度/天 · 蔬菜不會壞' },
   microwave:{ n: '微波爐', cat: 'equip', w: 0, note: '耗電 0.5 度/天 · 才能煮米' },
-  ac:       { n: '冷氣（冷暖）', cat: 'equip', w: 0, note: '寒潮時取暖 · 耗電 2 度/天' },
+  ac:       { n: '冷氣（冷暖）', cat: 'equip', w: 0, note: '寒潮時取暖 · 耗電 1.5 度/天' },
   pedal:    { n: '人力發電機', cat: 'equip', w: 0, note: '踩 1 小時 = 1.5 度電 · 很累' },
   rice_c:   { n: '熟飯', cat: 'food', w: 0.5, note: '1 份 · 2 天內要吃' },
   tomato_p: { n: '番茄', cat: 'food', w: 0.2, note: '自己種的' },
@@ -271,6 +279,7 @@ const UPGRADES = [
   { id: 'bag', n: '大背包', d: '背包容量 +5kg', cost: 2, max: 4 }
 ];
 
+// ---- 01-journal.js ----
 /* ================= 日誌（跨輪保存） ================= */
 const JKEY = 'survival-log-m1-journal';
 function freshJournal() { return { runs: [], events: {}, stores: {}, tips: {}, hordesSeen: 0, pp: 0, upg: { time: 0, money: 0, bag: 0 }, dev: false, save: { no: 1, revivals: 3, wins: 0 }, recipes: {}, chars: { neighbor: true }, char: 'neighbor', endings: {}, clues: {}, best: 0 }; }
@@ -284,6 +293,7 @@ let J = loadJournal();
 let S = null;     // 這一輪的狀態
 let UI = { tab: 'here', qty: {} };
 
+// ---- 02-util.js ----
 /* ================= 工具 ================= */
 const $app = document.getElementById('app');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -295,6 +305,7 @@ function count(bag) { return Object.values(bag).reduce((a, b) => a + b, 0); }
 function weightOf(bag) { return Object.entries(bag).reduce((a, [k, q]) => a + ITEMS[k].w * q, 0); }
 function add(bag, k, q) { bag[k] = (bag[k] || 0) + q; if (bag[k] <= 0) delete bag[k]; }
 
+// ---- 10-prep.js ----
 /* ================= 一輪開始 ================= */
 function newRun() {
   if (J.saveOverNote) { J.saveOverNote = false; saveJournal(); }
@@ -308,7 +319,7 @@ function newRun() {
   }
   S = {
     phase: 'play', t: -bonusT, money: 1070 + J.upg.money * 150 + ((J.char || 'neighbor') === 'student' ? 100 : 0), loc: 'home', char: J.char || 'neighbor',
-    car: false, loan: false, carry: {}, home: {}, sold: {}, stock,
+    car: false, loan: false, carry: {}, home: (J.char === 'nurse' ? { medkit: 2 } : J.char === 'veteran' ? { molotov: 2 } : {}), sold: {}, stock,
     fired: {}, log: [], seenStores: { home: true }, result: null
   };
   UI = { tab: 'here', qty: {} };
@@ -317,7 +328,7 @@ function newRun() {
   render();
 }
 
-function log(txt, alert) { S.log.unshift({ txt, alert: !!alert, t: S.t }); S.log = S.log.slice(0, 30); }
+function log(txt, alert) { if (alert && typeof sfx === 'function') sfx('alert'); S.log.unshift({ txt, alert: !!alert, t: S.t }); S.log = S.log.slice(0, 30); }
 
 function capacity() { return BASE_BAG + J.upg.bag * 5 + (S.char === 'manager' ? 15 : 0) + (S.car ? CAR_TRUNK : 0); }
 function carried() { return weightOf(S.carry); }
@@ -367,6 +378,7 @@ const ACT = {
     render();
   },
   buy(k) {
+    if (!S || S.phase !== 'play' || !STORES[S.loc] || !STORES[S.loc].items || !STORES[S.loc].items[k]) return;
     const store = S.loc;
     const it = ITEMS[k];
     if (!isOpen(store, S.t)) return;
@@ -388,6 +400,7 @@ const ACT = {
       render(); return;
     }
     S.money -= p * want;
+    if (p === 0) S.freeTaken = (S.freeTaken || 0) + want;
     S.stock[store][k] -= want;
     if (it.cat === 'equip') { add(S.home, k, want); log('買了 ' + it.n + ' ×' + want + '，會送到家。'); }
     else { add(S.carry, k, want); log((p === 0 ? '搶到 ' : '買了 ') + it.n + ' ×' + want + (p ? '，花 ' + money(p * want) : '') + '。'); }
@@ -397,6 +410,7 @@ const ACT = {
     render();
   },
   go(dest) {
+    if (!S || S.phase !== 'play' || !STORES[dest] || dest === S.loc) return;
     const tt = travelTime(S.loc, dest);
     log('前往 ' + STORES[dest].n + '（' + tt + ' 分鐘）。');
     advance(tt);
@@ -489,128 +503,7 @@ function finishRun(res) {
   res.committed = false;
 }
 
-/* ================= 爆發後模擬（估算能撐幾天） ================= */
-function simulate(home) {
-  const h = k => home[k] || 0;
-  const tl = [];
-  const push = (d, txt, cls) => tl.push({ d: '第 ' + d + ' 天', txt, cls: cls || '' });
-
-  let def = 10 + h('door') * 60 + Math.min(h('window'), 2) * 30 + h('board') * 4 + h('metal') * 6 + h('glass') * 3;
-  const defStart = def;
-  let hp = 100;
-  let water = h('water') * 3 + h('barrel') * 5;
-  let medkit = h('medkit'), pills = h('pills');
-  // 食物池（先吃會壞的、再吃一般的、米要能煮才吃）
-  const pools = {
-    veg: h('veg') * 2,
-    quick: h('sausage') + h('noodle') + h('choco') * 0.5,
-    rice: h('rice') * 8,
-    shelf: h('biscuit') * 3 + h('can') * 1.5
-  };
-  const totalMeals = pools.veg + pools.quick + pools.rice + pools.shelf;
-  let battery = h('battery') * 10, batCap = h('battery') * 10;
-  let diesel = h('gen') > 0 ? h('diesel') * 6 : 0;
-  const solarN = h('solar');
-  const freezer = h('freezer') > 0, cook = h('microwave') > 0, ac = h('ac') > 0, lightbox = h('lightbox');
-  const seeds = (h('tomato') + h('straw')) * 2;
-  const lightPlants = Math.min(lightbox * 4, seeds);
-  const potPlants = Math.min(h('pot'), seeds - lightPlants);
-  const fertMul = h('fert') > 0 ? 1.5 : 1;
-  const mush = h('mush');
-
-  let cause = '', causeKey = '', last = '';
-  let powerOutLogged = false, foodOutLogged = false, waterOutLogged = false, vegLost = false;
-  let hordesSeen = 0, coldSeen = false, rainSeen = false;
-  let day = 0;
-
-  if (!cook && pools.rice > 0) push(0, '家裡沒有微波爐，' + h('rice') + ' 袋米沒辦法煮。', 'bad');
-  if (h('diesel') > 0 && h('gen') === 0) push(0, '有柴油但沒有發電機，柴油用不上。', 'bad');
-
-  for (day = 1; day <= 100; day++) {
-    const cold = day >= COLD[0] && day <= COLD[1];
-    const rain = RAIN.some(r => day >= r[0] && day <= r[1]);
-    if (day === COLD[0]) { push(day, '寒潮來了，氣溫驟降（約持續到第 ' + COLD[1] + ' 天）。'); coldSeen = true; }
-    if (RAIN.some(r => day === r[0])) { push(day, '連日陰雨，太陽能幾乎不發電。'); rainSeen = true; }
-
-    // 電力
-    let demand = (freezer ? 1 : 0) + (cook && pools.rice > 0 ? 0.5 : 0) + lightbox * 1 + (cold && ac ? 2 : 0);
-    let supply = solarN * 1.5 * (rain ? 0.1 : cold ? 0.6 : 1);
-    let powered = true;
-    if (demand > 0 || supply > 0) {
-      let net = supply - demand;
-      if (net >= 0) battery = Math.min(batCap, battery + net);
-      else {
-        let need = -net;
-        const fromBat = Math.min(battery, need); battery -= fromBat; need -= fromBat;
-        const fromDiesel = Math.min(diesel, need); diesel -= fromDiesel; need -= fromDiesel;
-        if (need > 1e-6) powered = false;
-      }
-    }
-    if (demand > 0 && !powered && !powerOutLogged) { powerOutLogged = true; push(day, (day === 1 && solarN === 0 && h('battery') === 0 && diesel === 0 ? '爆發後市電斷了，家裡沒有發電設備：' : '電力用完了：') + '冰櫃、微波爐、種植箱、冷氣都停擺。', 'bad'); }
-
-    // 蔬菜保存
-    if (pools.veg > 0 && !vegLost && ((!freezer && day > 5) || (freezer && !powered))) {
-      push(day, '剩下的新鮮蔬菜壞掉了（' + pools.veg + ' 餐）。', 'bad'); pools.veg = 0; vegLost = true;
-    }
-
-    // 種植產出
-    let farmMeals = 0;
-    if (day >= 10) farmMeals += potPlants * 0.12 * fertMul + (powered ? lightPlants * 0.3 * fertMul : 0);
-    if (day >= 6 && day < 46) farmMeals += mush * 0.25;
-    if (day === 10 && (potPlants + lightPlants) > 0) push(day, '第一批作物收成了。', 'good');
-
-    // 吃飯：每天 2 餐
-    let need = 2 - Math.min(2, farmMeals);
-    for (const key of ['veg', 'quick', 'rice', 'shelf']) {
-      if (need <= 0) break;
-      if (key === 'rice' && !(cook && powered)) continue;
-      const take = Math.min(pools[key], need); pools[key] -= take; need -= take;
-    }
-    if (need > 0.01) {
-      if (!foodOutLogged) { foodOutLogged = true; push(day, (pools.rice > 0 ? '能吃的食物吃完了（米沒辦法煮），' : '食物吃完了，') + '開始挨餓。', 'bad'); }
-      hp -= need * 8; last = 'food';
-    }
-    // 喝水
-    water += h('rain') * (rain ? 2 : 0.25);
-    if (water >= 1) water -= 1;
-    else { if (!waterOutLogged) { waterOutLogged = true; push(day, '水喝完了。', 'bad'); } hp -= 34; last = 'water'; }
-    // 寒潮
-    if (cold && !(ac && powered)) { hp -= 6; if (last !== 'water' && last !== 'food') last = 'cold'; }
-
-    // 屍潮
-    const hz = HORDES.find(x => x[0] === day);
-    if (hz) {
-      hordesSeen++;
-      const str = hz[1];
-      if (def >= str) push(day, '屍潮來襲（強度 ' + str + '），防禦 ' + Math.round(def) + ' 擋下了。', 'good');
-      else { const dmg = (str - def) * 0.8; hp -= dmg; last = 'horde'; push(day, '屍潮來襲（強度 ' + str + '），防禦只有 ' + Math.round(def) + '，被突破，受傷 ' + Math.round(dmg) + '。', 'bad'); }
-      def = Math.max(0, def - str * 0.12);
-    }
-
-    // 治療與自然回復
-    if (hp > 0) {
-      while (hp < 60 && medkit > 0) { medkit--; hp += 35; }
-      while (hp < 75 && pills > 0) { pills--; hp += 10; }
-      if (need <= 0.01 && water >= 0 && !waterOutLogged) hp = Math.min(100, hp + 2);
-      hp = Math.min(100, hp);
-    }
-    if (hp <= 0) break;
-  }
-
-  const days = Math.min(100, day > 100 ? 100 : day - 1);
-  if (day > 100) { cause = '你撐過了 100 天。'; push(100, '撐過 100 天！', 'good'); }
-  else {
-    const map = { water: ['缺水，撐不下去了。', 'water'], food: ['斷糧，餓到撐不下去。', 'food'], horde: ['屍群破門而入。', 'horde'], cold: ['在寒潮中失溫。', 'cold'] };
-    const m = map[last] || ['撐不下去了。', 'other'];
-    cause = m[0]; causeKey = m[1];
-    push(day, cause, 'bad');
-  }
-  return {
-    days, cause, causeKey, timeline: tl, hordesSeen, coldSeen, rainSeen,
-    stats: { meals: totalMeals, cookable: cook, waterDays: h('water') * 3 + h('barrel') * 5, def: defStart, power: (h('gen') ? h('diesel') * 6 : 0) + h('battery') * 10, solar: solarN }
-  };
-}
-
+// ---- 11-views.js ----
 /* ================= 畫面 ================= */
 function render() {
   if (!S) { $app.innerHTML = viewTitle(); return; }
@@ -624,6 +517,7 @@ function render() {
   else if (UI.tab === 'map') body = viewMap();
   else if (UI.tab === 'inv') body = viewInv();
   else body = viewJournal(false);
+  body = tip(UI.tab === 'map' ? 'map' : 'prep') + body;
   $app.innerHTML =
     '<header class="status"><div class="status-in">' +
       '<div class="stamp' + (left <= 60 ? ' urgent' : '') + '"><div class="lbl">距離爆發</div><div class="big">' + dur(left) + '</div></div>' +
@@ -634,6 +528,7 @@ function render() {
       '</div></div></header>' +
     '<main class="wrap">' +
       '<div class="ticker">' + S.log.slice(0, 3).map(l => '<p class="' + (l.alert ? 'alert' : '') + '">' + esc(l.txt) + '</p>').join('') + '</div>' +
+      (UI.tab === 'here' ? sceneSVG(S.loc) : '') +
       '<div class="place"><h2>' + esc(store.n) + '</h2><span class="sub">' + (store.closes ? (isOpen(S.loc, S.t) ? '營業到 ' + clock(store.closes) : '已關門') : '') + '</span></div>' +
       body +
     '</main>' +
@@ -784,6 +679,9 @@ function viewJournal(outside) {
   }
   if (outside) h += viewUpgrades();
   else h += '<p class="empty">規劃點數 ' + J.pp + ' 點，可以在輪與輪之間使用。</p>';
+  h += viewCodex();
+  h += viewGuide();
+  h += '<div class="row-btns"><button class="btn ghost" data-a="sound">音效：' + (J.sound === false ? '關' : '開') + '</button></div>';
   h += '<div class="dev"><label><input type="checkbox" id="devmode" data-a="dev"' + (J.dev ? ' checked' : '') + '> 開發者模式</label>';
   if (J.dev) {
     h += '<div class="row-btns">' + (S && S.phase === 'play' ? '<button class="btn ghost" data-a="devMoney">+$1000</button><button class="btn ghost" data-a="devTime">時間倒回 60 分</button>' : '') +
@@ -807,14 +705,14 @@ function viewTitle() {
     '<p class="note">你死過一次。醒來時，時間回到早上 08:00。<br>18:00，屍群會淹沒整座城市。用手上的錢、腳程和背包，把家變成能撐下去的堡壘。</p>' +
     (J.saveOverNote ? '<p class="alert-line">上一個存檔的復活用完了。這是新的存檔，但日誌還記得一切。</p>' : '') +
     '<p class="hand" style="font-size:17px">' + CHARS[J.char || 'neighbor'].n + ' · 存檔 #' + J.save.no + ' · 剩 ' + J.save.revivals + ' 次復活' + (J.save.wins ? ' · 已撐過 100 天 ' + J.save.wins + ' 次' : '') + '</p>' +
-    '<div class="row-btns"><button class="btn red" data-a="start" style="font-size:18px;padding:10px 22px">' + (n ? '開始第 ' + (n + 1) + ' 輪' : '開始') + '</button></div>' +
+    (SAVED ? viewResume() : '<div class="row-btns"><button class="btn red" data-a="start" style="font-size:18px;padding:10px 22px">' + (n ? '開始第 ' + (n + 1) + ' 輪' : '開始') + '</button></div>') +
     '<p class="empty">準備期 10 小時，爆發後一天一天守家，目標撐過 100 天。死掉可以花規劃點數回溯到前幾天，或用掉 1 次復活回到 08:00 重來。</p></section>' +
     viewChars() + viewJournal(true) + '</main>';
 }
 
 function viewEnd() {
   const r = S.result;
-  let h = '<main class="wrap"><section class="hero"><p class="hand" style="color:var(--stamp);font-size:18px;margin:0">' + (r.days >= 100 ? '倖存' : '這一輪結束了') + '</p>' +
+  let h = '<main class="wrap">' + (r.days < 100 ? tip('death') : '') + '<section class="hero"><p class="hand" style="color:var(--stamp);font-size:18px;margin:0">' + (r.days >= 100 ? '倖存' : '這一輪結束了') + '</p>' +
     '<div class="result-big">' + r.days + '<small>天</small></div><p class="note">' + esc(r.cause) + '</p>' +
     (r.ending ? '<div class="sheet" style="padding:12px"><div class="hand" style="font-size:22px;color:var(--stamp)">結局「' + ENDINGS[r.ending].n + '」</div><p class="note" style="margin:6px 0 0">' + ENDINGS[r.ending].d + '</p></div>' : '') +
     '<p>這輪會得到 <b class="num">' + r.pp + '</b> 點規劃點數' + (r.committed ? '（已入帳）' : '（離開這個畫面時入帳）') + '。</p></section>';
@@ -840,6 +738,7 @@ function viewEnd() {
   return h;
 }
 
+// ---- 20-survive.js ----
 /* ================= M2：爆發後守家生存 ================= */
 const FOOD = {
   rice_c: { sat: 25, dish: true }, biscuit: { sat: 75 }, sausage: { sat: 25 }, noodle: { sat: 25 }, can: { sat: 38 },
@@ -878,11 +777,12 @@ function startSurvive() {
   m4Init(S.sv);
   m5Init(S.sv);
   m6Init(S.sv);
+  m7Init(S.sv);
   S.snaps = [];
   snapshot();
 }
 
-function slog(txt, alert) { const sv = S.sv; sv.log.unshift({ txt, alert: !!alert }); sv.log = sv.log.slice(0, 30); }
+function slog(txt, alert) { if (alert && typeof sfx === 'function') sfx('alert'); const sv = S.sv; sv.log.unshift({ txt, alert: !!alert }); sv.log = sv.log.slice(0, 30); }
 function chron(d, txt, cls) { S.sv.chron.push({ d: d ? '第 ' + d + ' 天' : '爆發', txt, cls: cls || '' }); }
 function sv_has(k) { const sv = S.sv; return (sv.st[k] || 0) + sv.fresh.filter(f => f.k === k).reduce((a, f) => a + f.q, 0); }
 function sv_take(k, n) {
@@ -892,7 +792,7 @@ function sv_take(k, n) {
   sv.fresh = sv.fresh.filter(f => f.q > 0);
   if (n > 0) { sv.st[k] = (sv.st[k] || 0) - n; if (sv.st[k] <= 0) delete sv.st[k]; }
 }
-function sv_addFresh(k, q) { if (q > 0) S.sv.fresh.push({ k, q, life: FRESH_LIFE[k] }); }
+function sv_addFresh(k, q) { if (q <= 0) return; if (!FRESH_LIFE[k]) { S.sv.st[k] = (S.sv.st[k] || 0) + q; return; } S.sv.fresh.push({ k, q, life: FRESH_LIFE[k] }); }
 const clamp = v => Math.max(0, Math.min(100, v));
 function powerCap() { return 3 + (S.sv.st.battery || 0) * 10; }
 function slots() { const st = S.sv.st; return { light: (st.lightbox || 0) * 4, green: (S.sv.rooms || []).filter(r => r === 'greenhouse').length * 4, pot: st.pot || 0 }; }
@@ -906,11 +806,11 @@ function passHours(n) {
   for (let i = 0; i < n; i++) {
     sv.hour++;
     sv.sat = clamp(sv.sat - 2.2);
-    sv.hyd = clamp(sv.hyd - 3);
+    sv.hyd = clamp(sv.hyd - 2.6);
     sv.mor = clamp(sv.mor - 0.3);
     if (sv.sat <= 0) hurt(2, 'food');
     if (sv.hyd <= 0) hurt(4, 'water');
-    if (inCold(sv.day) && !heated()) hurt(hasT('warm') ? 0.5 : 1, 'cold');
+    if (inCold(sv.day) && !heated()) hurt(hasT('warm') ? 0.3 : 0.6, 'cold');
   }
   checkDeath();
 }
@@ -945,9 +845,11 @@ const SACT = {
   },
   drink() {
     const sv = S.sv;
-    if (sv.st.wu < 1) return;
-    sv.st.wu -= 1; sv.hyd = clamp(sv.hyd + 30);
-    slog('喝了一份水，水分 +30。'); render();
+    const tap = sv.day <= 5;
+    if (sv.st.wu < 1 && !tap) return;
+    if (!tap) sv.st.wu -= 1;
+    sv.hyd = clamp(sv.hyd + 30);
+    slog(tap ? '自來水還沒停，喝了一杯。水分 +30。' : '喝了一份水，水分 +30。'); render();
   },
   cook() {
     const sv = S.sv;
@@ -995,7 +897,7 @@ const SACT = {
     for (let i = 0; i < n; i++) {
       const cnt = t => sv.plants.filter(p => p.slot === t).length;
       const slot = cnt('light') < s.light ? 'light' : cnt('green') < s.green ? 'green' : 'pot';
-      sv.plants.push({ k: k === 'tomato' ? 'tomato_p' : 'straw_p', slot, age: 0 });
+      sv.plants.push({ k: SEED_OUT[k], slot, age: 0 });
     }
     sv.sta -= 5;
     slog('種下' + ITEMS[k].n + '，' + n + ' 株。大約 8 天後開始收成。');
@@ -1012,7 +914,7 @@ const SACT = {
     const sv = S.sv;
     if (!(sv.st[k] > 0) || (sv.hp >= 100 && !(k === 'pills' && sv.sick))) return;
     sv.st[k] -= 1; if (!sv.st[k]) delete sv.st[k];
-    const v = k === 'medkit' ? 35 : 10;
+    const v = k === 'medkit' ? (S.char === 'nurse' ? 52 : 35) : 10;
     sv.hp = Math.min(100, sv.hp + v); if (k === 'pills') { sv.mor = clamp(sv.mor + 3); if (sv.sick) { sv.sick = 0; slog('病好了。'); } }
     slog('用了' + ITEMS[k].n + '，生命 +' + v + '。'); render();
   },
@@ -1033,7 +935,7 @@ function night(watch) {
   if (solar > 0) sv.power = Math.min(cap, sv.power + solar);
 
   // 2. 設備耗電（冷氣 > 冰櫃 > 種植箱）
-  const devs = [['ac', cold ? 2 : 0], ['freezer', 1], ['lightbox', (st.lightbox || 0) * 1]];
+  const devs = [['ac', cold ? 1.5 : 0], ['freezer', 1], ['lightbox', (st.lightbox || 0) * 1], ['bot_fix', 0.5], ['bot_farm', 0.5], ['bot_cook', 0.5]];
   sv.powered = {};
   for (const [k, need] of devs) {
     if (!(st[k] > 0) || !sv.dev[k] || need <= 0) { sv.powered[k] = false; continue; }
@@ -1052,7 +954,7 @@ function night(watch) {
   const hz = hordeOn(d);
   if (hz) {
     sv.hordesSeen++;
-    let dmg = hz[1] * 4 * (watch ? 0.6 : 1);
+    let dmg = hz[1] * 4 * (watch ? 0.6 : 1) * hordeMul();
     let trapKill = 0;
     for (const t of sv.traps) {
       const T = TRAPS[t.k];
@@ -1076,6 +978,7 @@ function night(watch) {
     sv.def -= dmg;
     if (sv.def >= 0) {
       sv.sp += 10;
+      if (sv.dog && sv.dog.state === 'pet') sv.dog.xp += 2;
       chron(d, '屍潮（強度 ' + hz[1] + '）' + (trapKill ? '，陷阱擋下 ' + Math.round(trapKill) : '') + (watch ? '，你守了一夜' + (used ? '、邊打邊修用掉 ' + used + ' 份材料' : '') : '') + '。防線剩 ' + Math.round(sv.def) + '。', 'good');
       slog('屍潮退去了，防線剩 ' + Math.round(sv.def) + '。', true);
     } else {
@@ -1087,6 +990,7 @@ function night(watch) {
     }
   }
 
+  if (robotOn('bot_fix') && sv.def < sv.defMax * 1.5) { sv.def = Math.min(sv.defMax * 1.5, sv.def + 25); slog('修理機器人連夜把防線補了 25。'); }
   // 5. 睡眠
   const hoursLeft = Math.max(0, LAST_HOUR - sv.hour);
   for (let i = 0; i < hoursLeft; i++) {
@@ -1101,7 +1005,7 @@ function night(watch) {
   else sv.sta = clamp(sv.sta + (55 + (roomN('bedroom') ? 10 : 0) + (sv.mor > 50 ? 15 : 0) - (sv.mor < 20 ? 20 : 0)) * (sv.sick ? 0.5 : 1));
   if (sv.sat <= 0) hurt(10, 'food');
   if (sv.hyd <= 0) hurt(20, 'water');
-  if (cold && !warmNight) hurt(hasT('warm') ? 4 : 8, 'cold');
+  if (cold && !warmNight) hurt(hasT('warm') ? 3 : 6, 'cold');
   if (sv.sat > 30 && sv.hyd > 30 && !hz) sv.hp = Math.min(100, sv.hp + 5);
   if (checkDeath()) { render(); return; }
 
@@ -1124,9 +1028,9 @@ function night(watch) {
   const harvest = {};
   for (const p of sv.plants) {
     p.age++;
-    if (p.age < 8) continue;
+    if (p.age < growDays()) continue;
     if (p.slot === 'light' && !sv.powered.lightbox) continue;
-    const rate = (p.slot === 'pot' ? 0.5 : 1) * (hasT('green') ? 1.3 : 1);
+    const rate = (p.slot === 'pot' ? 0.5 : 1) * (hasT('green') ? 1.3 : 1) * (robotOn('bot_farm') ? 1.25 : 1);
     p.acc = (p.acc || 0) + rate * fert;
     const got = Math.floor(p.acc); p.acc -= got;
     if (got) harvest[p.k] = (harvest[p.k] || 0) + got;
@@ -1136,6 +1040,7 @@ function night(watch) {
   if (hv.length) { for (const [k, q] of hv) sv_addFresh(k, q); slog('收成：' + hv.map(([k, q]) => ITEMS[k].n + '×' + q).join('、') + '。'); }
 
   // 天氣與廣播
+  if (nd === COLD[0] - 1) slog('收音機：明天開始會有強烈寒流，請準備取暖設備。', true);
   if (nd === COLD[0]) { sv.coldSeen = true; chron(nd, '寒潮來了，沒取暖會一直掉血。'); slog('寒潮來了！氣溫驟降。' + (st.ac ? '到「據點」把冷氣打開取暖。' : ''), true); }
   if (nd === COLD[1] + 1) chron(nd, '寒潮過去了。', 'good');
   if (RAIN.some(r => nd === r[0])) { sv.rainSeen = true; chron(nd, '連日陰雨，太陽能幾乎不發電。'); slog('外面下起連綿大雨。', true); }
@@ -1144,6 +1049,7 @@ function night(watch) {
   else if (tomorrow) slog('收音機：明晚會有' + hordeSize(tomorrow[1]) + '屍潮。');
   morningDisaster(nd);
   m5Morning(nd);
+  m7Morning(nd);
   slog('第 ' + nd + ' 天早上。');
   if (nd <= 100) snapshot();
 
@@ -1166,6 +1072,7 @@ function renderSurvive() {
   const sv = S.sv;
   const tonight = hordeOn(sv.day);
   let body = UI.tab === 'base' ? viewBase() : UI.tab === 'store' ? viewStore() : UI.tab === 'journal' ? viewJournal(false) : viewActs();
+  body = tip(sv.out && UI.tab === 'act' ? 'out' : UI.tab === 'base' ? 'base' : 'survive') + body;
   $app.innerHTML =
     '<header class="status"><div class="status-in">' +
       '<div class="stamp' + (tonight ? ' urgent' : '') + '"><div class="lbl">' + (tonight ? '今晚屍潮' : '倖存') + '</div><div class="big">第' + sv.day + '天</div><div class="lbl num">' + String(sv.hour).padStart(2, '0') + ':00</div></div>' +
@@ -1173,6 +1080,7 @@ function renderSurvive() {
     '</div></header>' +
     '<main class="wrap">' +
       '<div class="ticker">' + sv.log.slice(0, 3).map(l => '<p class="' + (l.alert ? 'alert' : '') + '">' + esc(l.txt) + '</p>').join('') + '</div>' +
+      ((UI.tab === 'act' || UI.tab === 'base') && !sv.out ? houseSVG() : '') +
       '<div class="chips"><span>防線 <b class="num">' + Math.round(sv.def) + '</b>/' + sv.defMax + '</span><span>電 <b class="num">' + (Math.round(sv.power * 10) / 10) + '</b>/' + powerCap() + ' 度</span><span>水 <b class="num">' + sv.st.wu + '</b> 份</span>' +
         (inCold(sv.day) ? '<span class="tag red">寒潮</span>' : '') + (inRain(sv.day) ? '<span class="tag amber">陰雨</span>' : '') + '</div>' +
       body +
@@ -1193,7 +1101,7 @@ function viewActs() {
   // 吃喝
   const foods = Object.keys(FOOD).filter(k => sv_has(k) > 0);
   h += '<div class="cat">吃喝（不花時間）</div><div class="sheet">';
-  h += actRow('喝水', '水分 +30 · 剩 ' + st.wu + ' 份', '喝', 'drink', '', st.wu >= 1 && sv.hyd < 100);
+  h += actRow('喝水', sv.day <= 5 ? '自來水還沒停（第 5 天後停水）· 不用消耗存水' : '水分 +30 · 剩 ' + st.wu + ' 份', '喝', 'drink', '', (st.wu >= 1 || sv.day <= 5) && sv.hyd < 100);
   if (!foods.length) h += '<p class="empty">沒有能直接吃的東西了' + (st.rice ? '（米要先煮）' : '') + '。</p>';
   for (const k of foods) {
     const fr = sv.fresh.filter(f => f.k === k);
@@ -1206,7 +1114,7 @@ function viewActs() {
   for (const m of ['metal', 'board', 'glass']) if (st[m]) h += actRow('用' + ITEMS[m].n + '加固', '防線 +' + REINFORCE[m] + ' · 剩 ' + st[m] + ' · 體力 -' + staCost(12) + ' · 上限 ' + Math.round(sv.defMax * 1.5), '加固', 'reinforce', m, !sv.sick && canAct(1, staCost(12)) && sv.def < sv.defMax * 1.5);
   if (st.gen) h += actRow('開發電機', '燒 1 桶柴油 → 電 +6 · 剩 ' + (st.diesel || 0) + ' 桶', '發電', 'gen', '', canAct(1) && st.diesel > 0);
   if (st.pedal) h += actRow('踩人力發電機', '電 +1.5 · 體力 -' + staCost(20), '踩', 'pedal', '', canAct(1, staCost(20)));
-  for (const k of ['tomato', 'straw']) if (st[k]) h += actRow('種' + ITEMS[k].n, '一包種 2 株 · 盆位 ' + freeSlots() + ' 個空 · 體力 -5', '種', 'plant', k, canAct(1, 5) && freeSlots() > 0);
+  for (const k of ['tomato', 'straw', 'rape']) if (st[k]) h += actRow('種' + ITEMS[k].n, '一包種 2 株 · 盆位 ' + freeSlots() + ' 個空 · 體力 -5', '種', 'plant', k, canAct(1, 5) && freeSlots() > 0);
   h += actRow('休息、聽收音機', '心態 +12 · 體力 +5', '休息', 'rest', '', canAct(1));
   h += '</div>';
   h += viewOutside();
@@ -1239,7 +1147,7 @@ function viewBase() {
   h += viewTraps();
   h += '<div class="cat">電力與設備</div><div class="sheet">';
   h += '<div class="item"><div><div class="nm">存電 ' + (Math.round(sv.power * 10) / 10) + ' / ' + powerCap() + ' 度</div><div class="meta">太陽能板 ' + (st.solar || 0) + ' 片（晴天每片 1.5 度/天）· 儲電站 ' + (st.battery || 0) + ' 台</div></div><div></div></div>';
-  const devs = [['freezer', '1 度/天 · 新鮮食物壞得慢 5 倍'], ['lightbox', ((st.lightbox || 0) * 1) + ' 度/天 · 沒電作物不長'], ['ac', '寒潮期間 2 度/天 · 取暖']];
+  const devs = [['freezer', '1 度/天 · 新鮮食物壞得慢 5 倍'], ['lightbox', ((st.lightbox || 0) * 1) + ' 度/天 · 沒電作物不長'], ['ac', '寒潮期間 1.5 度/天 · 取暖'], ['bot_farm', '0.5 度/天 · 作物 6 天成熟、產量 +25%'], ['bot_fix', '0.5 度/天 · 每晚修防線 +25'], ['bot_cook', '0.5 度/天 · 早上自動煮飯']];
   let any = false;
   for (const [k, d] of devs) {
     if (!(st[k] > 0)) continue; any = true;
@@ -1248,11 +1156,11 @@ function viewBase() {
   }
   if (!any) h += '<p class="empty">沒有用電設備。</p>';
   h += '</div>';
-  if (cold) h += '<p class="empty">寒潮中：' + (st.ac || st.heater ? '冷氣要開著且有電，或有暖爐和木板，才算有取暖。' : '沒有取暖設備，每小時掉 1 生命、每晚掉 8。') + '</p>';
+  if (cold) h += '<p class="empty">寒潮中：' + (st.ac || st.heater ? '冷氣要開著且有電，或有暖爐和木板，才算有取暖。' : '沒有取暖設備，醒著每小時掉 0.6 生命、每晚掉 6。') + '</p>';
   h += '<div class="cat">作物</div>';
   const s = slots();
   h += '<p class="empty">盆位：種植箱 ' + s.light + ' 格、溫室 ' + s.green + ' 格、花盆 ' + s.pot + ' 格，已種 ' + sv.plants.length + ' 株。' + ((st.mush || 0) ? '菌包 ' + st.mush + ' 包（第 6–45 天出菇）。' : '') + '</p>';
-  if (sv.plants.length) h += '<div class="sheet">' + sv.plants.map(p => '<div class="item"><div><div class="nm">' + ITEMS[p.k].n + '<span class="tag">' + ({ light: '種植箱', green: '溫室', pot: '花盆' }[p.slot]) + '</span></div><div class="meta">' + (p.age < 8 ? '還要 ' + (8 - p.age) + ' 天成熟' : '已成熟，' + ({ light: '有電每天收 1 個', green: '每天收 1 個', pot: '每 2 天收 1 個' }[p.slot])) + '</div></div><div></div></div>').join('') + '</div>';
+  if (sv.plants.length) h += '<div class="sheet">' + sv.plants.map(p => '<div class="item"><div><div class="nm">' + ITEMS[p.k].n + '<span class="tag">' + ({ light: '種植箱', green: '溫室', pot: '花盆' }[p.slot]) + '</span></div><div class="meta">' + (p.age < growDays() ? '還要 ' + (growDays() - p.age) + ' 天成熟' : '已成熟，' + ({ light: '有電每天收 1 個', green: '每天收 1 個', pot: '每 2 天收 1 個' }[p.slot])) + '</div></div><div></div></div>').join('') + '</div>';
   h += viewBuild();
   h += viewTalents();
   return h;
@@ -1268,6 +1176,7 @@ function viewStore() {
   return h;
 }
 
+// ---- 30-revive.js ----
 /* ================= M3：死亡、回溯、復活、天賦 ================= */
 const REWIND_COST = 2;
 const TALENTS = {
@@ -1299,6 +1208,7 @@ function commitRun() {
   if (res.hordesSeen > J.hordesSeen) J.hordesSeen = res.hordesSeen;
   if (res.coldSeen) J.tips.coldKnown = true;
   if (res.rainSeen) J.tips.rainKnown = true;
+  if (res.days >= 50 && !J.chars.veteran) J.chars.veteran = true;
   if (res.days >= 100) J.save.wins = (J.save.wins || 0) + 1;
   else {
     J.save.revivals -= 1;
@@ -1311,6 +1221,7 @@ function commitRun() {
   saveJournal();
 }
 
+// ---- 31-craft.js ----
 /* ================= M4：製作、陷阱、料理、天災 ================= */
 const RECIPES = {
   pot:    { n: '花盆', need: { plastic: 1 }, h: 1, out: { pot: 1 }, base: true, d: '多 1 個種植格' },
@@ -1356,7 +1267,7 @@ Object.assign(SACT, {
   craft(k) {
     const sv = S.sv, r = RECIPES[k];
     const ch = craftHours(r.h), cs = craftSta(r.h);
-    if (!r || !knownRecipes().includes(k) || !canCraft(k) || !canAct(ch, cs) || (r.defLv && defLv() < r.defLv) || (r.noStudent && S.char === 'student')) return;
+    if (!r || !knownRecipes().includes(k) || !canCraft(k) || !canAct(ch, cs) || (r.defLv && defLv() < r.defLv) || (r.noStudent && S.char === 'student') || (r.needDrone && !(sv.st.drone > 0))) return;
     for (const [m, n] of Object.entries(r.need)) { sv.st[m] -= n; if (!sv.st[m]) delete sv.st[m]; }
     if (r.trap) { const t = TRAPS[r.trap]; sv.traps.push({ k: r.trap, uses: t.uses }); }
     if (r.out) for (const [o, n] of Object.entries(r.out)) sv.st[o] = (sv.st[o] || 0) + n;
@@ -1384,7 +1295,7 @@ Object.assign(SACT, {
   rewind(i) {
     const s = S.snaps && S.snaps[Number(i)];
     if (!s || J.pp < REWIND_COST || !S.result || S.result.committed) return;
-    J.pp -= REWIND_COST; saveJournal();
+    J.pp -= REWIND_COST; J.stats = J.stats || {}; J.stats.rewinds = (J.stats.rewinds || 0) + 1; saveJournal();
     S.sv = JSON.parse(s.sv);
     S.snaps = S.snaps.slice(0, Number(i) + 1);
     S.phase = 'survive'; S.result = null;
@@ -1417,7 +1328,7 @@ function viewCraft() {
     const r = RECIPES[k];
     const need = Object.entries(r.need).map(([m, n]) => ITEMS[m].n + ' ' + (st[m] || 0) + '/' + n).join('、');
     const ch = craftHours(r.h), cs = craftSta(r.h);
-    const lock = r.defLv && defLv() < r.defLv ? '防禦等級 ' + r.defLv + ' 才能做' : r.noStudent && S.char === 'student' ? '大學生不會做' : '';
+    const lock = r.defLv && defLv() < r.defLv ? '防禦等級 ' + r.defLv + ' 才能做' : r.noStudent && S.char === 'student' ? '大學生不會做' : r.needDrone && !(st.drone > 0) ? '要先有無人機' : (r.out && ITEMS[Object.keys(r.out)[0]].cat === 'equip' && ['radar', 'refinery', 'bot_farm', 'bot_fix', 'bot_cook', 'dauto', 'brewer'].includes(k) && st[k] > 0) ? '已經有了' : '';
     h += actRow(r.n + (r.base ? '' : '<span class="tag amber">圖紙</span>'), (lock ? '<b style="color:var(--stamp)">' + lock + '</b> · ' : '') + r.d + ' · ' + need + ' · ' + ch + ' 小時 · 體力 -' + cs, '做', 'craft', k, !lock && canCraft(k) && canAct(ch, cs));
   }
   const unknown = Object.keys(RECIPES).length - knownRecipes().length;
@@ -1432,6 +1343,7 @@ function viewCraft() {
     }
     h += '</div>';
   }
+  h += viewRefine();
   if (st.brewer) h += '<div class="sheet">' + actRow('釀酒', '3 個番茄或草莓 → 1 瓶高度酒 · 2 小時', '釀', 'brew', '', ['tomato_p', 'straw_p'].reduce((a, k) => a + sv_has(k), 0) >= 3 && canAct(2, staCost(5))) + '</div>';
   return h;
 }
@@ -1450,6 +1362,7 @@ function viewTalents() {
       '<button class="btn ghost" data-a="talent" data-v="' + k + '"' + (sv.talents[k] || sv.sp < t.cost ? ' disabled' : '') + '>' + (sv.talents[k] ? '已學' : '學') + '</button></div>').join('') + '</div>';
 }
 
+// ---- 40-outside.js ----
 /* ================= M5：外出、交易、救援、角色 ================= */
 const CHARS = {
   neighbor: { n: '鄰居', d: '一般人，沒有特別能力。' },
@@ -1530,11 +1443,16 @@ Object.assign(SACT, {
   goOut(loc) {
     const sv = S.sv, L = LOCS[loc];
     if (!L || sv.out || expLevel(sv.xp) < L.lv || !canAct(L.trip, staCost(10))) return;
+    if (L.noise && !(sv.st.noise > 0)) { slog('那裡屍群太多，要先做一個噪音器引開。'); render(); return; }
+    if (L.noise) { sv.st.noise--; if (!sv.st.noise) delete sv.st.noise; }
+    let radar = false;
+    if (sv.st.radar > 0 && sv.power >= 1) { sv.power -= 1; radar = true; }
     sv.sta -= staCost(10);
     const conts = L.cont.map((n, i) => ({ n, i }));
     if (expLevel(sv.xp) >= 4) conts.push({ n: '上鎖的房間', i: 'lock' });
     if (loc === 'smarket' && sv.day >= 18 && expLevel(sv.xp) >= 2 && sv.mgr.state === 'none') conts.push({ n: '貨車駕駛座', i: 'truck' });
-    sv.out = { loc, exp: 0, bag: {}, conts };
+    sv.out = { loc, exp: 0, bag: {}, conts, radar };
+    if (radar) slog('雷達開著，耗電 1 度。');
     slog('你帶上背包，悄悄出門前往' + L.n + '（' + L.trip + ' 小時）。');
     passHours(L.trip); render(); window.scrollTo(0, 0);
   },
@@ -1546,6 +1464,8 @@ Object.assign(SACT, {
     const lv = expLevel(sv.xp);
     let exp = 20 - lv * 2 + Math.floor(Math.random() * 11) - 5;
     if (sv.hour >= 18) exp *= 2;
+    exp *= expMul();
+    if (o.loc === 'hospital') { J.stats = J.stats || {}; J.stats.hosp = (J.stats.hosp || 0) + 1; if (J.stats.hosp >= 5 && !J.chars.nurse) { J.chars.nurse = true; slog('你對醫院越來越熟了。（解鎖角色：護理師）', true); } saveJournal(); }
     o.exp += exp; sv.sta -= staCost(5); sv.xp += 1;
     Lst.done.push(key);
     let found = [];
@@ -1562,7 +1482,7 @@ Object.assign(SACT, {
     } else if (key === '3' && o.loc === 'school' && !(sv.st.drone > 0) && !o.bag.drone) {
       o.bag.drone = 1; found.push('教學無人機');
     } else {
-      const rolls = key === 'lock' ? 1 : 1 + (Math.random() < 0.35 ? 1 : 0);
+      const rolls = key === 'lock' ? 1 : 1 + (Math.random() < 0.35 + lootBonus() ? 1 : 0);
       for (let r = 0; r < rolls; r++) {
         const [k, q] = rollLoot(key === 'lock' ? LOCKED_LOOT : LOCS[o.loc].loot);
         const room = bagCap() - outWeight();
@@ -1679,7 +1599,7 @@ function ambush() {
 function viewOut() {
   const sv = S.sv, o = sv.out, L = LOCS[o.loc], Lst = sv.locs[o.loc];
   const w = outWeight(), cap = bagCap();
-  let h = '<div class="place"><h2>' + L.n + '</h2><span class="sub">探索等級 ' + expLevel(sv.xp) + '</span></div>';
+  let h = sceneSVG(o.loc) + '<div class="place"><h2>' + L.n + '</h2><span class="sub">探索等級 ' + expLevel(sv.xp) + '</span></div>';
   h += '<div class="cat">暴露值</div><div class="bar' + (o.exp >= 70 ? ' full' : '') + '" style="height:12px"><i style="width:' + Math.min(100, o.exp) + '%"></i></div>' +
     '<p class="empty">' + Math.round(o.exp) + '% · 滿 100% 會被屍群包圍，丟掉一半東西、生命 -20。' + (sv.hour >= 18 ? '<b style="color:var(--stamp)">天黑了，暴露值漲兩倍。</b>' : '') + '</p>';
   h += '<div class="cat">可以搜的地方（每處 1 小時）</div><div class="sheet">';
@@ -1701,7 +1621,8 @@ function viewOutside() {
   for (const [k, L] of Object.entries(LOCS)) {
     const left = L.cont.length - sv.locs[k].done.filter(x => /^\d$/.test(x)).length;
     const locked = lv < L.lv;
-    h += actRow(L.n, locked ? '探索等級 ' + L.lv + ' 才能去' : '單程 ' + L.trip + ' 小時 · 還有 ' + left + ' 處沒搜 · 體力 -' + staCost(10), '出門', 'goOut', k, !locked && canAct(L.trip + 1, staCost(10)));
+    const noNoise = L.noise && !(sv.st.noise > 0);
+    h += actRow(L.n, locked ? '探索等級 ' + L.lv + ' 才能去' : '單程 ' + L.trip + ' 小時 · 還有 ' + left + ' 處沒搜 · 體力 -' + staCost(10) + (L.noise ? ' · 要用 1 個噪音器（有 ' + (sv.st.noise || 0) + '）' : '') + (sv.st.radar > 0 ? ' · 雷達' + (sv.power >= 1 ? '可用' : '沒電') : ''), '出門', 'goOut', k, !locked && !noNoise && canAct(L.trip + 1, staCost(10)));
   }
   h += '</div>';
   if (hordeOn(sv.day)) h += '<p class="empty">今晚有屍潮，記得留時間回家準備。</p>';
@@ -1714,6 +1635,7 @@ function viewOutside() {
   }
   const m = sv.mgr;
   if (m.state === 'feeding') soc += actRow('空投給倉庫經理', m.today ? '今天已經空投過（' + m.fed + '/5）' : '用無人機送 2 份食物 · ' + m.fed + '/5' + (sv.st.drone ? '' : ' · <b style="color:var(--stamp)">需要無人機</b>'), '空投', 'airdrop', '', !m.today && sv.st.drone > 0);
+  soc += viewExtraSocial();
   if (soc) h += '<div class="cat">其他倖存者</div><div class="sheet">' + soc + '</div>';
   // 交易
   h += '<div class="cat">無人機交易</div>';
@@ -1735,6 +1657,7 @@ function viewChars() {
   }).join('') + '</div>';
 }
 
+// ---- 50-expand.js ----
 /* ================= 擴充：據點擴建、加工、防禦等級、熟練度、結局、無盡 ================= */
 const ROOMS = {
   storage:    { n: '儲藏室', need: { board: 3, plastic: 1 }, h: 2, d: '倉庫容量 +150kg' },
@@ -1831,11 +1754,399 @@ function viewBuild() {
   return h;
 }
 
+// ---- 60-extra.js ----
+/* ================= 原作補完：機器人、無人機自動化、狗、雷達、精煉、利息、噪音器、新角色 ================= */
+Object.assign(ITEMS, {
+  noise:     { n: '噪音器', cat: 'mat', w: 0.5, note: '引開屍群 · 去醫院、科技公司要用 1 個' },
+  radar:     { n: '雷達', cat: 'equip', w: 0, note: '外出耗電 1 度：暴露值 -25%、多找到東西' },
+  refinery:  { n: '精煉機', cat: 'equip', w: 0, note: '把油菜籽或作物煉成柴油' },
+  rape:      { n: '油菜籽種子', cat: 'farm', w: 0.05, note: '一包種 2 株 · 收成拿去精煉' },
+  rape_p:    { n: '油菜籽', cat: 'mat', w: 0.3, note: '3 個煉 1 桶柴油 · 不能吃' },
+  bot_farm:  { n: '澆水機器人', cat: 'equip', w: 0, note: '耗電 0.5 度/天 · 作物 6 天成熟、產量 +25%' },
+  bot_fix:   { n: '修理機器人', cat: 'equip', w: 0, note: '耗電 0.5 度/天 · 每晚自動修防線 +25' },
+  bot_cook:  { n: '料理機器人', cat: 'equip', w: 0, note: '耗電 0.5 度/天 · 早上自動煮飯' },
+  dauto:     { n: '無人機自動化模組', cat: 'equip', w: 0, note: '每天自動做划算的交易、自動空投' }
+});
+STORES.farm.items.rape = [10, 6];
+LOCS.hospital.noise = true;
+LOCS.tech.noise = true;
+Object.assign(CHARS, {
+  nurse:   { n: '護理師', d: '急救包效果 +50%，開局多 2 個急救包。', how: '累積搜醫院 5 次' },
+  veteran: { n: '退伍軍人', d: '屍潮傷害 -15%，開局多 2 瓶燃燒瓶。', how: '任一輪撐到第 50 天' }
+});
+Object.assign(RECIPES, {
+  noise:    { n: '噪音器', need: { glass: 1, plastic: 1 }, h: 1, out: { noise: 1 }, base: true, d: '去醫院、科技公司要用' },
+  radar:    { n: '雷達', need: { metal: 2, plastic: 2, glass: 1 }, h: 3, out: { radar: 1 }, d: '外出暴露值 -25%，多找到東西' },
+  refinery: { n: '精煉機', need: { metal: 4, plastic: 2 }, h: 3, out: { refinery: 1 }, d: '油菜籽或作物煉成柴油' },
+  bot_farm: { n: '澆水機器人', need: { metal: 4, plastic: 3, glass: 1 }, h: 4, out: { bot_farm: 1 }, d: '作物 6 天成熟、產量 +25%' },
+  bot_fix:  { n: '修理機器人', need: { metal: 5, plastic: 3 }, h: 4, out: { bot_fix: 1 }, d: '每晚自動修防線 +25' },
+  bot_cook: { n: '料理機器人', need: { metal: 3, plastic: 3, glass: 1 }, h: 4, out: { bot_cook: 1 }, d: '早上自動煮飯' },
+  dauto:    { n: '無人機自動化', need: { plastic: 2, metal: 1, glass: 1 }, h: 2, out: { dauto: 1 }, base: true, needDrone: true, d: '每天自動做划算的交易、自動空投（要先有無人機）' }
+});
+const SEED_OUT = { tomato: 'tomato_p', straw: 'straw_p', rape: 'rape_p' };
+const ROBOTS = ['bot_farm', 'bot_fix', 'bot_cook'];
+const DOG_FOOD = ['sausage', 'can', 'rice_c', 'biscuit', 'mushroom', 'noodle'];
+
+function m7Init(sv) {
+  for (const r of ROBOTS) sv.dev[r] = true;
+  sv.dog = { state: 'none', xp: 0, miss: 0, today: false };
+  if (S.char === 'veteran' && !sv.st.molotov) {}
+}
+const dogLv = () => { const d = S.sv.dog; return d && d.state === 'pet' ? Math.min(5, 1 + Math.floor(d.xp / 6)) : 0; };
+const robotOn = k => !!(S.sv.st[k] > 0 && S.sv.dev[k] && S.sv.powered && S.sv.powered[k]);
+const growDays = () => robotOn('bot_farm') ? 6 : 8;
+function hordeMul() { return (1 - dogLv() * 0.04) * (S.char === 'veteran' ? 0.85 : 1); }
+function expMul() { return (1 - dogLv() * 0.03) * (S.sv.out && S.sv.out.radar ? 0.75 : 1); }
+function lootBonus() { return dogLv() * 0.06 + (S.sv.out && S.sv.out.radar ? 0.2 : 0); }
+
+function m7Morning(nd) {
+  const sv = S.sv, st = sv.st;
+  // 生存點數利息
+  if (sv.sp >= 200) { const i = Math.floor(sv.sp * 0.05); sv.sp += i; slog('存著的生存點數生了 ' + i + ' 點利息。'); }
+  // 料理機器人
+  if (robotOn('bot_cook') && !sv.fresh.some(f => f.k === 'rice_c') && st.rice > 0 && st.microwave > 0 && sv.power >= 0.3) {
+    st.rice--; if (!st.rice) delete st.rice; sv.power -= 0.3; sv_addFresh('rice_c', 8);
+    slog('料理機器人煮好了 8 份熟飯。');
+  }
+  // 狗
+  const d = sv.dog;
+  if (d.state === 'none' && nd >= 4 && nd <= 30 && Math.random() < 0.25) { d.state = 'stray'; slog('門口有一隻瘦巴巴的流浪狗，一直看著你。', true); }
+  else if (d.state === 'stray' && Math.random() < 0.3) { d.state = 'none'; slog('流浪狗走掉了。'); }
+  else if (d.state === 'pet') {
+    if (d.today) { d.xp++; d.miss = 0; } else d.miss++;
+    d.today = false;
+    if (d.miss >= 3) { d.state = 'left'; slog('狗餓了好幾天，跑掉了。', true); chron(nd, '狗跑掉了。', 'bad'); }
+  }
+  // 無人機自動化
+  if (st.dauto > 0 && st.drone > 0) {
+    const done = [];
+    sv.offers.forEach((o, i) => { if (!o.done && sv_has(o.give[0]) >= o.give[1] * 2) { SACT.trade(i); done.push(ITEMS[o.get[0]].n); } });
+    if (sv.mgr.state === 'feeding' && !sv.mgr.today) SACT.airdrop();
+    if (done.length) slog('無人機自動交易換到：' + done.join('、') + '。');
+  }
+}
+
+Object.assign(SACT, {
+  adoptDog() {
+    const sv = S.sv, d = sv.dog;
+    if (d.state !== 'stray' || DOG_FOOD.reduce((a, k) => a + sv_has(k), 0) < 1) return;
+    takeFrom(DOG_FOOD, 1); d.state = 'pet'; d.today = true; sv.mor = clamp(sv.mor + 10);
+    slog('狗吃完東西，搖著尾巴跟你進門了。你多了一個夥伴。', true);
+    chron(sv.day, '收養了一隻狗。', 'good');
+    render();
+  },
+  feedDog() {
+    const sv = S.sv, d = sv.dog;
+    if (d.state !== 'pet' || d.today || DOG_FOOD.reduce((a, k) => a + sv_has(k), 0) < 1) return;
+    const lv = dogLv();
+    takeFrom(DOG_FOOD, 1); d.today = true; sv.mor = clamp(sv.mor + 3);
+    slog('餵了狗。' + (dogLv() > lv ? '狗升到 ' + dogLv() + ' 級了！' : ''));
+    render();
+  },
+  refine() {
+    const sv = S.sv, st = sv.st;
+    if (!(st.refinery > 0) || !canAct(2, staCost(8))) return;
+    if ((st.rape_p || 0) >= 3) { st.rape_p -= 3; if (!st.rape_p) delete st.rape_p; }
+    else if (vegPool() >= 6) takeFrom(VEGGIES, 6);
+    else return;
+    st.diesel = (st.diesel || 0) + 1; sv.sta -= staCost(8);
+    slog('精煉出一桶柴油。');
+    passHours(2); render();
+  }
+});
+
+function viewExtraSocial() {
+  const sv = S.sv, d = sv.dog;
+  const food = DOG_FOOD.reduce((a, k) => a + sv_has(k), 0);
+  if (d.state === 'stray') return actRow('門口的流浪狗', '給牠 1 份食物（火腿腸、罐頭、熟飯等）就能收養', '收養', 'adoptDog', '', food >= 1);
+  if (d.state === 'pet') return actRow('狗（' + dogLv() + ' 級）', d.today ? '今天餵過了' : '每天要餵 1 份食物，3 天沒吃會跑掉 · 每級：屍潮傷害 -4%、外出暴露 -3%、多找到東西', '餵', 'feedDog', '', !d.today && food >= 1);
+  return '';
+}
+function viewRefine() {
+  const st = S.sv.st;
+  if (!(st.refinery > 0)) return '';
+  return '<div class="sheet">' + actRow('精煉柴油', '3 個油菜籽（或 6 份蔬果）→ 1 桶柴油 · 2 小時 · 你有油菜籽 ' + (st.rape_p || 0) + ' 個', '煉', 'refine', '', ((st.rape_p || 0) >= 3 || vegPool() >= 6) && canAct(2, staCost(8))) + '</div>';
+}
+
+// ---- 70-codex.js ----
+/* ================= 生存圖鑑與成就 ================= */
+const ACHS = [
+  ['day1', '第一夜', '撐過爆發後第 1 天', () => S.sv && S.sv.day >= 2],
+  ['week', '一週', '撐過 7 天', () => S.sv && S.sv.day >= 8],
+  ['d30', '一個月', '撐過 30 天', () => S.sv && S.sv.day >= 31],
+  ['d50', '半程', '撐過 50 天', () => S.sv && S.sv.day >= 51],
+  ['d100', '百日倖存', '撐過 100 天', () => S.sv && S.sv.day >= 101],
+  ['d120', '不肯走', '無盡模式撐到第 120 天', () => S.sv && S.sv.endless && S.sv.day >= 120],
+  ['rich', '變賣家當', '準備期現金超過 $2,000', () => S.phase === 'play' && S.money >= 2000],
+  ['free', '趁亂', '搶購潮時免費拿 10 件東西', () => (S.freeTaken || 0) >= 10],
+  ['car', '有車階級', '準備期買下二手車', () => !!S.car],
+  ['horde10', '堡壘', '經歷 10 波屍潮', () => S.sv && S.sv.hordesSeen >= 10],
+  ['dog5', '最好的朋友', '狗升到 5 級', () => S.sv && S.sv.dog && dogLv() >= 5],
+  ['zoe', '隔壁的人', '救下 Zoe', () => S.sv && S.sv.zoe.state === 'saved'],
+  ['mgr', '貨車裡的人', '救下倉庫經理', () => S.sv && S.sv.mgr.state === 'saved'],
+  ['truth', '水裡有東西', '同一輪集齊 3 片真相碎片', () => S.sv && S.sv.clues && S.sv.clues.length >= 3],
+  ['allend', '所有的結局', '收集全部 4 種結局', () => Object.keys(ENDINGS).every(k => J.endings && J.endings[k])],
+  ['robots', '自動化', '三種機器人都做出來', () => S.sv && ROBOTS.every(k => S.sv.st[k] > 0)],
+  ['floors', '三層樓', '擴建二樓和地下室', () => S.sv && S.sv.floors && S.sv.floors.length >= 3],
+  ['trader', '空中市集', '一輪內交易 50 次', () => S.sv && S.sv.trades >= 50],
+  ['explorer', '老練拾荒者', '探索等級 4', () => S.sv && expLevel(S.sv.xp) >= 4],
+  ['craft20', '巧手', '一輪內製作 20 件', () => S.sv && (S.sv.crafted || 0) >= 20],
+  ['rewind', '再來一次', '回溯過去一次', () => J.stats && J.stats.rewinds >= 1],
+  ['chars', '眾生相', '解鎖全部 5 個角色', () => Object.keys(CHARS).every(k => J.chars[k])]
+];
+
+function trackCodex() {
+  if (!S) return;
+  let changed = false;
+  J.seen = J.seen || {}; J.ach = J.ach || {};
+  const mark = bag => { for (const k of Object.keys(bag || {})) if (ITEMS[k] && !J.seen[k]) { J.seen[k] = true; changed = true; } };
+  mark(S.carry); mark(S.home);
+  if (S.sv) { mark(S.sv.st); for (const f of S.sv.fresh) if (!J.seen[f.k]) { J.seen[f.k] = true; changed = true; } if (S.sv.out) mark(S.sv.out.bag); }
+  for (const [id, n, , cond] of ACHS) {
+    if (J.ach[id]) continue;
+    let ok = false; try { ok = cond(); } catch (e) {}
+    if (ok) {
+      J.ach[id] = true; changed = true;
+      const msg = '成就達成：「' + n + '」';
+      if (S.sv && S.phase === 'survive') slog(msg, true); else if (S.log) log(msg, true);
+      if (typeof sfx === 'function') sfx('ach');
+    }
+  }
+  if (changed) saveJournal();
+}
+
+function viewCodex() {
+  J.seen = J.seen || {}; J.ach = J.ach || {};
+  const keys = Object.keys(ITEMS).filter(k => k !== 'wu');
+  const seen = keys.filter(k => J.seen[k]).length;
+  let h = '<details class="guide"><summary>生存圖鑑（' + seen + '/' + keys.length + '）</summary>';
+  for (const c of CAT_ORDER) {
+    const ks = keys.filter(k => ITEMS[k].cat === c);
+    if (!ks.length) continue;
+    h += '<div class="cat" style="font-size:14px">' + CAT_NAMES[c] + '</div><ul class="list">' + ks.map(k => '<li>' + (J.seen[k] ? '<b>' + ITEMS[k].n + '</b>：' + ITEMS[k].note : '<span style="color:var(--muted)">？？？</span>') + '</li>').join('') + '</ul>';
+  }
+  h += '</details>';
+  const got = ACHS.filter(a => J.ach[a[0]]).length;
+  h += '<details class="guide"><summary>成就（' + got + '/' + ACHS.length + '）</summary><ul class="list">' +
+    ACHS.map(([id, n, d]) => '<li>' + (J.ach[id] ? '<b>' + n + '</b>：' + d : '<span style="color:var(--muted)">？？？ · ' + d + '</span>') + '</li>').join('') + '</ul></details>';
+  return h;
+}
+
+// ---- 80-art.js ----
+/* ================= 插圖（筆記本手繪風 SVG）與音效 ================= */
+const INK = '#1d2733', RED = '#b8322a', TAPE = '#ecd27a', PAPER = '#f3f0e6', MUTE = '#8a8f96';
+const ln = (x1, y1, x2, y2, w, c) => '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="' + (c || INK) + '" stroke-width="' + (w || 1.6) + '" stroke-linecap="round"/>';
+const rc = (x, y, w, h, fill, c, sw) => '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" fill="' + (fill || 'none') + '" stroke="' + (c || INK) + '" stroke-width="' + (sw || 1.6) + '" stroke-linejoin="round"/>';
+const tx = (x, y, s, size, c, anchor) => '<text x="' + x + '" y="' + y + '" font-size="' + (size || 13) + '" fill="' + (c || INK) + '" text-anchor="' + (anchor || 'middle') + '" font-family="LXGW WenKai TC, serif">' + s + '</text>';
+function windows(x, y, cols, rows, w, h, gap, broken) {
+  let s = '';
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const wx = x + c * (w + gap), wy = y + r * (h + gap);
+    s += rc(wx, wy, w, h, (r + c) % 3 === 1 && !broken ? TAPE : 'none', INK, 1.2);
+    if (broken && (r + c) % 2 === 0) s += ln(wx + 2, wy + 2, wx + w - 2, wy + h - 2, 1, INK) + ln(wx + w - 3, wy + 3, wx + 4, wy + h - 4, 1, INK);
+  }
+  return s;
+}
+function zombie(x, y, s) {
+  s = s || 1;
+  return '<g transform="translate(' + x + ' ' + y + ') scale(' + s + ')" stroke="' + MUTE + '" stroke-width="2" stroke-linecap="round" fill="none"><circle cx="0" cy="-26" r="5" fill="' + MUTE + '"/>' +
+    '<path d="M0 -21 L1 -6 M1 -6 L-4 6 M1 -6 L6 5 M0 -17 L10 -15 M0 -15 L9 -11"/></g>';
+}
+function sign(x, y, w, label, fill) { return rc(x, y, w, 20, fill || PAPER, INK, 1.6) + tx(x + w / 2, y + 15, label, 13); }
+
+// 準備期地點、外出地點的場景圖
+function sceneSVG(kind) {
+  let b = '';
+  const g = ln(0, 118, 360, 118, 1.6);
+  switch (kind) {
+    case 'home':
+      b = rc(110, 18, 140, 100) + windows(124, 30, 4, 3, 20, 16, 12) + rc(166, 92, 28, 26, PAPER) + sign(140, 2, 80, '公寓 3F') + ln(70, 118, 70, 88, 1.4) + '<circle cx="70" cy="80" r="10" fill="none" stroke="' + INK + '" stroke-width="1.4"/>';
+      break;
+    case 'conv':
+      b = rc(100, 40, 160, 78) + '<path d="M96 40 L264 40 L256 58 L104 58 Z" fill="' + TAPE + '" stroke="' + INK + '" stroke-width="1.6"/>' + [0, 1, 2, 3, 4, 5, 6].map(i => ln(110 + i * 22, 41, 106 + i * 22, 57, 1.2)).join('') + sign(130, 18, 100, '便利店') + rc(118, 68, 60, 40, 'none', INK, 1.2) + rc(196, 68, 46, 50, PAPER);
+      break;
+    case 'pharm':
+      b = rc(110, 34, 140, 84) + sign(140, 14, 80, '藥局') + '<path d="M172 54 h16 v14 h14 v16 h-14 v14 h-16 v-14 h-14 v-16 h14 z" fill="' + RED + '" opacity="0.85"/>' + rc(128, 80, 26, 38, PAPER);
+      break;
+    case 'mart':
+      b = rc(60, 30, 240, 88) + sign(130, 10, 100, '特價超市', TAPE) + windows(76, 46, 6, 1, 26, 30, 10) + rc(160, 86, 40, 32, PAPER) + '<g stroke="' + INK + '" stroke-width="1.4" fill="none"><path d="M240 96 h6 l6 16 h22 l5 -12 h-30"/><circle cx="258" cy="116" r="2.5"/><circle cx="272" cy="116" r="2.5"/></g>';
+      break;
+    case 'tool':
+      b = rc(100, 36, 160, 82) + sign(140, 16, 80, '工具店') + rc(170, 74, 34, 44, PAPER) + '<g stroke="' + INK + '" stroke-width="2.2" stroke-linecap="round"><line x1="120" y1="58" x2="146" y2="84"/><line x1="146" y1="58" x2="120" y2="84"/></g>' + rc(218, 60, 30, 26, TAPE, INK, 1.2);
+      break;
+    case 'reno':
+      b = rc(80, 46, 150, 72) + sign(110, 26, 90, '裝修公司') + windows(96, 62, 4, 1, 22, 22, 12) + ln(270, 118, 270, 20, 2) + ln(270, 20, 330, 20, 2) + ln(320, 20, 320, 56, 1.2) + rc(310, 56, 20, 16, TAPE, INK, 1.2) + ln(270, 30, 250, 20, 1.2);
+      break;
+    case 'farm':
+      b = [70, 160, 250].map(x => '<path d="M' + (x - 8) + ' 60 Q' + (x + 30) + ' 30 ' + (x + 68) + ' 60 Z" fill="' + TAPE + '" stroke="' + INK + '" stroke-width="1.6"/>' + ln(x + 30, 60, x + 30, 118, 1.4) + rc(x, 84, 60, 20, PAPER) + [0, 1, 2, 3].map(i => '<circle cx="' + (x + 10 + i * 13) + '" cy="80" r="5" fill="' + (i % 2 ? RED : '#2f6b3f') + '" opacity="0.8"/>').join('')).join('') + tx(180, 22, '農貿市場', 15);
+      break;
+    case 'cars':
+      b = sign(130, 10, 100, '二手車行') + '<g stroke="' + INK + '" stroke-width="1.8" fill="none"><path d="M110 104 h140 v-20 l-24 -4 l-18 -22 h-56 l-20 26 h-22 z" fill="' + TAPE + '"/><circle cx="142" cy="108" r="10" fill="' + PAPER + '"/><circle cx="222" cy="108" r="10" fill="' + PAPER + '"/></g>' + rc(150, 62, 30, 18, PAPER, INK, 1.2) + tx(300, 70, '$500', 14, RED);
+      break;
+    case 'smarket':
+      b = rc(60, 30, 240, 88) + sign(130, 10, 100, '超市', PAPER) + windows(76, 46, 6, 1, 26, 30, 10, true) + ln(150, 92, 210, 82, 3) + ln(150, 82, 210, 92, 3) + zombie(40, 118, 1) + zombie(320, 118, 0.9);
+      break;
+    case 'school':
+      b = rc(70, 40, 220, 78) + '<path d="M60 40 L180 12 L300 40 Z" fill="none" stroke="' + INK + '" stroke-width="1.6"/><circle cx="180" cy="30" r="8" fill="' + PAPER + '" stroke="' + INK + '" stroke-width="1.4"/>' + windows(86, 54, 7, 2, 20, 16, 10, true) + ln(330, 118, 330, 30, 1.6) + '<path d="M330 30 h20 l-6 6 l6 6 h-20" fill="' + RED + '" opacity="0.7"/>' + zombie(30, 118, 0.9);
+      break;
+    case 'hardware':
+      b = '<path d="M90 118 V50 L150 40 L180 62 L230 36 L270 52 V118" fill="none" stroke="' + INK + '" stroke-width="1.6"/>' + windows(110, 70, 4, 1, 22, 20, 14, true) + ln(140, 118, 200, 96, 3) + ln(160, 118, 230, 104, 3) + tx(180, 24, '五金行（廢墟）', 14) + zombie(310, 118, 1);
+      break;
+    case 'hospital':
+      b = rc(80, 22, 200, 96) + windows(96, 36, 6, 3, 18, 14, 13, true) + '<path d="M168 92 h24 v26 h-24 z" fill="' + PAPER + '" stroke="' + INK + '" stroke-width="1.6"/>' + '<path d="M290 30 h8 v8 h8 v8 h-8 v8 h-8 v-8 h-8 v-8 h8 z" fill="' + RED + '"/>' + zombie(40, 118, 1) + zombie(330, 118, 1);
+      break;
+    case 'tech':
+      b = rc(130, 6, 100, 112) + ln(180, 6, 180, -10, 1.6) + windows(142, 16, 4, 5, 14, 12, 8, true) + rc(166, 98, 28, 20, PAPER) + tx(290, 60, '科技公司', 14) + zombie(60, 118, 1) + zombie(90, 118, 0.85);
+      break;
+    default: return '';
+  }
+  return '<div class="scene"><svg viewBox="0 -12 360 134" role="img" aria-label="' + kind + '">' + b + g + '</svg></div>';
+}
+
+// 爆發後的家：樓層、房間、大門耐久、陷阱、天氣、今晚屍潮
+function houseSVG() {
+  const sv = S.sv, st = sv.st, d = sv.day;
+  const floors = ['2F', '1F', 'B1'].filter(f => sv.floors.includes(f));
+  const fh = 34, top = 116 - fh * floors.filter(f => f !== 'B1').length;
+  let s = '';
+  // 天氣
+  if (inCold(d)) s += [30, 60, 90, 300, 330].map((x, i) => '<circle cx="' + x + '" cy="' + (14 + (i % 2) * 12) + '" r="2.4" fill="' + MUTE + '"/>').join('') + tx(56, 44, '寒潮', 12, MUTE);
+  else if (inRain(d)) s += [24, 44, 64, 300, 320, 340].map(x => ln(x, 6, x - 6, 24, 1.4, MUTE)).join('') + tx(46, 44, '陰雨', 12, MUTE);
+  else s += '<circle cx="40" cy="22" r="11" fill="' + TAPE + '" stroke="' + INK + '" stroke-width="1.2"/>';
+  // 屋頂與太陽能
+  s += '<path d="M106 ' + top + ' L180 ' + (top - 22) + ' L254 ' + top + ' Z" fill="none" stroke="' + INK + '" stroke-width="1.6"/>';
+  for (let i = 0; i < Math.min(st.solar || 0, 4); i++) s += rc(150 + i * 14, top - 14 + Math.abs(1.5 - i) * 2, 11, 6, '#9fb3c8', INK, 1);
+  // 樓層
+  floors.forEach((f, i) => {
+    const y = f === 'B1' ? 118 : top + i * fh;
+    s += rc(110, y, 140, fh, f === 'B1' ? '#e3ddcd' : 'none');
+    s += tx(122, y + 20, f === '1F' ? '1F' : f, 10, MUTE, 'start');
+    const idx = { '1F': 0, '2F': 1, 'B1': 2 }[f];
+    const rooms = sv.rooms.slice(idx * 3, idx * 3 + 3);
+    rooms.forEach((r, j) => { s += tx(152 + j * 28, y + 21, ROOMS[r].n.slice(0, 2), 10.5); });
+  });
+  // 大門（顏色代表耐久）
+  const ratio = sv.def / sv.defMax;
+  const dc = ratio > 0.7 ? '#2f6b3f' : ratio > 0.35 ? '#a8661a' : RED;
+  s += rc(236, 92, 12, 24, dc, INK, 1.4);
+  // 陷阱
+  sv.traps.slice(0, 6).forEach((t, i) => { const x = 262 + i * 12; s += t.k === 'spike' ? '<path d="M' + x + ' 118 l4 -10 l4 10" fill="none" stroke="' + INK + '" stroke-width="1.4"/>' : rc(x, 108, 9, 10, t.k === 'saw' ? RED : TAPE, INK, 1); });
+  // 狗
+  if (sv.dog && sv.dog.state === 'pet') s += '<g fill="' + INK + '"><ellipse cx="92" cy="112" rx="9" ry="5"/><circle cx="101" cy="106" r="4"/><rect x="85" y="113" width="2" height="5"/><rect x="96" y="113" width="2" height="5"/></g>';
+  // 今晚屍潮
+  const hz = hordeOn(d);
+  if (hz) { const n = Math.min(6, 1 + Math.floor(hz[1] / 50)); for (let i = 0; i < n; i++) s += zombie(300 + (i % 3) * 18, 118 - Math.floor(i / 3) * 2, 0.8); s += tx(320, 72, '今晚', 12, RED); }
+  s += ln(0, 118, 360, 118, 1.6);
+  const h = floors.includes('B1') ? 160 : 128;
+  return '<div class="scene"><svg viewBox="0 -12 360 ' + h + '" role="img" aria-label="你的據點">' + s + '</svg></div>';
+}
+
+/* ---------- 音效（WebAudio 合成，不用外部檔案） ---------- */
+let AC = null;
+function sfx(type) {
+  if (J.sound === false) return;
+  try {
+    if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+    const t0 = AC.currentTime;
+    const tone = (f, start, len, wave, vol) => {
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = wave || 'sine'; o.frequency.setValueAtTime(f, t0 + start);
+      g.gain.setValueAtTime(0.0001, t0 + start); g.gain.exponentialRampToValueAtTime(vol || 0.08, t0 + start + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + start + len);
+      o.connect(g).connect(AC.destination); o.start(t0 + start); o.stop(t0 + start + len + 0.02);
+    };
+    if (type === 'click') tone(660, 0, 0.05, 'triangle', 0.03);
+    else if (type === 'buy') { tone(880, 0, 0.08, 'square', 0.04); tone(1320, 0.07, 0.12, 'square', 0.04); }
+    else if (type === 'alert') { tone(220, 0, 0.25, 'sawtooth', 0.05); tone(180, 0.2, 0.3, 'sawtooth', 0.05); }
+    else if (type === 'ach') [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.08, 0.18, 'triangle', 0.06));
+    else if (type === 'sleep') { tone(392, 0, 0.4, 'sine', 0.05); tone(294, 0.25, 0.6, 'sine', 0.05); }
+  } catch (e) {}
+}
+Object.assign(ACT, { sound() { J.sound = J.sound === false; saveJournal(); render(); } });
+
+// ---- 90-save.js ----
+/* ================= 存檔續玩 ================= */
+// 進行中的一輪每次畫面更新都存進瀏覽器；關掉網頁再打開可以繼續。
+const RKEY = 'survival-log-run';
+let SAVED = null;
+function persistRun() {
+  try {
+    if (S && !(S.phase === 'end' && S.result && S.result.committed)) localStorage.setItem(RKEY, JSON.stringify({ S, UI }));
+    else localStorage.removeItem(RKEY);
+  } catch (e) {}
+}
+function loadSavedRun() {
+  try { const raw = localStorage.getItem(RKEY); if (raw) { const d = JSON.parse(raw); if (d && d.S) return d; } } catch (e) {}
+  return null;
+}
+function savedLabel(d) {
+  const s = d.S;
+  if (s.phase === 'play') return '準備期 ' + clock(s.t) + '，距離爆發 ' + dur(OUTBREAK - s.t);
+  if (s.phase === 'survive') return '爆發後第 ' + s.sv.day + ' 天 ' + String(s.sv.hour).padStart(2, '0') + ':00' + (s.sv.out ? '（外出中）' : '');
+  return '這一輪剛結束，還沒選擇下一步';
+}
+const _renderBase = render;
+render = function () { trackCodex(); _renderBase(); persistRun(); };
+
+Object.assign(ACT, {
+  resume() { if (!SAVED) return; S = SAVED.S; UI = SAVED.UI || { tab: 'here', qty: {} }; SAVED = null; render(); window.scrollTo(0, 0); },
+  abandon() {
+    if (!SAVED) return;
+    S = SAVED.S; UI = SAVED.UI || { tab: 'here', qty: {} }; SAVED = null;
+    if (S.phase === 'play') finishRun({ days: 0, cause: '你放棄了這一輪。', causeKey: '', timeline: [{ d: '準備期', txt: '你放棄了這一輪。', cls: 'bad' }], stats: null });
+    else if (S.phase === 'survive') SACT.giveup();
+    commitRun();
+    S = null; render();
+  }
+});
+function viewResume() {
+  if (!SAVED) return '';
+  return '<div class="sheet" style="padding:12px;margin:0 0 14px;border-color:var(--stamp)"><div class="hand" style="font-size:20px">上一輪還沒結束</div>' +
+    '<p style="margin:4px 0 10px">' + esc(savedLabel(SAVED)) + '</p><div class="row-btns" style="margin:0"><button class="btn red" data-a="resume">繼續</button>' +
+    '<button class="btn ghost" data-a="abandon">放棄這一輪</button></div><p class="empty" style="padding:6px 0 0">放棄等於這一輪死亡，會用掉 1 次復活。</p></div>';
+}
+
+// ---- 91-tutorial.js ----
+/* ================= 新手教學 ================= */
+const TIPS = {
+  prep: ['準備期：你有 10 小時', '右上角是時間、現金和背包負重。在「這裡」買東西，每次結帳 2 分鐘。東西要<b>帶回家</b>才算數，背包滿了就回家卸貨。大型設備（大門、發電機）會送貨到府，但 16:00 後就送不到了。'],
+  map: ['地圖：移動會花時間', '每個地點都標了抵達時間和回家要多久。紅字「來不及回家」代表去了就趕不上 18:00。買車可以讓移動時間減半。'],
+  survive: ['爆發了：一天一天撐下去', '上方五條是生命、飽足、水分、體力、心態，醒著每小時都會下降。吃喝不花時間，做事每項 1 小時。到「據點」看防線、電力和作物，睡前會結算設備耗電。屍潮夜可以守夜減傷。'],
+  base: ['據點：你的堡壘', '防線耐久擋屍潮；陷阱會先擋一部分傷害。冷氣、冰櫃、種植箱要開著又有電才會運作。往下滑可以擴建樓層和蓋房間，最底下是天賦。'],
+  out: ['外出搜刮', '每搜一處 1 小時，暴露值會上升，滿 100% 會被包圍、丟掉一半東西。七八成就該回家。天黑後暴露值漲兩倍。'],
+  death: ['死掉不是結束', '你可以花 2 點規劃點數回到最近幾天的早上重來（不用掉復活），或用掉 1 次復活回到 08:00。學到的事件、心得和圖紙都會記在日誌裡。']
+};
+function tip(id) {
+  if (!J.seenTips) J.seenTips = {};
+  if (J.seenTips[id] || !TIPS[id]) return '';
+  return '<div class="tipcard"><div class="hand">' + TIPS[id][0] + '</div><p>' + TIPS[id][1] + '</p><button class="btn ghost" data-a="tipOk" data-v="' + id + '">知道了</button></div>';
+}
+Object.assign(ACT, {
+  tipOk(id) { if (!J.seenTips) J.seenTips = {}; J.seenTips[id] = true; saveJournal(); render(); },
+  tipReset() { J.seenTips = {}; saveJournal(); render(); }
+});
+const GUIDE = [
+  ['目標', '在準備期 10 小時內把家變成堡壘，爆發後撐過 100 天。第 100 天會依照你找到的真相和救下的人決定結局，之後可以選擇進入無盡模式。'],
+  ['準備期', '08:00 到 18:00。移動、結帳、卸貨都花時間。10:32 的搶購潮期間，特價超市可以免費拿東西。爆發時人一定要在家，否則直接結束。'],
+  ['狀態值', '飽足和水分歸零會開始掉血；體力不夠就不能做事；心態太低睡覺回得少。生病時體力回得慢、不能加固，吃止痛藥可以治好。'],
+  ['電力', '太陽能白天發電，柴油發電機一桶 6 度，人力發電 1.5 度。存電上限靠儲電站。冷氣、冰櫃、種植箱、電動陷阱都吃電。'],
+  ['防線與屍潮', '屍潮傷害約為強度 ×4，先被陷阱和燃燒瓶擋，剩下的打在防線上；防線歸零就會受傷。守夜傷害 -40%，還會邊打邊用材料修。'],
+  ['製作與擴建', '工作台可以做花盆、陷阱、燃燒瓶等，部分要圖紙（每輪開局抽 2 張，外出也找得到）。做越多熟練度越高。可以擴建二樓和地下室，蓋儲藏室、溫室、工坊、臥室、發電室。'],
+  ['外出與交易', '探索等級決定能去哪裡。無人機在學校的教師辦公室，可以每天交易、空投。救下 Zoe 和倉庫經理能解鎖角色，也會影響結局。'],
+  ['死亡與周目', '每個存檔 3 次復活。死掉可以花規劃點數回溯，或用掉復活重來。規劃點數也能在輪與輪之間升級準備時間、資金和背包。']
+];
+function viewGuide() {
+  return '<div class="cat">遊戲說明</div>' + GUIDE.map(([t, d]) => '<details class="guide"><summary>' + t + '</summary><p>' + d + '</p></details>').join('') +
+    '<div class="row-btns"><button class="btn ghost" data-a="tipReset">重新顯示新手提示</button></div>';
+}
+
+// ---- 99-boot.js ----
 /* ================= 事件綁定 ================= */
 $app.addEventListener('click', e => {
   const b = e.target.closest('[data-a]');
   if (!b || b.disabled) return;
   const a = b.getAttribute('data-a');
+  sfx(a === 'buy' ? 'buy' : a === 'sleep' || a === 'watch' ? 'sleep' : 'click');
   if (ACT[a]) ACT[a](b.getAttribute('data-v'));
   else if (SACT[a]) SACT[a](b.getAttribute('data-v'));
 });
@@ -1858,6 +2169,7 @@ $app.addEventListener('keydown', e => {
 
 function start(data) {
   if (data && data.S) { S = data.S; UI = data.UI || { tab: 'here', qty: {} }; }
+  else SAVED = loadSavedRun();
   render();
 }
 if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({ S, UI }));
@@ -1865,7 +2177,7 @@ if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude
 else start((window.claude && window.claude.hot && window.claude.hot.data) || {});
 
 // 給測試用
-window.__slog = { simulate, get S() { return S; }, ACT, get SACT() { return SACT; } };
+window.__slog = { get S() { return S; }, ACT, get SACT() { return SACT; } };
 })();
 </script>
 </body>
