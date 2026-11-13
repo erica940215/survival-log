@@ -1,15 +1,14 @@
 /* ================= 存檔續玩 ================= */
 // 進行中的一輪每次畫面更新都存進瀏覽器；關掉網頁再打開可以繼續。
-const RKEY = 'survival-log-run';
 let SAVED = null;
 function persistRun() {
   try {
-    if (S && !(S.phase === 'end' && S.result && S.result.committed)) localStorage.setItem(RKEY, JSON.stringify({ S, UI }));
-    else localStorage.removeItem(RKEY);
+    if (S && !(S.phase === 'end' && S.result && S.result.committed)) localStorage.setItem(rkeyOf(SLOT), JSON.stringify({ S, UI }));
+    else localStorage.removeItem(rkeyOf(SLOT));
   } catch (e) {}
 }
 function loadSavedRun() {
-  try { const raw = localStorage.getItem(RKEY); if (raw) { const d = JSON.parse(raw); if (d && d.S) return d; } } catch (e) {}
+  try { const raw = localStorage.getItem(rkeyOf(SLOT)); if (raw) { const d = JSON.parse(raw); if (d && d.S) return d; } } catch (e) {}
   return null;
 }
 function savedLabel(d) {

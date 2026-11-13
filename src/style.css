@@ -157,3 +157,8 @@ details.guide summary { cursor: pointer; font-weight: 700; }
 details.guide p { margin: 6px 0 2px; font-size: 14px; }
 .scene { margin: 10px 0 0; }
 .scene svg { width: 100%; height: auto; display: block; max-height: 170px; }
+.slots { display: grid; gap: 8px; margin-bottom: 14px; }
+.slot { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; background: rgba(255,255,255,0.55); }
+.slot.cur { border: 2px solid var(--ink); }
+.slot-h { display: flex; gap: 6px; align-items: center; }
+.slot .meta { margin: 2px 0 0; font-size: 13px; color: var(--muted); }

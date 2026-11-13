@@ -167,6 +167,11 @@ details.guide summary { cursor: pointer; font-weight: 700; }
 details.guide p { margin: 6px 0 2px; font-size: 14px; }
 .scene { margin: 10px 0 0; }
 .scene svg { width: 100%; height: auto; display: block; max-height: 170px; }
+.slots { display: grid; gap: 8px; margin-bottom: 14px; }
+.slot { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; background: rgba(255,255,255,0.55); }
+.slot.cur { border: 2px solid var(--ink); }
+.slot-h { display: flex; gap: 6px; align-items: center; }
+.slot .meta { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -281,13 +286,18 @@ const UPGRADES = [
 
 // ---- 01-journal.js ----
 /* ================= 日誌（跨輪保存） ================= */
-const JKEY = 'survival-log-m1-journal';
+// 三個存檔欄位：每格有自己的日誌和進行中的一輪。第 1 格沿用舊的儲存名稱，舊進度不會不見。
+const SLOT_KEY = 'survival-log-slot';
+const jkeyOf = n => n === 1 ? 'survival-log-m1-journal' : 'survival-log-m1-journal-' + n;
+const rkeyOf = n => n === 1 ? 'survival-log-run' : 'survival-log-run-' + n;
+let SLOT = 1;
+try { const v = Number(localStorage.getItem(SLOT_KEY)); if (v >= 1 && v <= 3) SLOT = v; } catch (e) {}
 function freshJournal() { return { runs: [], events: {}, stores: {}, tips: {}, hordesSeen: 0, pp: 0, upg: { time: 0, money: 0, bag: 0 }, dev: false, save: { no: 1, revivals: 3, wins: 0 }, recipes: {}, chars: { neighbor: true }, char: 'neighbor', endings: {}, clues: {}, best: 0 }; }
 function loadJournal() {
-  try { const raw = localStorage.getItem(JKEY); if (raw) return Object.assign(freshJournal(), JSON.parse(raw)); } catch (e) {}
+  try { const raw = localStorage.getItem(jkeyOf(SLOT)); if (raw) return Object.assign(freshJournal(), JSON.parse(raw)); } catch (e) {}
   return freshJournal();
 }
-function saveJournal() { try { localStorage.setItem(JKEY, JSON.stringify(J)); } catch (e) {} }
+function saveJournal() { try { localStorage.setItem(jkeyOf(SLOT), JSON.stringify(J)); } catch (e) {} }
 
 let J = loadJournal();
 let S = null;     // 這一輪的狀態
@@ -703,8 +713,9 @@ function viewTitle() {
   const n = J.runs.length;
   return '<main class="wrap"><section class="hero"><h1>生存日誌<br><span>還剩 10 小時</span></h1>' +
     '<p class="note">你死過一次。醒來時，時間回到早上 08:00。<br>18:00，屍群會淹沒整座城市。用手上的錢、腳程和背包，把家變成能撐下去的堡壘。</p>' +
-    (J.saveOverNote ? '<p class="alert-line">上一個存檔的復活用完了。這是新的存檔，但日誌還記得一切。</p>' : '') +
-    '<p class="hand" style="font-size:17px">' + CHARS[J.char || 'neighbor'].n + ' · 存檔 #' + J.save.no + ' · 剩 ' + J.save.revivals + ' 次復活' + (J.save.wins ? ' · 已撐過 100 天 ' + J.save.wins + ' 次' : '') + '</p>' +
+    viewSlots() +
+    (J.saveOverNote ? '<p class="alert-line">上一代的復活用完了，這是新的一代，但日誌還記得一切。</p>' : '') +
+    '<p class="hand" style="font-size:17px">' + CHARS[J.char || 'neighbor'].n + ' · 第 ' + J.save.no + ' 代 · 剩 ' + J.save.revivals + ' 次復活' + (J.save.wins ? ' · 已撐過 100 天 ' + J.save.wins + ' 次' : '') + '</p>' +
     (SAVED ? viewResume() : '<div class="row-btns"><button class="btn red" data-a="start" style="font-size:18px;padding:10px 22px">' + (n ? '開始第 ' + (n + 1) + ' 輪' : '開始') + '</button></div>') +
     '<p class="empty">準備期 10 小時，爆發後一天一天守家，目標撐過 100 天。死掉可以花規劃點數回溯到前幾天，或用掉 1 次復活回到 08:00 重來。</p></section>' +
     viewChars() + viewJournal(true) + '</main>';
@@ -732,8 +743,8 @@ function viewEnd() {
   }
   if (r.canEndless && !r.committed) h += '<div class="row-btns"><button class="btn" data-a="endless">留下來：進入無盡模式</button></div><p class="empty">第 100 天後每 7 天一波屍潮，每波強度 +40。死掉也算通關，不會用掉復活。</p>';
   const left = J.save.revivals - (won || r.committed ? 0 : 1);
-  h += '<div class="row-btns"><button class="btn red" data-a="start">' + (won ? '開始新的一輪' : left >= 0 ? '重生：回到 08:00（剩 ' + left + ' 次復活）' : '存檔結束，開新存檔') + '</button><button class="btn ghost" data-a="menu">回到日誌</button></div>';
-  if (!won && left < 0) h += '<p class="empty">復活用完了。開新存檔時規劃點數和升級會歸零，但日誌裡的事件、心得和圖紙會留著。</p>';
+  h += '<div class="row-btns"><button class="btn red" data-a="start">' + (won ? '開始新的一輪' : left >= 0 ? '重生：回到 08:00（剩 ' + left + ' 次復活）' : '復活用完，從新的一代開始') + '</button><button class="btn ghost" data-a="menu">回到日誌</button></div>';
+  if (!won && left < 0) h += '<p class="empty">復活用完了。從頭開始時規劃點數和升級會歸零，但日誌裡的事件、心得和圖紙會留著。</p>';
   h += viewUpgrades() + '</main>';
   return h;
 }
@@ -2067,16 +2078,15 @@ Object.assign(ACT, { sound() { J.sound = J.sound === false; saveJournal(); rende
 // ---- 90-save.js ----
 /* ================= 存檔續玩 ================= */
 // 進行中的一輪每次畫面更新都存進瀏覽器；關掉網頁再打開可以繼續。
-const RKEY = 'survival-log-run';
 let SAVED = null;
 function persistRun() {
   try {
-    if (S && !(S.phase === 'end' && S.result && S.result.committed)) localStorage.setItem(RKEY, JSON.stringify({ S, UI }));
-    else localStorage.removeItem(RKEY);
+    if (S && !(S.phase === 'end' && S.result && S.result.committed)) localStorage.setItem(rkeyOf(SLOT), JSON.stringify({ S, UI }));
+    else localStorage.removeItem(rkeyOf(SLOT));
   } catch (e) {}
 }
 function loadSavedRun() {
-  try { const raw = localStorage.getItem(RKEY); if (raw) { const d = JSON.parse(raw); if (d && d.S) return d; } } catch (e) {}
+  try { const raw = localStorage.getItem(rkeyOf(SLOT)); if (raw) { const d = JSON.parse(raw); if (d && d.S) return d; } } catch (e) {}
   return null;
 }
 function savedLabel(d) {
@@ -2139,6 +2149,55 @@ function viewGuide() {
   return '<div class="cat">遊戲說明</div>' + GUIDE.map(([t, d]) => '<details class="guide"><summary>' + t + '</summary><p>' + d + '</p></details>').join('') +
     '<div class="row-btns"><button class="btn ghost" data-a="tipReset">重新顯示新手提示</button></div>';
 }
+
+// ---- 92-slots.js ----
+/* ================= 三個存檔欄位 ================= */
+function slotInfo(n) {
+  let j = null, r = null;
+  try { const a = localStorage.getItem(jkeyOf(n)); if (a) j = JSON.parse(a); } catch (e) {}
+  try { const b = localStorage.getItem(rkeyOf(n)); if (b) r = JSON.parse(b); } catch (e) {}
+  if (!j && !r) return { empty: true };
+  const runs = j && j.runs ? j.runs.length : 0;
+  const ch = j && j.char && CHARS[j.char] ? CHARS[j.char].n : '鄰居';
+  return { empty: false, runs, ch, best: (j && j.best) || 0, ach: j && j.ach ? Object.keys(j.ach).length : 0, live: r && r.S ? savedLabel(r) : '' };
+}
+function viewSlots() {
+  let h = '<div class="cat">存檔欄位</div><div class="slots">';
+  for (const n of [1, 2, 3]) {
+    const s = slotInfo(n), cur = n === SLOT;
+    h += '<div class="slot' + (cur ? ' cur' : '') + '"><div class="slot-h"><b>存檔 ' + n + '</b>' + (cur ? '<span class="tag green">使用中</span>' : '') + '</div>';
+    if (s.empty) h += '<p class="meta">空的</p>';
+    else h += '<p class="meta">' + esc(s.ch) + ' · 玩了 ' + s.runs + ' 輪' + (s.best ? ' · 最佳 ' + s.best + ' 天' : '') + ' · 成就 ' + s.ach + '</p>' + (s.live ? '<p class="meta" style="color:var(--stamp)">進行中：' + esc(s.live) + '</p>' : '');
+    h += '<div class="row-btns" style="margin:6px 0 0">';
+    if (!cur) h += '<button class="btn ghost" data-a="slotUse" data-v="' + n + '">' + (s.empty ? '用這格開始' : '切換到這格') + '</button>';
+    if (!s.empty) {
+      if (UI.delSlot === n) h += '<button class="btn red" data-a="slotDelYes" data-v="' + n + '">確定刪除</button><button class="btn ghost" data-a="slotDelNo">取消</button>';
+      else h += '<button class="btn ghost" data-a="slotDel" data-v="' + n + '">刪除</button>';
+    }
+    h += '</div></div>';
+  }
+  return h + '</div>';
+}
+Object.assign(ACT, {
+  slotUse(v) {
+    const n = Number(v);
+    if (S || !(n >= 1 && n <= 3) || n === SLOT) return;
+    SLOT = n;
+    try { localStorage.setItem(SLOT_KEY, String(n)); } catch (e) {}
+    J = loadJournal(); SAVED = loadSavedRun(); UI = { tab: 'here', qty: {} };
+    render(); window.scrollTo(0, 0);
+  },
+  slotDel(v) { UI.delSlot = Number(v); render(); },
+  slotDelNo() { UI.delSlot = null; render(); },
+  slotDelYes(v) {
+    const n = Number(v);
+    if (S || UI.delSlot !== n) return;
+    try { localStorage.removeItem(jkeyOf(n)); localStorage.removeItem(rkeyOf(n)); } catch (e) {}
+    UI.delSlot = null;
+    if (n === SLOT) { J = freshJournal(); SAVED = null; }
+    render();
+  }
+});
 
 // ---- 99-boot.js ----
 /* ================= 事件綁定 ================= */
