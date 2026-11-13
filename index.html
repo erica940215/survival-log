@@ -210,6 +210,9 @@ const ITEMS = {
   soup:     { n: '蔬菜湯', cat: 'food', w: 0.5, note: '料理 · 2 天內要吃' },
   hotpot:   { n: '火鍋', cat: 'food', w: 1, note: '料理 · 當天要吃' },
   heater:   { n: '暖爐', cat: 'equip', w: 0, note: '寒潮時燒木板取暖' },
+  drone:    { n: '教學無人機', cat: 'equip', w: 0, note: '可以交易和空投' },
+  juicer:   { n: '榨汁機', cat: 'equip', w: 0, note: '2 份蔬果榨 1 瓶果汁 · 交易好用' },
+  juice:    { n: '果汁', cat: 'food', w: 0.5, note: '不會壞 · 交易熱門貨' },
   wu:       { n: '飲用水', cat: 'water', w: 0, note: '1 份 = 水分 +30' },
   lightbox: { n: '植物燈種植箱', cat: 'equip', w: 0, note: '4 格 · 耗電 1 度/天 · 產量較高' }
 };
@@ -227,7 +230,7 @@ const STORES = {
   tool:  { n: '工具店', x: 4, y: 1, closes: 600, desc: '建材和柴油。老闆說柴油只剩這些。',
            items: { board: [15, 10], metal: [20, 8], glass: [10, 6], plastic: [8, 6], matpack: [25, 4], diesel: [40, 8], barrel: [20, 6], rain: [45, 2] } },
   reno:  { n: '裝修公司', x: 5, y: -1, closes: 540, delivery: true, desc: '大型設備都在這。16:00 前下單才送得到。',
-           items: { door: [450, 1], window: [300, 2], gen: [350, 2], solar: [250, 3], battery: [200, 2], freezer: [150, 1], microwave: [60, 1], ac: [280, 1], pedal: [120, 1], board: [18, 10] } },
+           items: { door: [450, 1], window: [300, 2], gen: [350, 2], solar: [250, 3], battery: [200, 2], freezer: [150, 1], microwave: [60, 1], ac: [280, 1], pedal: [120, 1], juicer: [90, 1], board: [18, 10] } },
   farm:  { n: '農貿市場', x: -2, y: 3, closes: 600, delivery: true, desc: '種子和新鮮蔬菜。',
            items: { tomato: [10, 6], straw: [12, 6], mush: [15, 4], pot: [15, 8], fert: [8, 5], veg: [8, 10], lightbox: [120, 2], matpack: [25, 2] } },
   cars:  { n: '二手車行', x: -3, y: -1, closes: 540, desc: '一台舊小車 $500，不要了可以 $450 賣回。' }
@@ -264,7 +267,7 @@ const UPGRADES = [
 
 /* ================= 日誌（跨輪保存） ================= */
 const JKEY = 'survival-log-m1-journal';
-function freshJournal() { return { runs: [], events: {}, stores: {}, tips: {}, hordesSeen: 0, pp: 0, upg: { time: 0, money: 0, bag: 0 }, dev: false, save: { no: 1, revivals: 3, wins: 0 }, recipes: {} }; }
+function freshJournal() { return { runs: [], events: {}, stores: {}, tips: {}, hordesSeen: 0, pp: 0, upg: { time: 0, money: 0, bag: 0 }, dev: false, save: { no: 1, revivals: 3, wins: 0 }, recipes: {}, chars: { neighbor: true }, char: 'neighbor' }; }
 function loadJournal() {
   try { const raw = localStorage.getItem(JKEY); if (raw) return Object.assign(freshJournal(), JSON.parse(raw)); } catch (e) {}
   return freshJournal();
@@ -298,7 +301,7 @@ function newRun() {
     for (const [k, v] of Object.entries(st.items)) stock[id][k] = v[1];
   }
   S = {
-    phase: 'play', t: -bonusT, money: 1070 + J.upg.money * 150, loc: 'home',
+    phase: 'play', t: -bonusT, money: 1070 + J.upg.money * 150 + ((J.char || 'neighbor') === 'student' ? 100 : 0), loc: 'home', char: J.char || 'neighbor',
     car: false, loan: false, carry: {}, home: {}, sold: {}, stock,
     fired: {}, log: [], seenStores: { home: true }, result: null
   };
@@ -310,7 +313,7 @@ function newRun() {
 
 function log(txt, alert) { S.log.unshift({ txt, alert: !!alert, t: S.t }); S.log = S.log.slice(0, 30); }
 
-function capacity() { return BASE_BAG + J.upg.bag * 5 + (S.car ? CAR_TRUNK : 0); }
+function capacity() { return BASE_BAG + J.upg.bag * 5 + (S.char === 'manager' ? 15 : 0) + (S.car ? CAR_TRUNK : 0); }
 function carried() { return weightOf(S.carry); }
 
 /* 時間推進，觸發事件 */
@@ -756,6 +759,7 @@ function viewJournal(outside) {
   if (J.tips.food) tips.push('食物要算到「每天 2 餐」，種菜可以補後期。');
   if (J.tips.horde) tips.push('防禦值要跟得上屍潮強度，大門和防彈窗最有效。');
   if (J.tips.outside) tips.push('18:00 前一定要在家，地圖會標出「來不及回家」。');
+  if (J.tips.ambush) tips.push('外出時注意暴露值，天黑後漲兩倍，七八成就該回家。');
   h += '<div class="cat">生存心得</div>';
   h += tips.length ? '<ul class="list note">' + tips.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>' : '<p class="empty">死過一次就會有心得。</p>';
   const known = STORE_ORDER.filter(id => J.stores[id] && STORES[id].items);
@@ -791,10 +795,10 @@ function viewTitle() {
   return '<main class="wrap"><section class="hero"><h1>生存日誌<br><span>還剩 10 小時</span></h1>' +
     '<p class="note">你死過一次。醒來時，時間回到早上 08:00。<br>18:00，屍群會淹沒整座城市。用手上的錢、腳程和背包，把家變成能撐下去的堡壘。</p>' +
     (J.saveOverNote ? '<p class="alert-line">上一個存檔的復活用完了。這是新的存檔，但日誌還記得一切。</p>' : '') +
-    '<p class="hand" style="font-size:17px">存檔 #' + J.save.no + ' · 剩 ' + J.save.revivals + ' 次復活' + (J.save.wins ? ' · 已撐過 100 天 ' + J.save.wins + ' 次' : '') + '</p>' +
+    '<p class="hand" style="font-size:17px">' + CHARS[J.char || 'neighbor'].n + ' · 存檔 #' + J.save.no + ' · 剩 ' + J.save.revivals + ' 次復活' + (J.save.wins ? ' · 已撐過 100 天 ' + J.save.wins + ' 次' : '') + '</p>' +
     '<div class="row-btns"><button class="btn red" data-a="start" style="font-size:18px;padding:10px 22px">' + (n ? '開始第 ' + (n + 1) + ' 輪' : '開始') + '</button></div>' +
     '<p class="empty">準備期 10 小時，爆發後一天一天守家，目標撐過 100 天。死掉可以花規劃點數回溯到前幾天，或用掉 1 次復活回到 08:00 重來。</p></section>' +
-    viewJournal(true) + '</main>';
+    viewChars() + viewJournal(true) + '</main>';
 }
 
 function viewEnd() {
@@ -827,7 +831,7 @@ function viewEnd() {
 const FOOD = {
   rice_c: { sat: 25, dish: true }, biscuit: { sat: 75 }, sausage: { sat: 25 }, noodle: { sat: 25 }, can: { sat: 38 },
   veg: { sat: 50, mor: 3 }, choco: { sat: 12, mor: 10 }, tomato_p: { sat: 15, mor: 3 }, straw_p: { sat: 15, mor: 6 }, mushroom: { sat: 20 },
-  soup: { sat: 40, mor: 5, dish: true }, hotpot: { sat: 100, mor: 12, dish: true }
+  soup: { sat: 40, mor: 5, dish: true }, hotpot: { sat: 100, mor: 12, dish: true }, juice: { sat: 10, mor: 8 }
 };
 const FRESH_LIFE = { veg: 5, rice_c: 2, tomato_p: 3, straw_p: 3, mushroom: 3, soup: 2, hotpot: 1 };
 const REINFORCE = { board: 40, metal: 70, glass: 20 };
@@ -859,6 +863,7 @@ function startSurvive() {
   chron(0, '爆發。防線耐久 ' + defMax + '，水 ' + st.wu + ' 份。');
   if (hordeOn(1)) slog('收音機：今晚有屍潮。', true);
   m4Init(S.sv);
+  m5Init(S.sv);
   S.snaps = [];
   snapshot();
 }
@@ -899,7 +904,7 @@ function passHours(n) {
 function checkDeath() {
   const sv = S.sv;
   if (sv.hp > 0 || S.phase !== 'survive') return false;
-  const map = { water: ['缺水，撐不下去了。', 'water'], food: ['斷糧，餓到撐不下去。', 'food'], horde: ['屍群破門而入。', 'horde'], cold: ['在寒潮中失溫。', 'cold'] };
+  const map = { water: ['缺水，撐不下去了。', 'water'], food: ['斷糧，餓到撐不下去。', 'food'], horde: ['屍群破門而入。', 'horde'], cold: ['在寒潮中失溫。', 'cold'], ambush: ['外出時被屍群包圍，沒能逃回家。', 'ambush'] };
   const m = map[sv.lastHurt] || ['撐不下去了。', 'other'];
   chron(sv.day, m[0], 'bad');
   finishRun({ days: sv.day - 1, cause: m[0], causeKey: m[1], timeline: sv.chron, stats: null, hordesSeen: sv.hordesSeen, coldSeen: sv.coldSeen, rainSeen: sv.rainSeen });
@@ -1118,6 +1123,7 @@ function night(watch) {
   if (tonight) slog('收音機：今晚有' + hordeSize(tonight[1]) + '屍潮（強度 ' + tonight[1] + '）。', true);
   else if (tomorrow) slog('收音機：明晚會有' + hordeSize(tomorrow[1]) + '屍潮。');
   morningDisaster(nd);
+  m5Morning(nd);
   slog('第 ' + nd + ' 天早上。');
   if (nd <= 100) snapshot();
 
@@ -1158,6 +1164,7 @@ function actRow(name, meta, btn, act, v, ok) {
 }
 function viewActs() {
   const sv = S.sv, st = sv.st;
+  if (sv.out) return viewOut();
   const late = sv.hour >= LAST_HOUR;
   let h = sv.sick ? '<p class="alert-line">生病中（剩 ' + sv.sick + ' 天）：體力回得慢、不能加固。止痛藥可以治好。</p>' : '';
   if (!st.microwave && st.rice) h += '<p class="empty">米要用微波爐煮，你家沒有。</p>';
@@ -1180,6 +1187,7 @@ function viewActs() {
   for (const k of ['tomato', 'straw']) if (st[k]) h += actRow('種' + ITEMS[k].n, '一包種 2 株 · 盆位 ' + freeSlots() + ' 個空 · 體力 -5', '種', 'plant', k, canAct(1, 5) && freeSlots() > 0);
   h += actRow('休息、聽收音機', '心態 +12 · 體力 +5', '休息', 'rest', '', canAct(1));
   h += '</div>';
+  h += viewOutside();
   h += viewCraft();
   if (st.medkit || st.pills) {
     h += '<div class="cat">治療</div><div class="sheet">';
@@ -1409,6 +1417,281 @@ function viewTalents() {
   return '<div class="cat">天賦（生存點數 <span class="num">' + sv.sp + '</span>）</div><p class="empty">每撐過一天 +1，每擋下一波屍潮 +10。天賦只在這一輪有效。</p><div class="sheet">' +
     Object.entries(TALENTS).map(([k, t]) => '<div class="item"><div><div class="nm">' + t.n + (sv.talents[k] ? '<span class="tag green">已學</span>' : '') + '</div><div class="meta">' + t.d + ' · ' + t.cost + ' 點</div></div>' +
       '<button class="btn ghost" data-a="talent" data-v="' + k + '"' + (sv.talents[k] || sv.sp < t.cost ? ' disabled' : '') + '>' + (sv.talents[k] ? '已學' : '學') + '</button></div>').join('') + '</div>';
+}
+
+/* ================= M5：外出、交易、救援、角色 ================= */
+const CHARS = {
+  neighbor: { n: '鄰居', d: '一般人，沒有特別能力。' },
+  student:  { n: '大學生', d: '開局就會園藝、廚藝天賦，初始資金多 $100。', how: '救下隔壁的 Zoe（連續幫她 7 次）' },
+  manager:  { n: '倉庫經理', d: '背包 +15kg，無人機交易每次多拿 1 個。', how: '第 18 天後在廢棄超市的貨車裡找到他，空投食物給他 5 天' }
+};
+const LOCS = {
+  smarket:  { n: '廢棄超市', lv: 1, trip: 1, cont: ['收銀台', '零食貨架', '罐頭區', '倉庫', '冷藏櫃', '飲料區'],
+              loot: [['can', 1, 3, 30], ['biscuit', 1, 2, 20], ['sausage', 2, 4, 20], ['wu', 2, 4, 25], ['plastic', 1, 2, 10], ['choco', 1, 3, 15]] },
+  school:   { n: '學校', lv: 1, trip: 1, cont: ['教室', '保健室', '福利社', '教師辦公室', '實驗室', '體育器材室'],
+              loot: [['plastic', 1, 3, 25], ['board', 1, 2, 20], ['medkit', 1, 1, 10], ['pills', 1, 2, 15], ['noodle', 1, 3, 15], ['glass', 1, 2, 15]] },
+  hardware: { n: '五金行廢墟', lv: 1, trip: 1, cont: ['門口貨架', '五金區', '建材堆', '後院', '油料櫃', '工作室'],
+              loot: [['metal', 1, 2, 30], ['board', 1, 3, 30], ['glass', 1, 2, 20], ['diesel', 1, 1, 10], ['plastic', 1, 2, 10]] },
+  hospital: { n: '醫院', lv: 2, trip: 2, cont: ['掛號櫃台', '藥局', '病房', '護理站', '急診室', '倉庫'],
+              loot: [['medkit', 1, 2, 30], ['pills', 1, 3, 30], ['metal', 1, 1, 10], ['plastic', 1, 2, 10], ['wu', 1, 3, 20]] },
+  tech:     { n: '科技公司', lv: 3, trip: 2, cont: ['大廳', '辦公區', '機房', '研發室', '倉儲', '頂樓'],
+              loot: [['metal', 1, 3, 25], ['plastic', 2, 3, 25], ['glass', 1, 2, 15], ['diesel', 1, 2, 15], ['solar', 1, 1, 5]] }
+};
+const LOCKED_LOOT = [['bp', 1, 1, 40], ['diesel', 2, 2, 25], ['medkit', 2, 2, 20], ['metal', 3, 4, 15]];
+const ZOE_WANTS = ['wu', 'can', 'sausage', 'biscuit', 'pills', 'noodle', 'veg', 'choco'];
+const TRADES = [
+  { give: ['juice', 2], get: ['diesel', 1], min: 5 }, { give: ['juice', 1], get: ['metal', 2] }, { give: ['juice', 1], get: ['plastic', 2] },
+  { give: ['can', 2], get: ['board', 2] }, { give: ['mushroom', 3], get: ['plastic', 2] }, { give: ['pills', 1], get: ['glass', 3] },
+  { give: ['sausage', 4], get: ['wu', 3] }, { give: ['tomato_p', 3], get: ['metal', 1] }, { give: ['biscuit', 1], get: ['board', 2] },
+  { give: ['straw_p', 2], get: ['medkit', 1] }, { give: ['juice', 3], get: ['glass', 4] }
+];
+const EXP_LV = [0, 8, 20, 40];
+const expLevel = xp => EXP_LV.filter(t => xp >= t).length;
+const pick = a => a[Math.floor(Math.random() * a.length)];
+function rollLoot(table) {
+  const total = table.reduce((a, r) => a + r[3], 0);
+  let x = Math.random() * total;
+  for (const r of table) { x -= r[3]; if (x <= 0) return [r[0], r[1] + Math.floor(Math.random() * (r[2] - r[1] + 1))]; }
+  return [table[0][0], table[0][1]];
+}
+const outW = k => k === 'wu' ? 1 : k === 'bp' ? 0 : ITEMS[k].w;
+function bagCap() { return BASE_BAG + J.upg.bag * 5 + (S.char === 'manager' ? 15 : 0); }
+
+function m5Init(sv) {
+  sv.xp = 0; sv.trades = 0; sv.out = null;
+  sv.locs = {};
+  for (const k of Object.keys(LOCS)) sv.locs[k] = { done: [] };
+  sv.zoe = { state: 'wait', given: 0, miss: 0, want: null, today: false };
+  sv.mgr = { state: 'none', fed: 0, miss: 0, today: false };
+  sv.offers = [];
+  if (S.char === 'student') { sv.talents.green = true; sv.talents.chef = true; }
+}
+
+function newOffers() {
+  const sv = S.sv;
+  if (!(sv.st.drone > 0)) { sv.offers = []; return; }
+  const pool = TRADES.filter(t => !t.min || sv.trades >= t.min);
+  const out = [];
+  while (out.length < 3 && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  sv.offers = out.map(t => ({ give: t.give, get: [t.get[0], t.get[1] + (S.char === 'manager' ? 1 : 0)], done: false }));
+}
+
+// 每天早上：Zoe、倉庫經理、補貨、交易
+function m5Morning(nd) {
+  const sv = S.sv, z = sv.zoe, m = sv.mgr;
+  if (z.state === 'wait' && nd >= 2) { z.state = 'asking'; z.want = pick(ZOE_WANTS); slog('隔壁的 Zoe 敲牆：「拜託，可以分我一點' + ITEMS[z.want].n + '嗎？」', true); chron(nd, '鄰居 Zoe 開始向你求助。'); }
+  else if (z.state === 'asking') {
+    if (z.today) z.miss = 0; else z.miss++;
+    z.today = false;
+    if (z.miss >= 3) { z.state = 'gone'; slog('隔壁再也沒有聲音了。', true); chron(nd, '你沒再幫 Zoe，她不見了。', 'bad'); }
+    else { z.want = pick(ZOE_WANTS); slog('Zoe 今天想要：' + ITEMS[z.want].n + '。'); }
+  }
+  if (m.state === 'feeding') {
+    if (m.today) m.miss = 0; else m.miss++;
+    m.today = false;
+    if (m.miss >= 3) { m.state = 'gone'; chron(nd, '貨車裡的倉庫經理沒撐下去。', 'bad'); }
+  }
+  if (nd % 7 === 0) { for (const k of Object.keys(sv.locs)) sv.locs[k].done = sv.locs[k].done.slice(2); slog('外面的地方又被翻動過，可能有新的東西。'); }
+  newOffers();
+}
+
+Object.assign(SACT, {
+  goOut(loc) {
+    const sv = S.sv, L = LOCS[loc];
+    if (!L || sv.out || expLevel(sv.xp) < L.lv || !canAct(L.trip, staCost(10))) return;
+    sv.sta -= staCost(10);
+    const conts = L.cont.map((n, i) => ({ n, i }));
+    if (expLevel(sv.xp) >= 4) conts.push({ n: '上鎖的房間', i: 'lock' });
+    if (loc === 'smarket' && sv.day >= 18 && expLevel(sv.xp) >= 2 && sv.mgr.state === 'none') conts.push({ n: '貨車駕駛座', i: 'truck' });
+    sv.out = { loc, exp: 0, bag: {}, conts };
+    slog('你帶上背包，悄悄出門前往' + L.n + '（' + L.trip + ' 小時）。');
+    passHours(L.trip); render(); window.scrollTo(0, 0);
+  },
+  search(i) {
+    const sv = S.sv, o = sv.out;
+    if (!o || S.phase !== 'survive') return;
+    const key = String(i), Lst = sv.locs[o.loc];
+    if (Lst.done.includes(key) || !canAct(1, staCost(5))) return;
+    const lv = expLevel(sv.xp);
+    let exp = 20 - lv * 2 + Math.floor(Math.random() * 11) - 5;
+    if (sv.hour >= 18) exp *= 2;
+    o.exp += exp; sv.sta -= staCost(5); sv.xp += 1;
+    Lst.done.push(key);
+    let found = [];
+    if (key === 'truck') {
+      sv.mgr.state = 'feeding'; sv.mgr.today = true;
+      slog('貨車駕駛座裡有個受傷的男人，自稱倉庫經理。他需要有人每天空投食物。', true);
+      chron(sv.day, '在廢棄超市的貨車裡找到倉庫經理。');
+    } else if (key === '3' && o.loc === 'school' && !(sv.st.drone > 0) && !o.bag.drone) {
+      o.bag.drone = 1; found.push('教學無人機');
+    } else {
+      const rolls = key === 'lock' ? 1 : 1 + (Math.random() < 0.35 ? 1 : 0);
+      for (let r = 0; r < rolls; r++) {
+        const [k, q] = rollLoot(key === 'lock' ? LOCKED_LOOT : LOCS[o.loc].loot);
+        const room = bagCap() - outWeight();
+        const fit = outW(k) > 0 ? Math.min(q, Math.floor(room / outW(k))) : q;
+        if (fit <= 0) { found.push(ITEMS[k] ? ITEMS[k].n + '（背包滿了，帶不走）' : '東西（帶不走）'); continue; }
+        o.bag[k] = (o.bag[k] || 0) + fit;
+        found.push((k === 'bp' ? '一張圖紙' : ITEMS[k].n) + ' ×' + fit);
+      }
+    }
+    if (found.length) slog('搜了' + o.conts.find(c => String(c.i) === key).n + '：' + found.join('、') + '。');
+    else if (key !== 'truck') slog('什麼都沒找到。');
+    const before = expLevel(sv.xp - 1), after = expLevel(sv.xp);
+    if (after > before) slog('探索等級升到 ' + after + '！' + (after === 2 ? '可以去醫院了。' : after === 3 ? '可以去科技公司了。' : '能打開上鎖的房間了。'), true);
+    passHours(1);
+    if (S.phase === 'survive' && o.exp >= 100) ambush();
+    render();
+  },
+  goHome() {
+    const sv = S.sv, o = sv.out;
+    if (!o) return;
+    const trip = LOCS[o.loc].trip;
+    bringHome(o.bag);
+    sv.out = null;
+    passHours(trip);
+    if (sv.hour > LAST_HOUR) sv.hour = LAST_HOUR;
+    render(); window.scrollTo(0, 0);
+  },
+  zoe() {
+    const sv = S.sv, z = sv.zoe;
+    if (z.state !== 'asking' || z.today || sv_has(z.want) < 1 && !(z.want === 'wu' && sv.st.wu >= 1)) return;
+    if (z.want === 'wu') sv.st.wu -= 1; else sv_take(z.want, 1);
+    z.today = true; z.given++; sv.mor = clamp(sv.mor + 5);
+    if (z.given >= 7) {
+      z.state = 'saved';
+      sv.st.fert = (sv.st.fert || 0) + 2; sv.st.tomato = (sv.st.tomato || 0) + 2;
+      if (!J.chars.student) { J.chars.student = true; saveJournal(); }
+      slog('Zoe 撐過來了！她送你肥料和種子，還說下次換她來幫你。（解鎖角色：大學生）', true);
+      chron(sv.day, '救下 Zoe，解鎖大學生。', 'good');
+    } else slog('你把' + ITEMS[z.want].n + '從牆洞遞過去。Zoe：「謝謝……」（' + z.given + '/7）');
+    render();
+  },
+  airdrop() {
+    const sv = S.sv, m = sv.mgr;
+    if (m.state !== 'feeding' || m.today || !(sv.st.drone > 0)) return;
+    const foods = ['biscuit', 'can', 'sausage', 'noodle', 'choco', 'veg', 'tomato_p', 'straw_p', 'mushroom', 'juice'];
+    if (foods.reduce((a, k) => a + sv_has(k), 0) < 2) { slog('能空投的食物不夠 2 份。'); render(); return; }
+    takeFrom(foods, 2);
+    m.today = true; m.fed++;
+    if (m.fed >= 5) {
+      m.state = 'saved';
+      sv.st.metal = (sv.st.metal || 0) + 4; sv.st.diesel = (sv.st.diesel || 0) + 1;
+      if (!J.chars.manager) { J.chars.manager = true; saveJournal(); }
+      slog('倉庫經理靠自己走到安全區了，臨走前用無人機回送鐵片和柴油。（解鎖角色：倉庫經理）', true);
+      chron(sv.day, '救下倉庫經理，解鎖角色。', 'good');
+    } else slog('無人機把 2 份食物空投到貨車（' + m.fed + '/5）。');
+    render();
+  },
+  trade(i) {
+    const sv = S.sv, o = sv.offers[Number(i)];
+    if (!o || o.done || !(sv.st.drone > 0)) return;
+    const [gk, gq] = o.give;
+    if (sv_has(gk) < gq) return;
+    sv_take(gk, gq);
+    const [k, q] = o.get;
+    if (k === 'wu') sv.st.wu += q; else sv.st[k] = (sv.st[k] || 0) + q;
+    o.done = true; sv.trades++;
+    slog('無人機交易：' + ITEMS[gk].n + '×' + gq + ' 換到 ' + ITEMS[k].n + '×' + q + '。' + (sv.trades === 5 ? '對方開始願意用柴油交換了。' : ''));
+    render();
+  },
+  juice() {
+    const sv = S.sv;
+    if (!(sv.st.juicer > 0) || vegPool() < 2 || !canAct(1, staCost(3))) return;
+    takeFrom(VEGGIES, 2); sv.st.juice = (sv.st.juice || 0) + 1; sv.sta -= staCost(3);
+    slog('榨了一瓶果汁。很適合拿去交易。');
+    passHours(1); render();
+  },
+  pickChar(k) { if (!J.chars[k]) return; J.char = k; saveJournal(); render(); }
+});
+
+function outWeight() { const o = S.sv.out; return o ? Object.entries(o.bag).reduce((a, [k, q]) => a + outW(k) * q, 0) : 0; }
+function bringHome(bag) {
+  const sv = S.sv, got = [];
+  for (const [k, q] of Object.entries(bag)) {
+    if (k === 'bp') {
+      for (let i = 0; i < q; i++) {
+        const locked = Object.keys(RECIPES).filter(r => !RECIPES[r].base && !sv.recipes.includes(r));
+        if (locked.length) { const r = pick(locked); sv.recipes.push(r); J.recipes[r] = true; saveJournal(); got.push('圖紙「' + RECIPES[r].n + '」'); }
+        else { sv.st.plastic = (sv.st.plastic || 0) + 2; got.push('塑膠×2（圖紙都有了）'); }
+      }
+      continue;
+    }
+    if (k === 'wu') sv.st.wu += q; else sv.st[k] = (sv.st[k] || 0) + q;
+    got.push(ITEMS[k].n + '×' + q);
+  }
+  slog(got.length ? '平安回家，帶回 ' + got.join('、') + '。' : '空手回家。');
+  if (bag.drone) newOffers();
+}
+function ambush() {
+  const sv = S.sv, o = sv.out;
+  hurt(20, 'ambush'); sv.mor = clamp(sv.mor - 10);
+  for (const k of Object.keys(o.bag)) { o.bag[k] = Math.floor(o.bag[k] / 2); if (!o.bag[k]) delete o.bag[k]; }
+  slog('動靜太大，被屍群包圍了！你丟下一半的東西逃回家，生命 -20。', true);
+  chron(sv.day, '在' + LOCS[o.loc].n + '被屍群包圍，負傷逃回。', 'bad');
+  if (checkDeath()) return;
+  bringHome(o.bag);
+  sv.out = null;
+  passHours(LOCS[o.loc].trip);
+}
+
+function viewOut() {
+  const sv = S.sv, o = sv.out, L = LOCS[o.loc], Lst = sv.locs[o.loc];
+  const w = outWeight(), cap = bagCap();
+  let h = '<div class="place"><h2>' + L.n + '</h2><span class="sub">探索等級 ' + expLevel(sv.xp) + '</span></div>';
+  h += '<div class="cat">暴露值</div><div class="bar' + (o.exp >= 70 ? ' full' : '') + '" style="height:12px"><i style="width:' + Math.min(100, o.exp) + '%"></i></div>' +
+    '<p class="empty">' + Math.round(o.exp) + '% · 滿 100% 會被屍群包圍，丟掉一半東西、生命 -20。' + (sv.hour >= 18 ? '<b style="color:var(--stamp)">天黑了，暴露值漲兩倍。</b>' : '') + '</p>';
+  h += '<div class="cat">可以搜的地方（每處 1 小時）</div><div class="sheet">';
+  for (const c of o.conts) {
+    const done = Lst.done.includes(String(c.i));
+    h += actRow(c.n + (c.i === 'lock' ? '<span class="tag amber">稀有</span>' : c.i === 'truck' ? '<span class="tag red">有人？</span>' : ''), done ? '已經搜過' : '暴露值約 +' + (20 - expLevel(sv.xp) * 2) + '% · 體力 -' + staCost(5), done ? '空' : '搜', 'search', String(c.i), !done && canAct(1, staCost(5)));
+  }
+  h += '</div>';
+  h += '<div class="cat">背包 ' + kg(w) + ' / ' + cap + 'kg</div>';
+  const items = Object.entries(o.bag);
+  h += items.length ? '<div class="sheet">' + items.map(([k, q]) => '<div class="item"><div><div class="nm">' + (k === 'bp' ? '圖紙' : ITEMS[k].n) + '</div></div><div class="price">×' + q + '</div></div>').join('') + '</div>' : '<p class="empty">還沒找到東西。</p>';
+  h += '<div class="row-btns"><button class="btn red" data-a="goHome">回家（' + L.trip + ' 小時）</button></div>';
+  return h;
+}
+
+function viewOutside() {
+  const sv = S.sv, lv = expLevel(sv.xp);
+  let h = '<div class="cat">外出搜刮（探索等級 ' + lv + '，經驗 ' + sv.xp + (lv < 4 ? '/' + EXP_LV[lv] : '') + '）</div><div class="sheet">';
+  for (const [k, L] of Object.entries(LOCS)) {
+    const left = L.cont.length - sv.locs[k].done.filter(x => /^\d$/.test(x)).length;
+    const locked = lv < L.lv;
+    h += actRow(L.n, locked ? '探索等級 ' + L.lv + ' 才能去' : '單程 ' + L.trip + ' 小時 · 還有 ' + left + ' 處沒搜 · 體力 -' + staCost(10), '出門', 'goOut', k, !locked && canAct(L.trip + 1, staCost(10)));
+  }
+  h += '</div>';
+  if (hordeOn(sv.day)) h += '<p class="empty">今晚有屍潮，記得留時間回家準備。</p>';
+  // 鄰居
+  const z = sv.zoe;
+  let soc = '';
+  if (z.state === 'asking') {
+    const have = z.want === 'wu' ? sv.st.wu >= 1 : sv_has(z.want) >= 1;
+    soc += actRow('幫隔壁的 Zoe', z.today ? '今天已經給過了（' + z.given + '/7）' : '她想要：' + ITEMS[z.want].n + ' · 已幫 ' + z.given + '/7 · 連續 3 天沒幫她就會不見', '給她', 'zoe', '', !z.today && have);
+  }
+  const m = sv.mgr;
+  if (m.state === 'feeding') soc += actRow('空投給倉庫經理', m.today ? '今天已經空投過（' + m.fed + '/5）' : '用無人機送 2 份食物 · ' + m.fed + '/5' + (sv.st.drone ? '' : ' · <b style="color:var(--stamp)">需要無人機</b>'), '空投', 'airdrop', '', !m.today && sv.st.drone > 0);
+  if (soc) h += '<div class="cat">其他倖存者</div><div class="sheet">' + soc + '</div>';
+  // 交易
+  h += '<div class="cat">無人機交易</div>';
+  if (!(sv.st.drone > 0)) h += '<p class="empty">沒有無人機。聽說學校的教師辦公室有一台教學用的。</p>';
+  else {
+    h += '<div class="sheet">' + (sv.offers.length ? sv.offers.map((o, i) => actRow(ITEMS[o.give[0]].n + '×' + o.give[1] + ' → ' + ITEMS[o.get[0]].n + '×' + o.get[1], o.done ? '已完成' : '你有 ' + (o.give[0] === 'wu' ? sv.st.wu : sv_has(o.give[0])) + ' 個', o.done ? '完成' : '交換', 'trade', String(i), !o.done && sv_has(o.give[0]) >= o.give[1])).join('') : '<p class="empty">今天沒有人回應，明天再試。</p>') + '</div>';
+    h += '<p class="empty">每天早上換一批。已完成 ' + sv.trades + ' 次交易' + (sv.trades < 5 ? '，滿 5 次後對方願意給柴油。' : '。') + '</p>';
+  }
+  if (sv.st.juicer > 0) h += '<div class="sheet">' + actRow('榨果汁', '2 份蔬果 → 1 瓶果汁 · 1 小時 · 交易的熱門貨', '榨', 'juice', '', vegPool() >= 2 && canAct(1, staCost(3))) + '</div>';
+  return h;
+}
+
+function viewChars() {
+  const cur = J.char || 'neighbor';
+  return '<div class="cat">角色</div><div class="sheet">' + Object.entries(CHARS).map(([k, c]) => {
+    const open = J.chars[k];
+    return '<div class="item"><div><div class="nm">' + (open ? c.n : '？？？') + (cur === k ? '<span class="tag green">使用中</span>' : '') + '</div><div class="meta">' + (open ? c.d : '解鎖方法：' + c.how) + '</div></div>' +
+      '<button class="btn ghost" data-a="pickChar" data-v="' + k + '"' + (!open || cur === k ? ' disabled' : '') + '>選</button></div>';
+  }).join('') + '</div>';
 }
 
 /* ================= 事件綁定 ================= */
