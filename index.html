@@ -213,6 +213,9 @@ const ITEMS = {
   drone:    { n: '教學無人機', cat: 'equip', w: 0, note: '可以交易和空投' },
   juicer:   { n: '榨汁機', cat: 'equip', w: 0, note: '2 份蔬果榨 1 瓶果汁 · 交易好用' },
   juice:    { n: '果汁', cat: 'food', w: 0.5, note: '不會壞 · 交易熱門貨' },
+  brewer:   { n: '釀酒機', cat: 'equip', w: 0, note: '3 個番茄或草莓釀 1 瓶高度酒' },
+  alcohol:  { n: '高度酒', cat: 'mat', w: 1, note: '做燃燒瓶的原料' },
+  molotov:  { n: '燃燒瓶', cat: 'mat', w: 1, note: '守夜時丟出，每瓶擋 120' },
   wu:       { n: '飲用水', cat: 'water', w: 0, note: '1 份 = 水分 +30' },
   lightbox: { n: '植物燈種植箱', cat: 'equip', w: 0, note: '4 格 · 耗電 1 度/天 · 產量較高' }
 };
@@ -230,7 +233,7 @@ const STORES = {
   tool:  { n: '工具店', x: 4, y: 1, closes: 600, desc: '建材和柴油。老闆說柴油只剩這些。',
            items: { board: [15, 10], metal: [20, 8], glass: [10, 6], plastic: [8, 6], matpack: [25, 4], diesel: [40, 8], barrel: [20, 6], rain: [45, 2] } },
   reno:  { n: '裝修公司', x: 5, y: -1, closes: 540, delivery: true, desc: '大型設備都在這。16:00 前下單才送得到。',
-           items: { door: [450, 1], window: [300, 2], gen: [350, 2], solar: [250, 3], battery: [200, 2], freezer: [150, 1], microwave: [60, 1], ac: [280, 1], pedal: [120, 1], juicer: [90, 1], board: [18, 10] } },
+           items: { door: [450, 1], window: [300, 2], gen: [350, 2], solar: [250, 3], battery: [200, 2], freezer: [150, 1], microwave: [60, 1], ac: [280, 1], pedal: [120, 1], juicer: [90, 1], brewer: [150, 1], board: [18, 10] } },
   farm:  { n: '農貿市場', x: -2, y: 3, closes: 600, delivery: true, desc: '種子和新鮮蔬菜。',
            items: { tomato: [10, 6], straw: [12, 6], mush: [15, 4], pot: [15, 8], fert: [8, 5], veg: [8, 10], lightbox: [120, 2], matpack: [25, 2] } },
   cars:  { n: '二手車行', x: -3, y: -1, closes: 540, desc: '一台舊小車 $500，不要了可以 $450 賣回。' }
@@ -267,7 +270,7 @@ const UPGRADES = [
 
 /* ================= 日誌（跨輪保存） ================= */
 const JKEY = 'survival-log-m1-journal';
-function freshJournal() { return { runs: [], events: {}, stores: {}, tips: {}, hordesSeen: 0, pp: 0, upg: { time: 0, money: 0, bag: 0 }, dev: false, save: { no: 1, revivals: 3, wins: 0 }, recipes: {}, chars: { neighbor: true }, char: 'neighbor' }; }
+function freshJournal() { return { runs: [], events: {}, stores: {}, tips: {}, hordesSeen: 0, pp: 0, upg: { time: 0, money: 0, bag: 0 }, dev: false, save: { no: 1, revivals: 3, wins: 0 }, recipes: {}, chars: { neighbor: true }, char: 'neighbor', endings: {}, clues: {}, best: 0 }; }
 function loadJournal() {
   try { const raw = localStorage.getItem(JKEY); if (raw) return Object.assign(freshJournal(), JSON.parse(raw)); } catch (e) {}
   return freshJournal();
@@ -766,6 +769,11 @@ function viewJournal(outside) {
   if (known.length) {
     h += '<div class="cat">去過的店</div><ul class="list">' + known.map(id => '<li><b>' + STORES[id].n + '</b>：' + Object.keys(STORES[id].items).map(k => ITEMS[k].n).join('、') + '</li>').join('') + '</ul>';
   }
+  const ek = Object.keys(ENDINGS);
+  h += '<div class="cat">結局（' + ek.filter(k => J.endings && J.endings[k]).length + '/' + ek.length + '）</div><ul class="list">' + ek.map(k => '<li>' + (J.endings && J.endings[k] ? '<b>' + ENDINGS[k].n + '</b>：' + ENDINGS[k].d : '？？？') + '</li>').join('') + '</ul>';
+  const ck = Object.keys(CLUES).filter(k => J.clues && J.clues[k]);
+  if (ck.length) h += '<div class="cat">真相碎片（' + ck.length + '/3）</div><ul class="list note">' + ck.map(k => '<li>' + esc(CLUES[k]) + '</li>').join('') + '</ul><p class="empty">同一輪裡集齊 3 片，才能在第 100 天揭開真相。</p>';
+  if (J.best) h += '<p class="empty">最佳紀錄：撐了 ' + J.best + ' 天。</p>';
   const rk = Object.keys(RECIPES).filter(k => J.recipes[k]);
   if (rk.length) h += '<div class="cat">抄下的圖紙</div><ul class="list">' + rk.map(k => '<li><b>' + RECIPES[k].n + '</b>：' + Object.entries(RECIPES[k].need).map(([m, q]) => ITEMS[m].n + '×' + q).join('、') + '</li>').join('') + '</ul>';
   if (J.runs.length) {
@@ -805,6 +813,7 @@ function viewEnd() {
   const r = S.result;
   let h = '<main class="wrap"><section class="hero"><p class="hand" style="color:var(--stamp);font-size:18px;margin:0">' + (r.days >= 100 ? '倖存' : '這一輪結束了') + '</p>' +
     '<div class="result-big">' + r.days + '<small>天</small></div><p class="note">' + esc(r.cause) + '</p>' +
+    (r.ending ? '<div class="sheet" style="padding:12px"><div class="hand" style="font-size:22px;color:var(--stamp)">結局「' + ENDINGS[r.ending].n + '」</div><p class="note" style="margin:6px 0 0">' + ENDINGS[r.ending].d + '</p></div>' : '') +
     '<p>這輪會得到 <b class="num">' + r.pp + '</b> 點規劃點數' + (r.committed ? '（已入帳）' : '（離開這個畫面時入帳）') + '。</p></section>';
   if (r.stats) {
     h += '<div class="kv"><div><div class="k">食物</div><div class="v">' + Math.round(r.stats.meals) + ' 餐</div></div>' +
@@ -820,6 +829,7 @@ function viewEnd() {
         '<button class="btn ghost" data-a="rewind" data-v="' + i + '"' + (J.pp < REWIND_COST ? ' disabled' : '') + '>回溯</button></div>').join('') + '</div>' +
       '<p class="empty">目前規劃點數 ' + J.pp + ' 點（這輪的點數要離開畫面後才入帳）。</p>';
   }
+  if (r.canEndless && !r.committed) h += '<div class="row-btns"><button class="btn" data-a="endless">留下來：進入無盡模式</button></div><p class="empty">第 100 天後每 7 天一波屍潮，每波強度 +40。死掉也算通關，不會用掉復活。</p>';
   const left = J.save.revivals - (won || r.committed ? 0 : 1);
   h += '<div class="row-btns"><button class="btn red" data-a="start">' + (won ? '開始新的一輪' : left >= 0 ? '重生：回到 08:00（剩 ' + left + ' 次復活）' : '存檔結束，開新存檔') + '</button><button class="btn ghost" data-a="menu">回到日誌</button></div>';
   if (!won && left < 0) h += '<p class="empty">復活用完了。開新存檔時規劃點數和升級會歸零，但日誌裡的事件、心得和圖紙會留著。</p>';
@@ -838,7 +848,7 @@ const REINFORCE = { board: 40, metal: 70, glass: 20 };
 const LAST_HOUR = 24;
 const inCold = d => d >= COLD[0] && d <= COLD[1];
 const inRain = d => RAIN.some(r => d >= r[0] && d <= r[1]);
-const hordeOn = d => HORDES.find(x => x[0] === d);
+const hordeOn = d => d > 100 ? ((d - 100) % 7 === 0 ? [d, 320 + (d - 100) / 7 * 40] : undefined) : HORDES.find(x => x[0] === d);
 function hordeSize(str) { return str < 60 ? '小規模' : str < 150 ? '中規模' : '大規模'; }
 
 function startSurvive() {
@@ -864,6 +874,7 @@ function startSurvive() {
   if (hordeOn(1)) slog('收音機：今晚有屍潮。', true);
   m4Init(S.sv);
   m5Init(S.sv);
+  m6Init(S.sv);
   S.snaps = [];
   snapshot();
 }
@@ -881,7 +892,7 @@ function sv_take(k, n) {
 function sv_addFresh(k, q) { if (q > 0) S.sv.fresh.push({ k, q, life: FRESH_LIFE[k] }); }
 const clamp = v => Math.max(0, Math.min(100, v));
 function powerCap() { return 3 + (S.sv.st.battery || 0) * 10; }
-function slots() { const st = S.sv.st; return { light: (st.lightbox || 0) * 4, pot: st.pot || 0 }; }
+function slots() { const st = S.sv.st; return { light: (st.lightbox || 0) * 4, green: (S.sv.rooms || []).filter(r => r === 'greenhouse').length * 4, pot: st.pot || 0 }; }
 function heated() { const sv = S.sv; return (sv.dev.ac && (sv.st.ac || 0) > 0 && sv.power > 0) || ((sv.st.heater || 0) > 0 && (sv.st.board || 0) > 0); }
 
 function hurt(v, why) { const sv = S.sv; sv.hp -= v; if (v > 0) sv.lastHurt = why; }
@@ -959,14 +970,14 @@ const SACT = {
     const cap = powerCap();
     if (sv.power >= cap) { slog('電已經存滿了。'); render(); return; }
     sv.st.diesel -= 1; if (!sv.st.diesel) delete sv.st.diesel;
-    const before = sv.power; sv.power = Math.min(cap, sv.power + 6);
-    slog('發電機轟轟作響，燒掉一桶柴油，電力 +' + (Math.round((sv.power - before) * 10) / 10) + ' 度' + (sv.power - before < 6 ? '（存不下的浪費了）' : '') + '。');
+    const before = sv.power; sv.power = Math.min(cap, sv.power + 6 * powerMul());
+    slog('發電機轟轟作響，燒掉一桶柴油，電力 +' + (Math.round((sv.power - before) * 10) / 10) + ' 度' + (sv.power - before < 6 * powerMul() - 0.01 ? '（存不下的浪費了）' : '') + '。');
     passHours(1); render();
   },
   pedal() {
     const sv = S.sv;
     if (!canAct(1, staCost(20)) || !(sv.st.pedal > 0)) return;
-    sv.sta -= staCost(20); sv.power = Math.min(powerCap(), sv.power + 1.5);
+    sv.sta -= staCost(20); sv.power = Math.min(powerCap(), sv.power + 1.5 * powerMul());
     slog('踩了一小時人力發電機，電力 +1.5 度。');
     passHours(1); render();
   },
@@ -974,13 +985,13 @@ const SACT = {
     const sv = S.sv;
     if (!canAct(1, 5) || !(sv.st[k] > 0)) return;
     const s = slots();
-    const usedL = sv.plants.filter(p => p.slot === 'light').length, usedP = sv.plants.filter(p => p.slot === 'pot').length;
-    const free = (s.light - usedL) + (s.pot - usedP);
+    const free = freeSlots();
     if (free <= 0) { slog('沒有空的盆位了。'); render(); return; }
     sv.st[k] -= 1; if (!sv.st[k]) delete sv.st[k];
     const n = Math.min(2, free);
     for (let i = 0; i < n; i++) {
-      const slot = sv.plants.filter(p => p.slot === 'light').length < s.light ? 'light' : 'pot';
+      const cnt = t => sv.plants.filter(p => p.slot === t).length;
+      const slot = cnt('light') < s.light ? 'light' : cnt('green') < s.green ? 'green' : 'pot';
       sv.plants.push({ k: k === 'tomato' ? 'tomato_p' : 'straw_p', slot, age: 0 });
     }
     sv.sta -= 5;
@@ -1015,7 +1026,7 @@ function night(watch) {
   const cap = powerCap();
 
   // 1. 白天太陽能入帳
-  const solar = (st.solar || 0) * 1.5 * (rain ? 0.1 : cold ? 0.6 : 1);
+  const solar = (st.solar || 0) * 1.5 * powerMul() * (rain ? 0.1 : cold ? 0.6 : 1);
   if (solar > 0) sv.power = Math.min(cap, sv.power + solar);
 
   // 2. 設備耗電（冷氣 > 冰櫃 > 種植箱）
@@ -1043,10 +1054,16 @@ function night(watch) {
     for (const t of sv.traps) {
       const T = TRAPS[t.k];
       if (T.power) { if (sv.power >= T.power) sv.power -= T.power; else { slog(T.n + '沒電，沒有啟動。', true); continue; } }
-      trapKill += T.dmg * (hasT('traps') ? 1.15 : 1); t.uses--;
+      trapKill += T.dmg * (hasT('traps') ? 1.15 : 1) * (1 + (defLv() - 1) * 0.05); t.uses--;
     }
     sv.traps = sv.traps.filter(t => t.uses > 0);
+    let molo = 0;
+    if (watch) while (molo < 3 && (st.molotov || 0) > 0) { st.molotov--; if (!st.molotov) delete st.molotov; trapKill += 120; molo++; }
+    if (molo) slog('你從窗口丟出 ' + molo + ' 瓶燃燒瓶。');
     if (trapKill) dmg = Math.max(0, dmg - trapKill);
+    const dlBefore = defLv();
+    sv.defXp = (sv.defXp || 0) + hz[1] / 10;
+    if (defLv() > dlBefore) slog('防禦等級升到 ' + defLv() + ' 級！' + (defLv() === 2 ? '可以做電擊陷阱了。' : defLv() === 4 ? '可以做電鋸陷阱了。' : ''), true);
     let used = 0;
     if (watch) {
       for (const m of ['metal', 'board', 'glass']) {
@@ -1078,7 +1095,7 @@ function night(watch) {
   sv.sat = clamp(sv.sat - 10);
   sv.hyd = clamp(sv.hyd - 14);
   if (watch) sv.sta = clamp(sv.sta + 15);
-  else sv.sta = clamp(sv.sta + (55 + (sv.mor > 50 ? 15 : 0) - (sv.mor < 20 ? 20 : 0)) * (sv.sick ? 0.5 : 1));
+  else sv.sta = clamp(sv.sta + (55 + (roomN('bedroom') ? 10 : 0) + (sv.mor > 50 ? 15 : 0) - (sv.mor < 20 ? 20 : 0)) * (sv.sick ? 0.5 : 1));
   if (sv.sat <= 0) hurt(10, 'food');
   if (sv.hyd <= 0) hurt(20, 'water');
   if (cold && !warmNight) hurt(hasT('warm') ? 4 : 8, 'cold');
@@ -1088,7 +1105,7 @@ function night(watch) {
   // 6. 新的一天
   sv.day++; sv.hour = 8;
   const nd = sv.day;
-  sv.mor = clamp(sv.mor - 4);
+  sv.mor = clamp(sv.mor - 4 + (roomN('bedroom') ? 3 : 0));
   sv.sp += 1;
   if (sv.sick > 0) { sv.sick--; if (!sv.sick) slog('病好了。'); }
 
@@ -1106,7 +1123,7 @@ function night(watch) {
     p.age++;
     if (p.age < 8) continue;
     if (p.slot === 'light' && !sv.powered.lightbox) continue;
-    const rate = (p.slot === 'light' ? 1 : 0.5) * (hasT('green') ? 1.3 : 1);
+    const rate = (p.slot === 'pot' ? 0.5 : 1) * (hasT('green') ? 1.3 : 1);
     p.acc = (p.acc || 0) + rate * fert;
     const got = Math.floor(p.acc); p.acc -= got;
     if (got) harvest[p.k] = (harvest[p.k] || 0) + got;
@@ -1127,9 +1144,11 @@ function night(watch) {
   slog('第 ' + nd + ' 天早上。');
   if (nd <= 100) snapshot();
 
-  if (nd > 100) {
-    chron(100, '你撐過了 100 天。救援直升機的聲音從遠方傳來。', 'good');
-    finishRun({ days: 100, cause: '你撐過了 100 天。', causeKey: '', timeline: sv.chron, stats: null, hordesSeen: sv.hordesSeen, coldSeen: sv.coldSeen, rainSeen: sv.rainSeen });
+  if (nd > 100 && !sv.endless) {
+    const e = pickEnding(sv);
+    chron(100, '結局「' + ENDINGS[e].n + '」：' + ENDINGS[e].d, 'good');
+    J.endings[e] = true; saveJournal();
+    finishRun({ days: 100, cause: '你撐過了 100 天。', causeKey: '', timeline: sv.chron, stats: null, hordesSeen: sv.hordesSeen, coldSeen: sv.coldSeen, rainSeen: sv.rainSeen, ending: e, canEndless: true });
   }
   UI.tab = 'act';
   render();
@@ -1205,12 +1224,12 @@ function viewActs() {
   h += '<div class="row-btns"><button class="btn ghost" data-a="giveup">放棄這一輪</button></div>';
   return h;
 }
-function freeSlots() { const s = slots(); return s.light + s.pot - S.sv.plants.length; }
+function freeSlots() { const s = slots(); return s.light + s.green + s.pot - S.sv.plants.length; }
 
 function viewBase() {
   const sv = S.sv, st = sv.st;
   const cold = inCold(sv.day);
-  let h = '<div class="cat">防線</div><div class="sheet"><div class="item"><div><div class="nm">耐久 ' + Math.round(sv.def) + ' / ' + sv.defMax + '</div><div class="meta">加固最多到 ' + Math.round(sv.defMax * 1.5) + '。屍潮傷害約為強度 ×4。</div></div><div></div>' +
+  let h = '<div class="cat">防線</div><div class="sheet"><div class="item"><div><div class="nm">耐久 ' + Math.round(sv.def) + ' / ' + sv.defMax + '</div><div class="meta">加固最多到 ' + Math.round(sv.defMax * 1.5) + '。屍潮傷害約為強度 ×4。防禦等級 ' + defLv() + '（經驗 ' + Math.round(sv.defXp || 0) + (defLv() < 4 ? '/' + DEF_LV[defLv()] : '') + '），每級陷阱傷害 +5%。</div></div><div></div>' +
     '<div class="ctrl" style="justify-content:stretch"><div class="bar" style="flex:1"><i style="width:' + Math.min(100, sv.def / (sv.defMax * 1.5) * 100) + '%"></i></div></div></div></div>';
   const next = HORDES.find(x => x[0] >= sv.day);
   if (next && J.hordesSeen > HORDES.indexOf(next)) h += '<p class="empty">日誌：下一波屍潮在第 ' + next[0] + ' 天，強度 ' + next[1] + '。</p>';
@@ -1229,8 +1248,9 @@ function viewBase() {
   if (cold) h += '<p class="empty">寒潮中：' + (st.ac || st.heater ? '冷氣要開著且有電，或有暖爐和木板，才算有取暖。' : '沒有取暖設備，每小時掉 1 生命、每晚掉 8。') + '</p>';
   h += '<div class="cat">作物</div>';
   const s = slots();
-  h += '<p class="empty">盆位：種植箱 ' + s.light + ' 格、花盆 ' + s.pot + ' 格，已種 ' + sv.plants.length + ' 株。' + ((st.mush || 0) ? '菌包 ' + st.mush + ' 包（第 6–45 天出菇）。' : '') + '</p>';
-  if (sv.plants.length) h += '<div class="sheet">' + sv.plants.map(p => '<div class="item"><div><div class="nm">' + ITEMS[p.k].n + '<span class="tag">' + (p.slot === 'light' ? '種植箱' : '花盆') + '</span></div><div class="meta">' + (p.age < 8 ? '還要 ' + (8 - p.age) + ' 天成熟' : '已成熟，' + (p.slot === 'light' ? '有電每天收 1 個' : '每 2 天收 1 個')) + '</div></div><div></div></div>').join('') + '</div>';
+  h += '<p class="empty">盆位：種植箱 ' + s.light + ' 格、溫室 ' + s.green + ' 格、花盆 ' + s.pot + ' 格，已種 ' + sv.plants.length + ' 株。' + ((st.mush || 0) ? '菌包 ' + st.mush + ' 包（第 6–45 天出菇）。' : '') + '</p>';
+  if (sv.plants.length) h += '<div class="sheet">' + sv.plants.map(p => '<div class="item"><div><div class="nm">' + ITEMS[p.k].n + '<span class="tag">' + ({ light: '種植箱', green: '溫室', pot: '花盆' }[p.slot]) + '</span></div><div class="meta">' + (p.age < 8 ? '還要 ' + (8 - p.age) + ' 天成熟' : '已成熟，' + ({ light: '有電每天收 1 個', green: '每天收 1 個', pot: '每 2 天收 1 個' }[p.slot])) + '</div></div><div></div></div>').join('') + '</div>';
+  h += viewBuild();
   h += viewTalents();
   return h;
 }
@@ -1269,6 +1289,7 @@ function commitRun() {
   if (!res || res.committed) return;
   res.committed = true;
   J.pp += res.pp;
+  J.best = Math.max(J.best || 0, res.days);
   J.runs.unshift({ n: J.runs.length + 1, days: res.days, cause: res.cause });
   J.runs = J.runs.slice(0, 20);
   if (res.causeKey) J.tips[res.causeKey] = true;
@@ -1294,8 +1315,10 @@ const RECIPES = {
   rainc:  { n: '雨水收集器', need: { plastic: 2, board: 1 }, h: 2, out: { rain: 1 }, d: '雨天每天 2 份水' },
   solar:  { n: '太陽能板', need: { glass: 2, metal: 2, plastic: 1 }, h: 3, out: { solar: 1 }, d: '晴天每天 1.5 度' },
   heater: { n: '暖爐', need: { metal: 2, board: 1 }, h: 2, out: { heater: 1 }, d: '寒潮時每天燒 1 片木板取暖' },
-  shock:  { n: '電擊陷阱', need: { metal: 2, plastic: 1 }, h: 2, trap: 'shock', d: '陷阱：每波擋 90，屍潮夜耗電 1.5，可用 6 波' },
-  saw:    { n: '電鋸陷阱', need: { metal: 4, plastic: 2 }, h: 3, trap: 'saw', d: '陷阱：每波擋 220，屍潮夜耗電 3，可用 10 波' }
+  molotov: { n: '燃燒瓶', need: { alcohol: 1, glass: 1 }, h: 1, out: { molotov: 1 }, base: true, noStudent: true, d: '守夜時自動丟出，每瓶擋 120' },
+  brewer: { n: '釀酒機', need: { metal: 3, glass: 2 }, h: 2, out: { brewer: 1 }, d: '3 個番茄或草莓釀 1 瓶高度酒' },
+  shock:  { n: '電擊陷阱', defLv: 2, need: { metal: 2, plastic: 1 }, h: 2, trap: 'shock', d: '陷阱：每波擋 90，屍潮夜耗電 1.5，可用 6 波' },
+  saw:    { n: '電鋸陷阱', defLv: 4, need: { metal: 4, plastic: 2 }, h: 3, trap: 'saw', d: '陷阱：每波擋 220，屍潮夜耗電 3，可用 10 波' }
 };
 const TRAPS = { spike: { n: '尖刺路障', dmg: 40, uses: 3, power: 0 }, shock: { n: '電擊陷阱', dmg: 90, uses: 6, power: 1.5 }, saw: { n: '電鋸陷阱', dmg: 220, uses: 10, power: 3 } };
 const VEGGIES = ['veg', 'tomato_p', 'mushroom', 'straw_p'];
@@ -1329,13 +1352,15 @@ function m4Init(sv) {
 Object.assign(SACT, {
   craft(k) {
     const sv = S.sv, r = RECIPES[k];
-    if (!r || !knownRecipes().includes(k) || !canCraft(k) || !canAct(r.h, staCost(8 * r.h))) return;
+    const ch = craftHours(r.h), cs = craftSta(r.h);
+    if (!r || !knownRecipes().includes(k) || !canCraft(k) || !canAct(ch, cs) || (r.defLv && defLv() < r.defLv) || (r.noStudent && S.char === 'student')) return;
     for (const [m, n] of Object.entries(r.need)) { sv.st[m] -= n; if (!sv.st[m]) delete sv.st[m]; }
     if (r.trap) { const t = TRAPS[r.trap]; sv.traps.push({ k: r.trap, uses: t.uses }); }
     if (r.out) for (const [o, n] of Object.entries(r.out)) sv.st[o] = (sv.st[o] || 0) + n;
-    sv.sta -= staCost(8 * r.h);
-    slog('在工作台做好了' + r.n + '。');
-    passHours(r.h); render();
+    sv.sta -= cs; sv.crafted = (sv.crafted || 0) + 1;
+    const lvBefore = lvOf(sv.crafted - 1, CRAFT_LV);
+    slog('在工作台做好了' + r.n + '。' + (craftLv() > lvBefore ? ' 製作熟練度升到 ' + craftLv() + ' 級！' : ''));
+    passHours(ch); render();
   },
   cookx(k) {
     const sv = S.sv, c = COOKS[k];
@@ -1384,11 +1409,13 @@ function morningDisaster(nd) {
 
 function viewCraft() {
   const sv = S.sv, st = sv.st;
-  let h = '<div class="cat">工作台</div><div class="sheet">';
+  let h = '<div class="cat">工作台（熟練度 ' + craftLv() + ' 級 · 已做 ' + (sv.crafted || 0) + ' 件）</div><p class="empty">熟練度 2 級體力消耗 -25%、3 級製作時間 -1 小時。' + (roomN('workshop') ? '有工坊，時間再 -1 小時。' : '') + '</p><div class="sheet">';
   for (const k of knownRecipes()) {
     const r = RECIPES[k];
     const need = Object.entries(r.need).map(([m, n]) => ITEMS[m].n + ' ' + (st[m] || 0) + '/' + n).join('、');
-    h += actRow(r.n + (r.base ? '' : '<span class="tag amber">圖紙</span>'), r.d + ' · ' + need + ' · ' + r.h + ' 小時 · 體力 -' + staCost(8 * r.h), '做', 'craft', k, canCraft(k) && canAct(r.h, staCost(8 * r.h)));
+    const ch = craftHours(r.h), cs = craftSta(r.h);
+    const lock = r.defLv && defLv() < r.defLv ? '防禦等級 ' + r.defLv + ' 才能做' : r.noStudent && S.char === 'student' ? '大學生不會做' : '';
+    h += actRow(r.n + (r.base ? '' : '<span class="tag amber">圖紙</span>'), (lock ? '<b style="color:var(--stamp)">' + lock + '</b> · ' : '') + r.d + ' · ' + need + ' · ' + ch + ' 小時 · 體力 -' + cs, '做', 'craft', k, !lock && canCraft(k) && canAct(ch, cs));
   }
   const unknown = Object.keys(RECIPES).length - knownRecipes().length;
   h += '</div>';
@@ -1402,6 +1429,7 @@ function viewCraft() {
     }
     h += '</div>';
   }
+  if (st.brewer) h += '<div class="sheet">' + actRow('釀酒', '3 個番茄或草莓 → 1 瓶高度酒 · 2 小時', '釀', 'brew', '', ['tomato_p', 'straw_p'].reduce((a, k) => a + sv_has(k), 0) >= 3 && canAct(2, staCost(5))) + '</div>';
   return h;
 }
 
@@ -1522,6 +1550,12 @@ Object.assign(SACT, {
       sv.mgr.state = 'feeding'; sv.mgr.today = true;
       slog('貨車駕駛座裡有個受傷的男人，自稱倉庫經理。他需要有人每天空投食物。', true);
       chron(sv.day, '在廢棄超市的貨車裡找到倉庫經理。');
+    } else if ((o.loc === 'school' && key === '4' && expLevel(sv.xp) >= 2 && !sv.clues.includes('lab')) || (o.loc === 'tech' && key === '2' && !sv.clues.includes('server')) || (o.loc === 'hospital' && key === 'lock' && !sv.clues.includes('rec'))) {
+      const c = o.loc === 'school' ? 'lab' : o.loc === 'tech' ? 'server' : 'rec';
+      sv.clues.push(c); J.clues[c] = true; saveJournal();
+      slog('你找到一條線索：' + CLUES[c], true);
+      chron(sv.day, '找到真相碎片（' + sv.clues.length + '/3）。');
+      found.push('真相碎片');
     } else if (key === '3' && o.loc === 'school' && !(sv.st.drone > 0) && !o.bag.drone) {
       o.bag.drone = 1; found.push('教學無人機');
     } else {
@@ -1617,8 +1651,12 @@ function bringHome(bag) {
       }
       continue;
     }
-    if (k === 'wu') sv.st.wu += q; else sv.st[k] = (sv.st[k] || 0) + q;
-    got.push(ITEMS[k].n + '×' + q);
+    let fit = q;
+    if (k !== 'wu' && ITEMS[k].cat !== 'equip' && ITEMS[k].w > 0) fit = Math.max(0, Math.min(q, Math.floor((storeCap() - storeWeight()) / ITEMS[k].w)));
+    if (fit < q) got.push(ITEMS[k].n + '×' + (q - fit) + '（倉庫放不下，丟在門口）');
+    if (!fit) continue;
+    if (k === 'wu') sv.st.wu += fit; else sv.st[k] = (sv.st[k] || 0) + fit;
+    got.push(ITEMS[k].n + '×' + fit);
   }
   slog(got.length ? '平安回家，帶回 ' + got.join('、') + '。' : '空手回家。');
   if (bag.drone) newOffers();
@@ -1694,6 +1732,102 @@ function viewChars() {
   }).join('') + '</div>';
 }
 
+/* ================= 擴充：據點擴建、加工、防禦等級、熟練度、結局、無盡 ================= */
+const ROOMS = {
+  storage:    { n: '儲藏室', need: { board: 3, plastic: 1 }, h: 2, d: '倉庫容量 +150kg' },
+  greenhouse: { n: '溫室', need: { glass: 4, board: 2 }, h: 3, d: '4 個不用電的種植格，產量和種植箱一樣' },
+  workshop:   { n: '工坊', need: { metal: 3, board: 2 }, h: 3, d: '製作時間 -1 小時（最少 1 小時）' },
+  bedroom:    { n: '臥室', need: { board: 4 }, h: 2, d: '睡覺體力 +10，每天心態 +3' },
+  powerroom:  { n: '發電室', need: { metal: 2, plastic: 2 }, h: 2, d: '發電機、太陽能、人力發電多 20%' }
+};
+const FLOORS = {
+  '2F': { n: '二樓', need: { board: 6, metal: 4 }, h: 4 },
+  'B1': { n: '地下室', need: { metal: 6, board: 4 }, h: 4 }
+};
+const DEF_LV = [0, 10, 30, 60];
+const CRAFT_LV = [0, 5, 12];
+const lvOf = (v, t) => t.filter(x => v >= x).length;
+const CLUES = {
+  lab: '學校實驗室的筆記：「自來水檢驗異常，含有未知菌株，已通報市府……沒有回音。」',
+  server: '科技公司機房的伺服器還在跑，日誌寫著：「淨水計畫 B 階段：投放完成。」',
+  rec: '醫院檔案室的錄音筆：「第一批病人都住在同一個供水區。科技公司的人把病歷全部帶走了。」'
+};
+const ENDINGS = {
+  dawn: { n: '黎明', d: '你、Zoe 和倉庫經理一起把證據交給軍方。科技公司高層被逮捕，城市開始重建。' },
+  truth: { n: '真相', d: '你用無線電把證據送出去。新聞終於報導了災難的真相，但你是獨自一人等到救援。' },
+  community: { n: '街坊', d: '你們從互相求助變成一個小小的社區。救援直升機來時，你們一起離開。' },
+  alone: { n: '獨自倖存', d: '一百天後，救援直升機的聲音從遠方傳來。你活下來了，但不知道這一切為什麼會發生。' }
+};
+
+function m6Init(sv) {
+  sv.floors = ['1F']; sv.rooms = []; sv.defXp = 0; sv.crafted = 0; sv.clues = []; sv.endless = false;
+}
+const roomN = k => (S.sv.rooms || []).filter(r => r === k).length;
+const defLv = () => lvOf(S.sv.defXp || 0, DEF_LV);
+const craftLv = () => lvOf(S.sv.crafted || 0, CRAFT_LV);
+const powerMul = () => roomN('powerroom') ? 1.2 : 1;
+function storeCap() { return 200 + roomN('storage') * 150; }
+function storeWeight() { const st = S.sv.st; return Object.entries(st).reduce((a, [k, q]) => a + (k === 'wu' || !ITEMS[k] || ITEMS[k].cat === 'equip' ? 0 : ITEMS[k].w * q), 0); }
+function craftHours(h) { return Math.max(1, h - (roomN('workshop') ? 1 : 0) - (craftLv() >= 3 ? 1 : 0)); }
+function craftSta(h) { return Math.round(staCost(8 * h) * (craftLv() >= 2 ? 0.75 : 1)); }
+function roomSlots() { return S.sv.floors.length * 3; }
+
+Object.assign(SACT, {
+  buildFloor(k) {
+    const sv = S.sv, f = FLOORS[k];
+    if (!f || sv.floors.includes(k) || !Object.entries(f.need).every(([m, n]) => (sv.st[m] || 0) >= n) || !canAct(f.h, staCost(30))) return;
+    for (const [m, n] of Object.entries(f.need)) { sv.st[m] -= n; if (!sv.st[m]) delete sv.st[m]; }
+    sv.floors.push(k); sv.sta -= staCost(30);
+    slog('花了 ' + f.h + ' 小時打通了' + f.n + '，多了 3 個房間位置。', true);
+    chron(sv.day, '擴建' + f.n + '。', 'good');
+    passHours(f.h); render();
+  },
+  buildRoom(k) {
+    const sv = S.sv, r = ROOMS[k];
+    if (!r || sv.rooms.length >= roomSlots() || !Object.entries(r.need).every(([m, n]) => (sv.st[m] || 0) >= n) || !canAct(r.h, staCost(15))) return;
+    for (const [m, n] of Object.entries(r.need)) { sv.st[m] -= n; if (!sv.st[m]) delete sv.st[m]; }
+    sv.rooms.push(k); sv.sta -= staCost(15);
+    slog('蓋好了' + r.n + '：' + r.d + '。');
+    passHours(r.h); render();
+  },
+  brew() {
+    const sv = S.sv;
+    const fruits = ['tomato_p', 'straw_p'];
+    if (!(sv.st.brewer > 0) || fruits.reduce((a, k) => a + sv_has(k), 0) < 3 || !canAct(2, staCost(5))) return;
+    takeFrom(fruits, 3); sv.st.alcohol = (sv.st.alcohol || 0) + 1; sv.sta -= staCost(5);
+    slog('釀出一瓶高度酒。可以拿來做燃燒瓶。');
+    passHours(2); render();
+  },
+  endless() {
+    if (!S.result || !S.result.canEndless) return;
+    S.sv.endless = true; S.phase = 'survive'; S.result = null;
+    slog('你決定留下來。屍潮還會一波比一波強，看你能撐多久。', true);
+    chron(S.sv.day, '進入無盡模式。');
+    render(); window.scrollTo(0, 0);
+  }
+});
+
+function pickEnding(sv) {
+  const saved = (sv.zoe.state === 'saved' ? 1 : 0) + (sv.mgr.state === 'saved' ? 1 : 0);
+  const truth = sv.clues.length >= 3;
+  if (truth && saved >= 2) return 'dawn';
+  if (truth) return 'truth';
+  if (saved >= 1) return 'community';
+  return 'alone';
+}
+
+function viewBuild() {
+  const sv = S.sv, st = sv.st;
+  const has = need => Object.entries(need).every(([m, n]) => (st[m] || 0) >= n);
+  const needTxt = need => Object.entries(need).map(([m, n]) => ITEMS[m].n + ' ' + (st[m] || 0) + '/' + n).join('、');
+  let h = '<div class="cat">據點擴建（' + sv.floors.map(f => f === '1F' ? '一樓' : FLOORS[f].n).join('、') + '）</div>';
+  h += '<p class="empty">房間 ' + sv.rooms.length + '/' + roomSlots() + '：' + (sv.rooms.length ? sv.rooms.map(r => ROOMS[r].n).join('、') : '還沒蓋') + ' · 倉庫 ' + Math.round(storeWeight()) + '/' + storeCap() + 'kg</p><div class="sheet">';
+  for (const [k, f] of Object.entries(FLOORS)) if (!sv.floors.includes(k)) h += actRow('擴建' + f.n, '+3 個房間位置 · ' + needTxt(f.need) + ' · ' + f.h + ' 小時 · 體力 -' + staCost(30), '擴建', 'buildFloor', k, has(f.need) && canAct(f.h, staCost(30)));
+  for (const [k, r] of Object.entries(ROOMS)) h += actRow('蓋' + r.n + (roomN(k) ? '<span class="tag green">已有 ' + roomN(k) + '</span>' : ''), r.d + ' · ' + needTxt(r.need) + ' · ' + r.h + ' 小時', '蓋', 'buildRoom', k, sv.rooms.length < roomSlots() && has(r.need) && canAct(r.h, staCost(15)));
+  h += '</div>';
+  return h;
+}
+
 /* ================= 事件綁定 ================= */
 $app.addEventListener('click', e => {
   const b = e.target.closest('[data-a]');
@@ -1712,7 +1846,7 @@ if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude
 else start((window.claude && window.claude.hot && window.claude.hot.data) || {});
 
 // 給測試用
-window.__slog = { simulate, get S() { return S; }, ACT };
+window.__slog = { simulate, get S() { return S; }, ACT, get SACT() { return SACT; } };
 })();
 </script>
 </body>
