@@ -346,7 +346,7 @@ function renderSurvive() {
     '</div></header>' +
     '<main class="wrap">' +
       '<div class="ticker">' + sv.log.slice(0, 3).map(l => '<p class="' + (l.alert ? 'alert' : '') + '">' + esc(l.txt) + '</p>').join('') + '</div>' +
-      (UI.tab === 'act' && !sv.out ? houseSVG() : '') +
+      (UI.tab === 'act' && !sv.out ? (typeof isoLive === 'function' ? isoLive() : houseSVG()) : '') +
       '<div class="chips">' + (sv.noise != null ? '<span>噪音 <b class="num"' + (sv.noise > 60 ? ' style="color:var(--stamp)"' : '') + '>' + sv.noise + '</b></span><span>衛生 <b class="num"' + (sv.hyg < 30 ? ' style="color:var(--stamp)"' : '') + '>' + Math.round(sv.hyg) + '</b></span>' : '') + '<span>防線 <b class="num">' + Math.round(sv.def) + '</b>/' + sv.defMax + '</span><span>電 <b class="num">' + (Math.round(sv.power * 10) / 10) + '</b>/' + powerCap() + ' 度</span><span>水 <b class="num">' + sv.st.wu + '</b> 份</span>' +
         (inCold(sv.day) ? '<span class="tag red">寒潮</span>' : '') + (inRain(sv.day) ? '<span class="tag amber">陰雨</span>' : '') + '</div>' +
       body +
