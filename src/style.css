@@ -273,3 +273,20 @@ details.guide p { margin: 6px 0 2px; font-size: 14px; }
 .sg-warn { border-left: 4px solid #b8322a; padding: 6px 10px; margin: 8px 0; background: rgba(184,50,42,0.07); font-size: 0.92em; }
 svg.sg-on { animation: sgPulse 2.4s ease-in-out infinite; }
 @keyframes sgPulse { 50% { filter: saturate(0.8) brightness(0.92); } }
+
+/* 物件視窗 */
+.rt-modal { position: fixed; inset: 0; z-index: 60; background: rgba(15,18,22,0.55); display: flex; align-items: flex-end; justify-content: center; padding: 12px; animation: mFade .15s ease-out; }
+.rt-mbox { background: var(--paper, #f6f1e4); color: var(--ink, #1d2733); width: min(460px, 100%); max-height: 78vh; overflow: auto; border: 2px solid var(--ink, #1d2733); border-radius: 14px; padding: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); animation: mUp .18s ease-out; }
+.rt-mh { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+.rt-mh b { font-size: 1.15em; }
+.rt-mic { font-size: 30px; line-height: 1; }
+.macts { display: grid; gap: 8px; }
+.macts .btn { display: flex; flex-direction: column; align-items: flex-start; text-align: left; width: 100%; }
+.macts .btn small { font-weight: 400; opacity: 0.75; font-size: 0.8em; margin-top: 2px; }
+.mgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; margin-bottom: 8px; }
+.mcell { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px; border: 1.5px solid var(--ink, #1d2733); border-radius: 8px; background: rgba(255,255,255,0.5); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.mcell span { font-size: 0.78em; opacity: 0.75; }
+.mcell:disabled { opacity: 0.4; }
+@keyframes mFade { from { opacity: 0; } }
+@keyframes mUp { from { transform: translateY(24px); opacity: 0; } }
+:root[data-dark="1"] .rt-mbox, :root[data-dark="1"] .mcell { background: #23282f; color: #e8e4da; border-color: #556; }
