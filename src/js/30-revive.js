@@ -21,6 +21,14 @@ function commitRun() {
   const res = S && S.result;
   if (!res || res.committed) return;
   res.committed = true;
+  if (S.daily) {
+    J.daily = J.daily || {};
+    J.daily[S.daily] = Math.max(J.daily[S.daily] || 0, res.days);
+    J.runs.unshift({ n: J.runs.length + 1, days: res.days, cause: '［每日挑戰 ' + S.daily + '］' + res.cause });
+    J.runs = J.runs.slice(0, 20);
+    saveJournal();
+    return;
+  }
   J.pp += res.pp;
   J.best = Math.max(J.best || 0, res.days);
   J.runs.unshift({ n: J.runs.length + 1, days: res.days, cause: res.cause });

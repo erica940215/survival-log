@@ -1,7 +1,11 @@
 /* ================= 一輪開始 ================= */
 function newRun() {
   if (J.saveOverNote) { J.saveOverNote = false; saveJournal(); }
-  const bonusT = J.upg.time * 30;
+  const set = runSetup();
+  const daily = set.mode === 'daily';
+  const up = k => daily ? 0 : J.upg[k];
+  const ch = daily ? 'neighbor' : (J.char || 'neighbor');
+  const bonusT = up('time') * 30;
   const stock = {};
   for (const id of STORE_ORDER) {
     const st = STORES[id];
@@ -9,20 +13,24 @@ function newRun() {
     stock[id] = {};
     for (const [k, v] of Object.entries(st.items)) stock[id][k] = v[1];
   }
+  const D = DIFFS[daily ? 'normal' : set.diff];
   S = {
-    phase: 'play', t: -bonusT, money: 1070 + J.upg.money * 150 + ((J.char || 'neighbor') === 'student' ? 100 : 0), loc: 'home', char: J.char || 'neighbor',
-    car: false, loan: false, carry: {}, home: (J.char === 'nurse' ? { medkit: 2 } : J.char === 'veteran' ? { molotov: 2 } : {}), sold: {}, stock,
-    fired: {}, log: [], seenStores: { home: true }, result: null
+    phase: 'play', t: -bonusT, money: 1070 + D.money + up('money') * 150 + (ch === 'student' ? 100 : 0), loc: 'home', char: ch,
+    car: false, loan: false, carry: {}, home: (ch === 'nurse' ? { medkit: 2 } : ch === 'veteran' ? { molotov: 2 } : {}), sold: {}, stock,
+    fired: {}, log: [], seenStores: { home: true }, result: null,
+    diff: daily ? 'normal' : set.diff, daily: daily ? todayKey() : null, mods: daily ? {} : Object.assign({}, set.mods), upgBag: up('bag'),
+    rng: daily ? seedOf(todayKey()) : (Math.random() * 4294967296) >>> 0
   };
   UI = { tab: 'here', qty: {} };
   log('你從惡夢中驚醒。這次你知道：今天 18:00，城市會被屍群淹沒。', true);
+  if (daily) log('每日挑戰 ' + todayKey() + '：今天每個人遇到的事件、天災、圖紙都一樣。不套用升級、角色固定為鄰居。');
   if (bonusT) log('你提早 ' + bonusT + ' 分鐘醒來。');
   render();
 }
 
 function log(txt, alert) { if (alert && typeof sfx === 'function') sfx('alert'); S.log.unshift({ txt, alert: !!alert, t: S.t }); S.log = S.log.slice(0, 30); }
 
-function capacity() { return BASE_BAG + J.upg.bag * 5 + (S.char === 'manager' ? 15 : 0) + (S.car ? CAR_TRUNK : 0); }
+function capacity() { return BASE_BAG + (S.upgBag || 0) * 5 + (S.char === 'manager' ? 15 : 0) + (S.car ? CAR_TRUNK : 0); }
 function carried() { return weightOf(S.carry); }
 
 /* 時間推進，觸發事件 */
@@ -44,7 +52,7 @@ function advance(min) {
 
 /* ================= 價格與規則 ================= */
 function price(store, k) {
-  const base = STORES[store].items[k][0];
+  const base = Math.round(STORES[store].items[k][0] * D_().price);
   if (store === 'mart' && S.t >= 152 && S.t < 210) return 0;
   if (S.t >= 210 && (store === 'mart' || store === 'conv') && (ITEMS[k].cat === 'food' || ITEMS[k].cat === 'water')) return Math.ceil(base * 1.5);
   return base;
@@ -131,6 +139,7 @@ const ACT = {
     render();
   },
   buyCar() {
+    if (S.mods && S.mods.noCar) { log('挑戰條件：這輪不能買車。'); render(); return; }
     if (S.car || S.money < 500 || S.loc !== 'cars' || !isOpen('cars', S.t)) return;
     S.car = true; S.money -= 500;
     log('買下舊小車。移動時間大約減半，後車廂多 80kg。', true);
@@ -138,7 +147,7 @@ const ACT = {
   },
   sellCar() {
     if (!S.car || S.loc !== 'cars' || !isOpen('cars', S.t)) return;
-    if (weightOf(S.carry) > BASE_BAG + J.upg.bag * 5) { log('車上還有東西，先回家卸貨再來賣車。'); render(); return; }
+    if (weightOf(S.carry) > BASE_BAG + (S.upgBag || 0) * 5) { log('車上還有東西，先回家卸貨再來賣車。'); render(); return; }
     S.car = false; S.money += 450;
     log('把車賣回車行，拿回 $450。');
     advance(10); checkOutbreak(); render();
@@ -170,7 +179,7 @@ function unload() {
     if (k === 'matpack') {
       const pool = ['board', 'metal', 'glass', 'plastic'];
       const got = {};
-      for (let i = 0; i < q * 3; i++) { const m = pool[Math.floor(Math.random() * pool.length)]; got[m] = (got[m] || 0) + 1; add(S.home, m, 1); }
+      for (let i = 0; i < q * 3; i++) { const m = pool[Math.floor(rnd() * pool.length)]; got[m] = (got[m] || 0) + 1; add(S.home, m, 1); }
       log('拆開材料包：' + Object.entries(got).map(([m, n]) => ITEMS[m].n + '×' + n).join('、') + '。');
     } else add(S.home, k, q);
   }

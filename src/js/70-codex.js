@@ -60,3 +60,10 @@ function viewCodex() {
     ACHS.map(([id, n, d]) => '<li>' + (J.ach[id] ? '<b>' + n + '</b>：' + d : '<span style="color:var(--muted)">？？？ · ' + d + '</span>') + '</li>').join('') + '</ul></details>';
   return h;
 }
+ACHS.push(
+  ['hard100', '硬漢', '困難難度撐過 100 天', () => S.sv && S.diff === 'hard' && S.sv.day >= 101],
+  ['nocar100', '步行者', '不買車撐過 100 天', () => S.sv && S.mods && S.mods.noCar && S.sv.day >= 101],
+  ['norewind100', '一條命', '不回溯撐過 100 天', () => S.sv && S.mods && S.mods.noRewind && S.sv.day >= 101],
+  ['noout100', '足不出戶', '不外出撐過 100 天', () => S.sv && S.mods && S.mods.noOut && S.sv.day >= 101],
+  ['daily1', '每日一戰', '完成一次每日挑戰', () => J.daily && Object.keys(J.daily).length > 0]
+);

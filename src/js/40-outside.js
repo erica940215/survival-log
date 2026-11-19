@@ -26,15 +26,15 @@ const TRADES = [
 ];
 const EXP_LV = [0, 8, 20, 40];
 const expLevel = xp => EXP_LV.filter(t => xp >= t).length;
-const pick = a => a[Math.floor(Math.random() * a.length)];
+const pick = a => a[Math.floor(rnd() * a.length)];
 function rollLoot(table) {
   const total = table.reduce((a, r) => a + r[3], 0);
-  let x = Math.random() * total;
-  for (const r of table) { x -= r[3]; if (x <= 0) return [r[0], r[1] + Math.floor(Math.random() * (r[2] - r[1] + 1))]; }
+  let x = rnd() * total;
+  for (const r of table) { x -= r[3]; if (x <= 0) return [r[0], r[1] + Math.floor(rnd() * (r[2] - r[1] + 1))]; }
   return [table[0][0], table[0][1]];
 }
 const outW = k => k === 'wu' ? 1 : k === 'bp' ? 0 : ITEMS[k].w;
-function bagCap() { return BASE_BAG + J.upg.bag * 5 + (S.char === 'manager' ? 15 : 0); }
+function bagCap() { return BASE_BAG + (S.upgBag || 0) * 5 + (S.char === 'manager' ? 15 : 0); }
 
 function m5Init(sv) {
   sv.xp = 0; sv.trades = 0; sv.out = null;
@@ -51,7 +51,7 @@ function newOffers() {
   if (!(sv.st.drone > 0)) { sv.offers = []; return; }
   const pool = TRADES.filter(t => !t.min || sv.trades >= t.min);
   const out = [];
-  while (out.length < 3 && pool.length) out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  while (out.length < (allyOn('mgr', 'trade') ? 4 : 3) && pool.length) out.push(pool.splice(Math.floor(rnd() * pool.length), 1)[0]);
   sv.offers = out.map(t => ({ give: t.give, get: [t.get[0], t.get[1] + (S.char === 'manager' ? 1 : 0)], done: false }));
 }
 
@@ -77,7 +77,7 @@ function m5Morning(nd) {
 Object.assign(SACT, {
   goOut(loc) {
     const sv = S.sv, L = LOCS[loc];
-    if (!L || sv.out || expLevel(sv.xp) < L.lv || !canAct(L.trip, staCost(10))) return;
+    if (!L || sv.out || (S.mods && S.mods.noOut) || expLevel(sv.xp) < L.lv || !canAct(L.trip, staCost(10))) return;
     if (L.noise && !(sv.st.noise > 0)) { slog('那裡屍群太多，要先做一個噪音器引開。'); render(); return; }
     if (L.noise) { sv.st.noise--; if (!sv.st.noise) delete sv.st.noise; }
     let radar = false;
@@ -97,7 +97,7 @@ Object.assign(SACT, {
     const key = String(i), Lst = sv.locs[o.loc];
     if (Lst.done.includes(key) || !canAct(1, staCost(5))) return;
     const lv = expLevel(sv.xp);
-    let exp = 20 - lv * 2 + Math.floor(Math.random() * 11) - 5;
+    let exp = 20 - lv * 2 + Math.floor(rnd() * 11) - 5;
     if (sv.hour >= 18) exp *= 2;
     exp *= expMul();
     if (o.loc === 'hospital') { J.stats = J.stats || {}; J.stats.hosp = (J.stats.hosp || 0) + 1; if (J.stats.hosp >= 5 && !J.chars.nurse) { J.chars.nurse = true; slog('你對醫院越來越熟了。（解鎖角色：護理師）', true); } saveJournal(); }
@@ -117,7 +117,7 @@ Object.assign(SACT, {
     } else if (key === '3' && o.loc === 'school' && !(sv.st.drone > 0) && !o.bag.drone) {
       o.bag.drone = 1; found.push('教學無人機');
     } else {
-      const rolls = key === 'lock' ? 1 : 1 + (Math.random() < 0.35 + lootBonus() ? 1 : 0);
+      const rolls = key === 'lock' ? 1 : 1 + (rnd() < 0.35 + lootBonus() ? 1 : 0);
       for (let r = 0; r < rolls; r++) {
         const [k, q] = rollLoot(key === 'lock' ? LOCKED_LOOT : LOCS[o.loc].loot);
         const room = bagCap() - outWeight();
@@ -253,7 +253,9 @@ function viewOut() {
 function viewOutside() {
   const sv = S.sv, lv = expLevel(sv.xp);
   let h = '<div class="cat">外出搜刮（探索等級 ' + lv + '，經驗 ' + sv.xp + (lv < 4 ? '/' + EXP_LV[lv] : '') + '）</div><div class="sheet">';
+  if (S.mods && S.mods.noOut) h += '<p class="empty">挑戰條件「足不出戶」：這輪不能外出。</p>';
   for (const [k, L] of Object.entries(LOCS)) {
+    if (S.mods && S.mods.noOut) break;
     const left = L.cont.length - sv.locs[k].done.filter(x => /^\d$/.test(x)).length;
     const locked = lv < L.lv;
     const noNoise = L.noise && !(sv.st.noise > 0);
@@ -270,7 +272,7 @@ function viewOutside() {
   }
   const m = sv.mgr;
   if (m.state === 'feeding') soc += actRow('空投給倉庫經理', m.today ? '今天已經空投過（' + m.fed + '/5）' : '用無人機送 2 份食物 · ' + m.fed + '/5' + (sv.st.drone ? '' : ' · <b style="color:var(--stamp)">需要無人機</b>'), '空投', 'airdrop', '', !m.today && sv.st.drone > 0);
-  soc += viewExtraSocial();
+  soc += viewAllies() + viewExtraSocial();
   if (soc) h += '<div class="cat">其他倖存者</div><div class="sheet">' + soc + '</div>';
   // 交易
   h += '<div class="cat">無人機交易</div>';

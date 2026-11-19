@@ -17,11 +17,13 @@ function viewSlots() {
     else h += '<p class="meta">' + esc(s.ch) + ' · 玩了 ' + s.runs + ' 輪' + (s.best ? ' · 最佳 ' + s.best + ' 天' : '') + ' · 成就 ' + s.ach + '</p>' + (s.live ? '<p class="meta" style="color:var(--stamp)">進行中：' + esc(s.live) + '</p>' : '');
     h += '<div class="row-btns" style="margin:6px 0 0">';
     if (!cur) h += '<button class="btn ghost" data-a="slotUse" data-v="' + n + '">' + (s.empty ? '用這格開始' : '切換到這格') + '</button>';
+    if (!s.empty) h += '<button class="btn ghost" data-a="exportSave" data-v="' + n + '">匯出</button>';
+    h += '<button class="btn ghost" data-a="importOpen" data-v="' + n + '">匯入</button>';
     if (!s.empty) {
       if (UI.delSlot === n) h += '<button class="btn red" data-a="slotDelYes" data-v="' + n + '">確定刪除</button><button class="btn ghost" data-a="slotDelNo">取消</button>';
       else h += '<button class="btn ghost" data-a="slotDel" data-v="' + n + '">刪除</button>';
     }
-    h += '</div></div>';
+    h += '</div>' + viewBackup(n) + '</div>';
   }
   return h + '</div>';
 }

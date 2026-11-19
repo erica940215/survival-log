@@ -30,8 +30,8 @@ function m4Init(sv) {
   const locked = Object.keys(RECIPES).filter(k => !RECIPES[k].base);
   const drawn = [];
   const pool = locked.slice();
-  for (let i = 0; i < 2 && pool.length; i++) drawn.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
-  const remembered = locked.filter(k => J.recipes[k]);
+  for (let i = 0; i < 2 && pool.length; i++) drawn.push(pool.splice(Math.floor(rndAt('bp' + i) * pool.length), 1)[0]);
+  const remembered = S.daily ? [] : locked.filter(k => J.recipes[k]);
   sv.recipes = Array.from(new Set([...remembered, ...drawn]));
   const fresh = drawn.filter(k => !J.recipes[k]);
   for (const k of drawn) J.recipes[k] = true;
@@ -69,6 +69,7 @@ Object.assign(SACT, {
     slog('學會天賦：' + t.n + '（' + t.d + '）。'); render();
   },
   rewind(i) {
+    if (S.mods && S.mods.noRewind) return;
     const s = S.snaps && S.snaps[Number(i)];
     if (!s || J.pp < REWIND_COST || !S.result || S.result.committed) return;
     J.pp -= REWIND_COST; J.stats = J.stats || {}; J.stats.rewinds = (J.stats.rewinds || 0) + 1; saveJournal();
@@ -85,12 +86,12 @@ Object.assign(SACT, {
 function morningDisaster(nd) {
   const sv = S.sv, st = sv.st;
   if (nd === 49) { sv.sick = 3; slog('你發燒了，渾身無力。生病時體力回得慢，也沒力氣加固防線。', true); chron(nd, '生病了，偏偏後天就是大屍潮。', 'bad'); return; }
-  if (nd < 5 || Math.random() > 0.12) return;
-  const k = DISASTERS[Math.floor(Math.random() * DISASTERS.length)];
+  if (nd < 5 || rndAt('dis' + nd) > 0.12) return;
+  const k = DISASTERS[Math.floor(rndAt('disk' + nd) * DISASTERS.length)];
   if (k === 'leak' && st.wu > 0) { const n = Math.min(st.wu, 4); st.wu -= n; slog('水管爆裂，流失了 ' + n + ' 份水。', true); chron(nd, '水管爆裂，流失 ' + n + ' 份水。', 'bad'); }
   else if (k === 'rats') {
     const pool = ['biscuit', 'sausage', 'noodle', 'can', 'rice'].filter(x => st[x] > 0);
-    if (pool.length) { const x = pool[Math.floor(Math.random() * pool.length)]; const n = Math.min(st[x], 1 + Math.floor(Math.random() * 3)); st[x] -= n; if (!st[x]) delete st[x]; slog('老鼠咬壞了' + ITEMS[x].n + ' ×' + n + '。', true); chron(nd, '鼠患，損失' + ITEMS[x].n + ' ×' + n + '。', 'bad'); }
+    if (pool.length) { const x = pool[Math.floor(rnd() * pool.length)]; const n = Math.min(st[x], 1 + Math.floor(rnd() * 3)); st[x] -= n; if (!st[x]) delete st[x]; slog('老鼠咬壞了' + ITEMS[x].n + ' ×' + n + '。', true); chron(nd, '鼠患，損失' + ITEMS[x].n + ' ×' + n + '。', 'bad'); }
   }
   else if (k === 'sick' && !sv.sick) { sv.sick = 3; slog('你著涼生病了（3 天）。吃止痛藥可以提早好。', true); chron(nd, '生病 3 天。', 'bad'); }
   else if (k === 'surge' && sv.power > 0) { sv.power = 0; slog('電線走火跳電，存電全部歸零。', true); chron(nd, '電線走火，存電歸零。', 'bad'); }

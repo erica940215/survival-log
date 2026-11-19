@@ -38,7 +38,7 @@ function m7Init(sv) {
 const dogLv = () => { const d = S.sv.dog; return d && d.state === 'pet' ? Math.min(5, 1 + Math.floor(d.xp / 6)) : 0; };
 const robotOn = k => !!(S.sv.st[k] > 0 && S.sv.dev[k] && S.sv.powered && S.sv.powered[k]);
 const growDays = () => robotOn('bot_farm') ? 6 : 8;
-function hordeMul() { return (1 - dogLv() * 0.04) * (S.char === 'veteran' ? 0.85 : 1); }
+function hordeMul() { return (1 - dogLv() * 0.04) * (S.char === 'veteran' ? 0.85 : 1) * (allyOn('zoe', 'guard') ? 0.8 : 1); }
 function expMul() { return (1 - dogLv() * 0.03) * (S.sv.out && S.sv.out.radar ? 0.75 : 1); }
 function lootBonus() { return dogLv() * 0.06 + (S.sv.out && S.sv.out.radar ? 0.2 : 0); }
 
@@ -53,8 +53,8 @@ function m7Morning(nd) {
   }
   // 狗
   const d = sv.dog;
-  if (d.state === 'none' && nd >= 4 && nd <= 30 && Math.random() < 0.25) { d.state = 'stray'; slog('門口有一隻瘦巴巴的流浪狗，一直看著你。', true); }
-  else if (d.state === 'stray' && Math.random() < 0.3) { d.state = 'none'; slog('流浪狗走掉了。'); }
+  if (d.state === 'none' && nd >= 4 && nd <= 30 && rnd() < 0.25) { d.state = 'stray'; slog('門口有一隻瘦巴巴的流浪狗，一直看著你。', true); }
+  else if (d.state === 'stray' && rnd() < 0.3) { d.state = 'none'; slog('流浪狗走掉了。'); }
   else if (d.state === 'pet') {
     if (d.today) { d.xp++; d.miss = 0; } else d.miss++;
     d.today = false;

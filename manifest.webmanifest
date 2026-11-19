@@ -1,0 +1,16 @@
+{
+  "name": "生存日誌",
+  "short_name": "生存日誌",
+  "description": "爆發前 10 小時囤貨，爆發後撐過 100 天。",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f0e6",
+  "theme_color": "#1d2733",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

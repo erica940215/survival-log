@@ -38,6 +38,7 @@ function startSurvive() {
   m6Init(S.sv);
   m7Init(S.sv);
   S.snaps = [];
+  S.sv.mark = dayMark();
   snapshot();
 }
 
@@ -64,8 +65,8 @@ function passHours(n) {
   const sv = S.sv;
   for (let i = 0; i < n; i++) {
     sv.hour++;
-    sv.sat = clamp(sv.sat - 2.2);
-    sv.hyd = clamp(sv.hyd - 2.6);
+    sv.sat = clamp(sv.sat - 2.2 * diffDecay());
+    sv.hyd = clamp(sv.hyd - 2.6 * diffDecay());
     sv.mor = clamp(sv.mor - 0.3);
     if (sv.sat <= 0) hurt(2, 'food');
     if (sv.hyd <= 0) hurt(4, 'water');
@@ -213,16 +214,16 @@ function night(watch) {
   const hz = hordeOn(d);
   if (hz) {
     sv.hordesSeen++;
-    let dmg = hz[1] * 4 * (watch ? 0.6 : 1) * hordeMul();
+    let dmg = hz[1] * 4 * (watch ? 0.6 : 1) * hordeMul() * diffHorde() * (typeof hordeTypeMul === 'function' ? hordeTypeMul(d, watch) : 1);
     let trapKill = 0;
     for (const t of sv.traps) {
       const T = TRAPS[t.k];
       if (T.power) { if (sv.power >= T.power) sv.power -= T.power; else { slog(T.n + '沒電，沒有啟動。', true); continue; } }
-      trapKill += T.dmg * (hasT('traps') ? 1.15 : 1) * (1 + (defLv() - 1) * 0.05); t.uses--;
+      trapKill += T.dmg * (hasT('traps') ? 1.15 : 1) * (1 + (defLv() - 1) * 0.05) * trapTypeMul(d, t.k); t.uses--;
     }
     sv.traps = sv.traps.filter(t => t.uses > 0);
     let molo = 0;
-    if (watch) while (molo < 3 && (st.molotov || 0) > 0) { st.molotov--; if (!st.molotov) delete st.molotov; trapKill += 120; molo++; }
+    if (watch) while (molo < 3 && (st.molotov || 0) > 0) { st.molotov--; if (!st.molotov) delete st.molotov; trapKill += 120 * moloMul(d); molo++; }
     if (molo) slog('你從窗口丟出 ' + molo + ' 瓶燃燒瓶。');
     if (trapKill) dmg = Math.max(0, dmg - trapKill);
     const dlBefore = defLv();
@@ -238,28 +239,29 @@ function night(watch) {
     if (sv.def >= 0) {
       sv.sp += 10;
       if (sv.dog && sv.dog.state === 'pet') sv.dog.xp += 2;
-      chron(d, '屍潮（強度 ' + hz[1] + '）' + (trapKill ? '，陷阱擋下 ' + Math.round(trapKill) : '') + (watch ? '，你守了一夜' + (used ? '、邊打邊修用掉 ' + used + ' 份材料' : '') : '') + '。防線剩 ' + Math.round(sv.def) + '。', 'good');
+      chron(d, HTYPES[hordeType(d)].n + '（強度 ' + hz[1] + '）' + (trapKill ? '，陷阱擋下 ' + Math.round(trapKill) : '') + (watch ? '，你守了一夜' + (used ? '、邊打邊修用掉 ' + used + ' 份材料' : '') : '') + '。防線剩 ' + Math.round(sv.def) + '。', 'good');
       slog('屍潮退去了，防線剩 ' + Math.round(sv.def) + '。', true);
     } else {
       const over = -sv.def; sv.def = 0;
       const h = Math.round((over * 0.25 + 15) * (hasT('tough') ? 0.7 : 1));
       hurt(h, 'horde'); sv.mor = clamp(sv.mor - 20);
-      chron(d, '屍潮（強度 ' + hz[1] + '）突破防線，你受傷 ' + h + '。', 'bad');
+      chron(d, HTYPES[hordeType(d)].n + '（強度 ' + hz[1] + '）突破防線，你受傷 ' + h + '。', 'bad');
       slog('防線被突破了！生命 -' + h + '。', true);
     }
   }
 
+  if (allyOn('mgr', 'fix') && sv.def < sv.defMax * 1.5) { sv.def = Math.min(sv.defMax * 1.5, sv.def + 20); slog('倉庫經理半夜過來幫忙補了防線。'); }
   if (robotOn('bot_fix') && sv.def < sv.defMax * 1.5) { sv.def = Math.min(sv.defMax * 1.5, sv.def + 25); slog('修理機器人連夜把防線補了 25。'); }
   // 5. 睡眠
   const hoursLeft = Math.max(0, LAST_HOUR - sv.hour);
   for (let i = 0; i < hoursLeft; i++) {
-    sv.sat = clamp(sv.sat - 1.1); sv.hyd = clamp(sv.hyd - 1.5);
+    sv.sat = clamp(sv.sat - 1.1 * diffDecay()); sv.hyd = clamp(sv.hyd - 1.5 * diffDecay());
     if (sv.sat <= 0) hurt(1, 'food');
     if (sv.hyd <= 0) hurt(2, 'water');
     if (cold && !warmNight) hurt(hasT('warm') ? 0.25 : 0.5, 'cold');
   }
-  sv.sat = clamp(sv.sat - 10);
-  sv.hyd = clamp(sv.hyd - 14);
+  sv.sat = clamp(sv.sat - 10 * diffDecay());
+  sv.hyd = clamp(sv.hyd - 14 * diffDecay());
   if (watch) sv.sta = clamp(sv.sta + 15);
   else sv.sta = clamp(sv.sta + (55 + (roomN('bedroom') ? 10 : 0) + (sv.mor > 50 ? 15 : 0) - (sv.mor < 20 ? 20 : 0)) * (sv.sick ? 0.5 : 1));
   if (sv.sat <= 0) hurt(10, 'food');
@@ -269,6 +271,7 @@ function night(watch) {
   if (checkDeath()) { render(); return; }
 
   // 6. 新的一天
+  writeDiary(d);
   sv.day++; sv.hour = 8;
   const nd = sv.day;
   sv.mor = clamp(sv.mor - 4 + (roomN('bedroom') ? 3 : 0));
@@ -289,7 +292,7 @@ function night(watch) {
     p.age++;
     if (p.age < growDays()) continue;
     if (p.slot === 'light' && !sv.powered.lightbox) continue;
-    const rate = (p.slot === 'pot' ? 0.5 : 1) * (hasT('green') ? 1.3 : 1) * (robotOn('bot_farm') ? 1.25 : 1);
+    const rate = (p.slot === 'pot' ? 0.5 : 1) * (hasT('green') ? 1.3 : 1) * (robotOn('bot_farm') ? 1.25 : 1) * (allyOn('zoe', 'farm') ? 1.3 : 1);
     p.acc = (p.acc || 0) + rate * fert;
     const got = Math.floor(p.acc); p.acc -= got;
     if (got) harvest[p.k] = (harvest[p.k] || 0) + got;
@@ -304,11 +307,13 @@ function night(watch) {
   if (nd === COLD[1] + 1) chron(nd, '寒潮過去了。', 'good');
   if (RAIN.some(r => nd === r[0])) { sv.rainSeen = true; chron(nd, '連日陰雨，太陽能幾乎不發電。'); slog('外面下起連綿大雨。', true); }
   const tonight = hordeOn(nd), tomorrow = hordeOn(nd + 1);
-  if (tonight) slog('收音機：今晚有' + hordeSize(tonight[1]) + '屍潮（強度 ' + tonight[1] + '）。', true);
-  else if (tomorrow) slog('收音機：明晚會有' + hordeSize(tomorrow[1]) + '屍潮。');
+  if (tonight) slog('收音機：今晚有' + hordeSize(tonight[1]) + '的' + hordeName(nd) + '，強度 ' + tonight[1] + '。', true);
+  else if (tomorrow) slog('收音機：明晚會有' + hordeSize(tomorrow[1]) + '的' + HTYPES[hordeType(nd + 1)].n + '。');
   morningDisaster(nd);
   m5Morning(nd);
   m7Morning(nd);
+  m8Morning(nd);
+  morningSummary(nd);
   slog('第 ' + nd + ' 天早上。');
   if (nd <= 100) snapshot();
 
@@ -359,7 +364,8 @@ function viewActs() {
   if (!st.microwave && st.rice) h += '<p class="empty">米要用微波爐煮，你家沒有。</p>';
   // 吃喝
   const foods = Object.keys(FOOD).filter(k => sv_has(k) > 0);
-  h += '<div class="cat">吃喝（不花時間）</div><div class="sheet">';
+  h += viewSummary();
+  h += '<div class="cat">吃喝（不花時間）</div><div class="row-btns" style="margin:4px 0 8px"><button class="btn" data-a="eatFull"' + (sv.sat >= 85 ? ' disabled' : '') + '>吃到飽</button><button class="btn" data-a="drinkFull"' + (sv.hyd >= 85 ? ' disabled' : '') + '>喝到滿</button></div><div class="sheet">';
   h += actRow('喝水', sv.day <= 5 ? '自來水還沒停（第 5 天後停水）· 不用消耗存水' : '水分 +30 · 剩 ' + st.wu + ' 份', '喝', 'drink', '', (st.wu >= 1 || sv.day <= 5) && sv.hyd < 100);
   if (!foods.length) h += '<p class="empty">沒有能直接吃的東西了' + (st.rice ? '（米要先煮）' : '') + '。</p>';
   for (const k of foods) {
@@ -386,9 +392,9 @@ function viewActs() {
   }
   // 睡覺
   const hz = hordeOn(sv.day);
-  h += '<div class="cat">結束這一天</div><div class="sheet">';
+  h += '<div class="cat">結束這一天</div>' + viewSleepWarn() + '<div class="sheet">';
   if (late) h += '<p class="empty">已經半夜了，只能睡覺。</p>';
-  h += actRow('睡覺到明天 08:00', '體力大幅回復 · 睡前結算太陽能、設備耗電' + (hz ? ' · <b style="color:var(--stamp)">今晚屍潮（強度 ' + hz[1] + '）</b>' : ''), '睡覺', 'sleep', '', true);
+  h += actRow('睡覺到明天 08:00', '體力大幅回復 · 睡前結算太陽能、設備耗電' + (hz ? ' · <b style="color:var(--stamp)">今晚' + HTYPES[hordeType(sv.day)].n + '（強度 ' + hz[1] + '）</b>' : ''), '睡覺', 'sleep', '', true);
   if (hz) h += actRow('守夜', '屍潮傷害 -40%，邊打邊用材料修（最多 3 份）· 體力只回 15', '守夜', 'watch', '', true);
   h += '</div>';
   h += '<div class="row-btns"><button class="btn ghost" data-a="giveup">放棄這一輪</button></div>';
@@ -432,5 +438,6 @@ function viewStore() {
   h += sv.fresh.length ? '<div class="sheet">' + sv.fresh.slice().sort((a, b) => a.life - b.life).map(f => '<div class="item"><div><div class="nm">' + ITEMS[f.k].n + '</div><div class="meta">' + Math.ceil(f.life) + ' 天後壞（冰櫃有電時壞得慢）</div></div><div class="price">×' + f.q + '</div></div>').join('') + '</div>' : '<p class="empty">沒有。</p>';
   h += '<div class="cat">庫存</div>';
   h += all.length ? '<div class="sheet">' + CAT_ORDER.flatMap(c => all.filter(k => ITEMS[k].cat === c)).map(k => '<div class="item"><div><div class="nm">' + ITEMS[k].n + '</div><div class="meta">' + ITEMS[k].note + '</div></div><div class="price">×' + sv.st[k] + '</div></div>').join('') + '</div>' : '<p class="empty">空的。</p>';
+  h += viewDiary(sv.diary, true);
   return h;
 }

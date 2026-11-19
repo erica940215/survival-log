@@ -61,7 +61,7 @@ function viewHere() {
     if (!ks.length) continue;
     h += '<div class="cat">' + CAT_NAMES[cat] + '</div><div class="sheet">';
     for (const k of ks) {
-      const it = ITEMS[k], p = price(id, k), base = st.items[k][0], stock = S.stock[id][k];
+      const it = ITEMS[k], p = price(id, k), base = Math.round(st.items[k][0] * D_().price), stock = S.stock[id][k];
       const q = UI.qty[k] || 1;
       const blocked = stock <= 0 || (it.cat === 'equip' && !deliveryOk());
       const pcls = p === 0 ? 'free' : p > base ? 'up' : '';
@@ -200,7 +200,7 @@ function viewTitle() {
     viewSlots() +
     (J.saveOverNote ? '<p class="alert-line">上一代的復活用完了，這是新的一代，但日誌還記得一切。</p>' : '') +
     '<p class="hand" style="font-size:17px">' + CHARS[J.char || 'neighbor'].n + ' · 第 ' + J.save.no + ' 代 · 剩 ' + J.save.revivals + ' 次復活' + (J.save.wins ? ' · 已撐過 100 天 ' + J.save.wins + ' 次' : '') + '</p>' +
-    (SAVED ? viewResume() : '<div class="row-btns"><button class="btn red" data-a="start" style="font-size:18px;padding:10px 22px">' + (n ? '開始第 ' + (n + 1) + ' 輪' : '開始') + '</button></div>') +
+    (SAVED ? viewResume() : viewSetup() + '<div class="row-btns"><button class="btn red" data-a="start" style="font-size:18px;padding:10px 22px">' + (n ? '開始第 ' + (n + 1) + ' 輪' : '開始') + '</button></div>') +
     '<p class="empty">準備期 10 小時，爆發後一天一天守家，目標撐過 100 天。死掉可以花規劃點數回溯到前幾天，或用掉 1 次復活回到 08:00 重來。</p></section>' +
     viewChars() + viewJournal(true) + '</main>';
 }
@@ -218,17 +218,18 @@ function viewEnd() {
       '<div><div class="k">備用電力</div><div class="v">' + r.stats.power + ' 度' + (r.stats.solar ? ' + 太陽能' : '') + '</div></div></div>';
   }
   h += '<div class="cat">這一輪的紀錄</div><ul class="timeline">' + r.timeline.map(e => '<li class="' + e.cls + '"><span class="d">' + e.d + '</span><span>' + esc(e.txt) + '</span></li>').join('') + '</ul>';
+  if (S.sv) h += viewDiary(S.sv.diary, false);
   const won = r.days >= 100;
-  if (!won && !r.committed && S.snaps && S.snaps.length) {
+  if (!won && !r.committed && S.snaps && S.snaps.length && !(S.mods && S.mods.noRewind)) {
     h += '<div class="cat">翻開日誌，回到過去（每次 ' + REWIND_COST + ' 點規劃點數，不用掉復活）</div><div class="sheet">' +
       S.snaps.map((sn, i) => ({ sn, i })).reverse().map(({ sn, i }) => '<div class="item"><div><div class="nm">回到第 ' + sn.day + ' 天早上</div><div class="meta">保留那天早上的一切</div></div>' +
         '<button class="btn ghost" data-a="rewind" data-v="' + i + '"' + (J.pp < REWIND_COST ? ' disabled' : '') + '>回溯</button></div>').join('') + '</div>' +
       '<p class="empty">目前規劃點數 ' + J.pp + ' 點（這輪的點數要離開畫面後才入帳）。</p>';
   }
   if (r.canEndless && !r.committed) h += '<div class="row-btns"><button class="btn" data-a="endless">留下來：進入無盡模式</button></div><p class="empty">第 100 天後每 7 天一波屍潮，每波強度 +40。死掉也算通關，不會用掉復活。</p>';
-  const left = J.save.revivals - (won || r.committed ? 0 : 1);
-  h += '<div class="row-btns"><button class="btn red" data-a="start">' + (won ? '開始新的一輪' : left >= 0 ? '重生：回到 08:00（剩 ' + left + ' 次復活）' : '復活用完，從新的一代開始') + '</button><button class="btn ghost" data-a="menu">回到日誌</button></div>';
-  if (!won && left < 0) h += '<p class="empty">復活用完了。從頭開始時規劃點數和升級會歸零，但日誌裡的事件、心得和圖紙會留著。</p>';
+  const left = J.save.revivals - (won || r.committed || S.daily ? 0 : 1);
+  h += '<div class="row-btns"><button class="btn red" data-a="start">' + (S.daily ? '再挑戰一次' : won ? '開始新的一輪' : left >= 0 ? '重生：回到 08:00（剩 ' + left + ' 次復活）' : '復活用完，從新的一代開始') + '</button><button class="btn ghost" data-a="menu">回到日誌</button></div>';
+  if (!won && left < 0 && !S.daily) h += '<p class="empty">復活用完了。從頭開始時規劃點數和升級會歸零，但日誌裡的事件、心得和圖紙會留著。</p>';
   h += viewUpgrades() + '</main>';
   return h;
 }
