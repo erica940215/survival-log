@@ -68,7 +68,7 @@ function evResolve(id) {
   else if (e.k === 'walker') {
     if (sv.sta < 2) { evFloat(e, '沒力氣', '#9aa7b4'); return; }
     sv.sta -= 2; e.hp -= S.char === 'veteran' ? 2 : 1; e.hurtAt = now; sfx('hit');
-    if (e.hp <= 0) { e.gone = true; evFloat(e, '擊倒！', '#ffd36a'); slog('你拿撬棍從窗縫捅倒了那隻殭屍。'); sv.mor = clamp(sv.mor + 2); } else evFloat(e, '-1', '#ff8a6a');
+    if (e.hp <= 0) { e.gone = true; sv.kills = (sv.kills || 0) + 1; evFloat(e, '擊倒！', '#ffd36a'); slog('你拿撬棍從窗縫捅倒了那隻殭屍。'); sv.mor = clamp(sv.mor + 2); } else evFloat(e, '-1', '#ff8a6a');
   } else if (e.k === 'radio') { e.gone = true; sv.mor = clamp(sv.mor + 8); sfx('pop'); evFloat(e, '心態 +8', '#d97ab8'); slog(evRadioMsg()); }
   else if (e.k === 'knock') { UI.evKnock = e.id; UI.rtSel = null; render(); return; }
   else if (e.k === 'broke') { UI.rtSel = (isoObjects().find(o => o.k === e.obj && sv.place[o.id]) || {}).id || null; render(); return; }

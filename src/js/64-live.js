@@ -96,7 +96,7 @@ isoSVG = function () {
     for (let i = 0; i < n; i++) { const c = P(-0.9 - (i % 2) * 0.5, 3.6 + i * 0.35, 0); s += '<g class="' + (anim ? 'lv-zbob' : '') + '" style="animation-delay:' + (i * 0.3) + 's">' + zombie(c[0], c[1], 0.75) + '</g>'; }
   }
   // 狗
-  if (sv.dog && sv.dog.state === 'pet' && f === '1F') { const c = P(3.3, 3.6, 0); s += '<g class="' + (anim ? 'lv-dog' : '') + '"><ellipse cx="' + c[0] + '" cy="' + (c[1] - 5) + '" rx="8" ry="4.5" fill="#7a5a3a"/><circle cx="' + (c[0] + 8) + '" cy="' + (c[1] - 10) + '" r="4" fill="#7a5a3a"/><path d="M' + (c[0] - 8) + ' ' + (c[1] - 7) + ' l -4 -4" stroke="#7a5a3a" stroke-width="2" class="' + (anim ? 'lv-tail' : '') + '"/></g>'; }
+  if (sv.dog && sv.dog.state === 'pet' && f === '1F' && !(typeof rtActive === 'function' && rtActive())) { const c = P(3.3, 3.6, 0); s += '<g class="' + (anim ? 'lv-dog' : '') + '"><ellipse cx="' + c[0] + '" cy="' + (c[1] - 5) + '" rx="8" ry="4.5" fill="#7a5a3a"/><circle cx="' + (c[0] + 8) + '" cy="' + (c[1] - 10) + '" r="4" fill="#7a5a3a"/><path d="M' + (c[0] - 8) + ' ' + (c[1] - 7) + ' l -4 -4" stroke="#7a5a3a" stroke-width="2" class="' + (anim ? 'lv-tail' : '') + '"/></g>'; }
   // 角色
   if (!UI.cpos) { const t = objTile('bed|bedroom'); UI.cpos = t ? { f: t.f, x: t.x, y: t.y } : { f: '1F', x: 3, y: 3 }; }
   const cp = UI.cpos;

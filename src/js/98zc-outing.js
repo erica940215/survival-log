@@ -220,7 +220,7 @@ document.addEventListener('pointerdown', e => {
   if (sv.sta < 3) { rt.fx.push({ x: z.x, y: z.y, txt: '沒力氣', col: '#9aa7b4', t0: now }); return; }
   sv.sta -= 3; z.hp -= (typeof weapon === 'function' && weapon()) || S.char === 'veteran' ? 2 : 1; z.hurtAt = now; sfx('hit');
   if (typeof weapon === 'function' && weapon() && typeof wearWeapon === 'function') { try { wearWeapon(); } catch (er) {} }
-  if (z.hp <= 0) { z.st = 'dead'; z.deadAt = now; rt.fx.push({ x: z.x, y: z.y, txt: '擊倒！', col: '#ffd36a', t0: now }); sv.out.exp += 3; }
+  if (z.hp <= 0) { z.st = 'dead'; z.deadAt = now; sv.kills = (sv.kills || 0) + 1; rt.fx.push({ x: z.x, y: z.y, txt: '擊倒！', col: '#ffd36a', t0: now }); sv.out.exp += 3; }
   else { rt.fx.push({ x: z.x, y: z.y, txt: '-1', col: '#ff8a6a', t0: now }); }
   otPaint(now);
 }, true);
