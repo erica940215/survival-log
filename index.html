@@ -208,6 +208,18 @@ details.guide p { margin: 6px 0 2px; font-size: 14px; }
 @keyframes walk { from { transform: translateX(30px); } to { transform: translateX(270px); } }
 @keyframes animFade { 0%, 80% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
 @keyframes dayFade { 0% { opacity: 0; } 15%, 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+:root[data-dark="1"] {
+  --paper: #171b21; --paper-2: #232a33; --grid: rgba(255,255,255,0.035); --ink: #e8e4da; --muted: #a2aab4; --line: #3a424d;
+  --stamp: #e46a5e; --tape: #c9a94a; --good: #7cc191; --warn: #e0a85a; color-scheme: dark;
+}
+:root[data-dark="1"] .sheet, :root[data-dark="1"] .kv > div, :root[data-dark="1"] .slot, :root[data-dark="1"] .summary, :root[data-dark="1"] .roompanel { background: rgba(255,255,255,0.04); }
+:root[data-dark="1"] .scene svg, :root[data-dark="1"] .map svg { background: #f3f0e6; border-radius: 8px; }
+:root[data-dark="1"] .tipcard { background: rgba(201,169,74,0.12); }
+:root[data-dark="1"] .anim.travel { background: #f3f0e6; color: #1d2733; }
+.cell { color: #1d2733; }
+.qbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0 2px; }
+.seed-in { font-family: var(--f-num); font-size: 15px; border: 1.5px solid var(--ink); border-radius: 6px; padding: 3px 8px; width: 140px; background: transparent; color: var(--ink); text-transform: uppercase; }
+.diary-img { width: 100%; border: 1px solid var(--line); border-radius: 6px; margin: 6px 0 12px; }
 </style>
 </head>
 <body>
@@ -356,7 +368,8 @@ function add(bag, k, q) { bag[k] = (bag[k] || 0) + q; if (bag[k] <= 0) delete ba
 function newRun() {
   if (J.saveOverNote) { J.saveOverNote = false; saveJournal(); }
   const set = runSetup();
-  const daily = set.mode === 'daily';
+  const daily = set.mode === 'daily' || set.mode === 'seed';
+  const seedKey = set.mode === 'seed' ? 'S:' + (set.seed || '0000') : todayKey();
   const up = k => daily ? 0 : J.upg[k];
   const ch = daily ? 'neighbor' : (J.char || 'neighbor');
   const bonusT = up('time') * 30;
@@ -372,12 +385,12 @@ function newRun() {
     phase: 'play', t: -bonusT, money: 1070 + D.money + up('money') * 150 + (ch === 'student' ? 100 : 0), loc: 'home', char: ch,
     car: false, loan: false, carry: {}, home: (ch === 'nurse' ? { medkit: 2 } : ch === 'veteran' ? { molotov: 2 } : {}), sold: {}, stock,
     fired: {}, log: [], seenStores: { home: true }, result: null,
-    diff: daily ? 'normal' : set.diff, daily: daily ? todayKey() : null, mods: daily ? {} : Object.assign({}, set.mods), upgBag: up('bag'),
-    rng: daily ? seedOf(todayKey()) : (Math.random() * 4294967296) >>> 0
+    diff: daily ? 'normal' : set.diff, daily: daily ? seedKey : null, mods: daily ? {} : Object.assign({}, set.mods), upgBag: up('bag'),
+    rng: daily ? seedOf(seedKey) : (Math.random() * 4294967296) >>> 0
   };
   UI = { tab: 'here', qty: {} };
   log('你從惡夢中驚醒。這次你知道：今天 18:00，城市會被屍群淹沒。', true);
-  if (daily) log('每日挑戰 ' + todayKey() + '：今天每個人遇到的事件、天災、圖紙都一樣。不套用升級、角色固定為鄰居。');
+  if (daily) log((set.mode === 'seed' ? '種子挑戰「' + (set.seed || '0000') + '」：用同一組種子碼的人' : '每日挑戰 ' + todayKey() + '：今天每個人') + '遇到的事件、天災、圖紙都一樣。不套用升級、角色固定為鄰居。');
   if (bonusT) log('你提早 ' + bonusT + ' 分鐘醒來。');
   render();
 }
@@ -608,14 +621,14 @@ function viewHere() {
   }
   if (id === 'cars') {
     const open = isOpen('cars', S.t);
-    h += '<div class="sheet"><div class="item"><div><div class="nm">二手小車</div><div class="meta">移動時間約減半 · 後車廂 +80kg · 買賣各花 10 分鐘</div></div><div class="price">' + (S.car ? '+$450' : money(carPrice())) + '</div><div class="ctrl">' +
+    h += '<div class="sheet"><div class="item"><div><div class="nm">' + (J.style === 'tw' ? '二手機車' : '二手小車') + '</div><div class="meta">移動時間約減半 · 後車廂 +80kg · 買賣各花 10 分鐘</div></div><div class="price">' + (S.car ? '+$450' : money(carPrice())) + '</div><div class="ctrl">' +
       (S.car ? '<button class="btn ghost" data-a="sellCar"' + (open ? '' : ' disabled') + '>賣回車行</button>'
              : '<button class="btn" data-a="buyCar"' + (open && S.money >= carPrice() ? '' : ' disabled') + '>買下</button>') +
       '</div></div></div>';
     return h;
   }
   const open = isOpen(id, S.t);
-  if (!open) return h + '<p class="empty">已經關門了。去別的地方吧。</p>';
+  if (!open) return h + '<p class="empty">' + (st.opens && S.t < st.opens ? '還沒開，' + clock(st.opens) + ' 才營業。' : '已經關門了。去別的地方吧。') + '</p>';
   const items = Object.keys(st.items);
   for (const cat of CAT_ORDER) {
     const ks = items.filter(k => ITEMS[k].cat === cat);
@@ -894,6 +907,7 @@ function startSurvive() {
   m5Init(S.sv);
   m6Init(S.sv);
   m7Init(S.sv);
+  S.sv.noise = 0; S.sv.hyg = 80; S.sv.inj = { frac: 0, inf: 0 };
   S.snaps = [];
   S.sv.mark = dayMark();
   snapshot();
@@ -1048,7 +1062,7 @@ function night(watch) {
   const cap = powerCap();
 
   // 1. 白天太陽能入帳
-  const solar = (st.solar || 0) * 1.5 * powerMul() * (rain ? 0.1 : cold ? 0.6 : 1);
+  const solar = (st.solar || 0) * 1.5 * powerMul() * (rain ? 0.1 : cold ? 0.6 : 1) * (typeof isTyphoon === 'function' && isTyphoon(d) ? 0 : 1);
   if (solar > 0) sv.power = Math.min(cap, sv.power + solar);
 
   // 2. 設備耗電（冷氣 > 冰櫃 > 種植箱）
@@ -1203,7 +1217,7 @@ function renderSurvive() {
     '<main class="wrap">' +
       '<div class="ticker">' + sv.log.slice(0, 3).map(l => '<p class="' + (l.alert ? 'alert' : '') + '">' + esc(l.txt) + '</p>').join('') + '</div>' +
       ((UI.tab === 'act' || UI.tab === 'base') && !sv.out ? houseSVG() : '') +
-      '<div class="chips"><span>防線 <b class="num">' + Math.round(sv.def) + '</b>/' + sv.defMax + '</span><span>電 <b class="num">' + (Math.round(sv.power * 10) / 10) + '</b>/' + powerCap() + ' 度</span><span>水 <b class="num">' + sv.st.wu + '</b> 份</span>' +
+      '<div class="chips">' + (sv.noise != null ? '<span>噪音 <b class="num"' + (sv.noise > 60 ? ' style="color:var(--stamp)"' : '') + '>' + sv.noise + '</b></span><span>衛生 <b class="num"' + (sv.hyg < 30 ? ' style="color:var(--stamp)"' : '') + '>' + Math.round(sv.hyg) + '</b></span>' : '') + '<span>防線 <b class="num">' + Math.round(sv.def) + '</b>/' + sv.defMax + '</span><span>電 <b class="num">' + (Math.round(sv.power * 10) / 10) + '</b>/' + powerCap() + ' 度</span><span>水 <b class="num">' + sv.st.wu + '</b> 份</span>' +
         (inCold(sv.day) ? '<span class="tag red">寒潮</span>' : '') + (inRain(sv.day) ? '<span class="tag amber">陰雨</span>' : '') + '</div>' +
       body +
     '</main>' +
@@ -2674,6 +2688,177 @@ Object.assign(ACT, {
   music() { J.music = J.music !== true; saveJournal(); if (J.music) musicStart(); else musicStop(); render(); }
 });
 
+// ---- 85-ux.js ----
+/* ================= 體驗與紀錄：深色模式、字體、生涯統計、種子分享、日記圖片、行動排程 ================= */
+const UIKEY = 'survival-log-ui';
+let UIS = { dark: false, font: 'm' };
+try { Object.assign(UIS, JSON.parse(localStorage.getItem(UIKEY) || '{}')); } catch (e) {}
+function applyUI() {
+  document.documentElement.setAttribute('data-dark', UIS.dark ? '1' : '0');
+  document.body.style.zoom = { s: '0.92', m: '1', l: '1.12' }[UIS.font] || '1';
+}
+function saveUI() { try { localStorage.setItem(UIKEY, JSON.stringify(UIS)); } catch (e) {} applyUI(); }
+Object.assign(ACT, {
+  dark() { UIS.dark = !UIS.dark; saveUI(); render(); },
+  font(v) { UIS.font = v; saveUI(); render(); }
+});
+function viewUIPrefs() {
+  const pill = (a, v, l, on) => '<button class="pill' + (on ? ' on' : '') + '" data-a="' + a + '" data-v="' + v + '">' + l + '</button>';
+  return '<div class="cat">顯示</div><div class="setrow"><span>主題</span>' + pill('dark', '', UIS.dark ? '深色' : '淺色', UIS.dark) + '</div>' +
+    '<div class="setrow"><span>字體</span>' + pill('font', 's', '小', UIS.font === 's') + pill('font', 'm', '中', UIS.font === 'm') + pill('font', 'l', '大', UIS.font === 'l') + '</div>';
+}
+
+/* ---------- 生涯統計 ---------- */
+const _commitStats = commitRun;
+commitRun = function () {
+  const res = S && S.result;
+  if (res && !res.committed) {
+    const c = J.career = J.career || { runs: 0, days: 0, hordes: 0, kills: 0, trades: 0, crafted: 0, searches: 0, deaths: {} };
+    c.runs++; c.days += res.days;
+    if (S.sv) { c.hordes += S.sv.hordesSeen || 0; c.kills += S.sv.kills || 0; c.trades += S.sv.trades || 0; c.crafted += S.sv.crafted || 0; c.searches += S.sv.xp || 0; }
+    if (res.days < 100) c.deaths[res.cause] = (c.deaths[res.cause] || 0) + 1;
+    c.best = Math.max(c.best || 0, res.days);
+  }
+  _commitStats();
+};
+function viewCareer() {
+  const c = J.career;
+  if (!c || !c.runs) return '';
+  const top = Object.entries(c.deaths || {}).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  return '<details class="guide"><summary>生涯統計</summary><div class="kv">' +
+    [['玩過', c.runs + ' 輪'], ['總共撐了', c.days + ' 天'], ['平均', Math.round(c.days / c.runs) + ' 天'], ['最佳', (c.best || 0) + ' 天'], ['經歷屍潮', c.hordes + ' 波'], ['外出殺敵', c.kills + ' 隻'], ['搜刮', c.searches + ' 處'], ['交易', c.trades + ' 次'], ['製作', c.crafted + ' 件']].map(([k, v]) => '<div><div class="k">' + k + '</div><div class="v" style="font-size:16px">' + v + '</div></div>').join('') +
+    '</div>' + (top.length ? '<p class="meta">最常的死因：' + top.map(([k, n]) => esc(k) + '（' + n + ' 次）').join('、') + '</p>' : '') + '</details>';
+}
+
+/* ---------- 種子挑戰（自訂或分享） ---------- */
+const _viewSetupSeed = viewSetup;
+viewSetup = function () {
+  let h = _viewSetupSeed();
+  const s = runSetup(), on = (J.setup || {}).mode === 'seed';
+  const pill = '<button class="pill' + (on ? ' on' : '') + '" data-a="setMode" data-v="seed">種子</button>';
+  h = h.replace('每日挑戰</button>', '每日挑戰</button>' + pill);
+  if (on) {
+    const code = (J.setup && J.setup.seed) || '';
+    const best = J.daily && J.daily['S:' + code];
+    h = h.replace(/<p class="meta">(今天|多 |原本|少 )[^]*?<\/p>/, '');
+    const box = '<div class="setrow"><span>種子</span><input id="seed-in" class="seed-in" maxlength="12" value="' + esc(code) + '" placeholder="例如 ABC123"><button class="pill" data-a="seedRandom">隨機</button></div>' +
+      '<p class="meta">輸入朋友給你的種子碼，或按「隨機」產生一組分享出去。同一組種子碼，事件、天災、圖紙、屍潮都一樣。普通難度、角色固定、不套用升級、不用掉復活。' + (best != null ? '這組最佳：' + best + ' 天。' : '') + '</p>';
+    const i = h.indexOf('<div class="setrow"><span>場景');
+    h = i > 0 ? h.slice(0, i) + box + h.slice(i) : h + box;
+  }
+  return h;
+};
+const _runSetupSeed = runSetup;
+runSetup = function () { const s = _runSetupSeed(); const raw = J.setup || {}; if (raw.mode === 'seed') { s.mode = 'seed'; s.seed = raw.seed || ''; } return s; };
+Object.assign(ACT, {
+  seedRandom() { const c = Math.random().toString(36).slice(2, 8).toUpperCase(); J.setup = Object.assign(runSetup(), { mode: 'seed', seed: c }); saveJournal(); render(); }
+});
+$app.addEventListener('input', e => {
+  if (e.target.id === 'seed-in') { const v = e.target.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12); J.setup = Object.assign(runSetup(), { mode: 'seed', seed: v }); saveJournal(); }
+});
+const _startSeed = ACT.start;
+ACT.start = function () { const s = runSetup(); if (s.mode === 'seed' && !s.seed) { J.setup = Object.assign(s, { seed: Math.random().toString(36).slice(2, 8).toUpperCase() }); saveJournal(); } _startSeed(); };
+
+/* ---------- 日記做成圖片（長按可存到相簿） ---------- */
+function diaryImage() {
+  const sv = S.sv, r = S.result;
+  const list = (sv && sv.diary) || [];
+  const W = 720, lineH = 34, pick = list.length > 24 ? list.slice(0, 4).concat([{ d: '…', t: '……' }], list.slice(-19)) : list;
+  const H = 260 + pick.length * lineH + 80;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  g.fillStyle = '#f3f0e6'; g.fillRect(0, 0, W, H);
+  g.strokeStyle = 'rgba(60,90,120,0.09)'; for (let x = 0; x < W; x += 24) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); } for (let y = 0; y < H; y += 24) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+  const font = (s, w) => (w || '') + ' ' + s + 'px "LXGW WenKai TC", "Kaiti TC", serif';
+  g.fillStyle = '#b8322a'; g.font = font(22); g.fillText('生存日誌', 40, 56);
+  g.fillStyle = '#1d2733'; g.font = font(64, '700'); g.fillText(r.days + ' 天', 40, 136);
+  g.font = font(24); g.fillText(r.cause + (r.ending ? '　結局「' + ENDINGS[r.ending].n + '」' : ''), 40, 180);
+  g.fillStyle = '#5f6873'; g.font = font(18); g.fillText(CHARS[S.char || 'neighbor'].n + ' · ' + DIFFS[S.diff || 'normal'].n + (S.daily ? ' · ' + (S.daily.startsWith('S:') ? '種子 ' + S.daily.slice(2) : '每日挑戰 ' + S.daily) : ''), 40, 214);
+  g.strokeStyle = '#1d2733'; g.beginPath(); g.moveTo(40, 232); g.lineTo(W - 40, 232); g.stroke();
+  pick.forEach((e, i) => {
+    const y = 270 + i * lineH;
+    g.fillStyle = '#8a8f96'; g.font = font(16); g.fillText(e.d === '…' ? '' : '第 ' + e.d + ' 天', 40, y);
+    g.fillStyle = '#1d2733'; g.font = font(20);
+    let t = e.t; while (g.measureText(t).width > W - 190 && t.length > 2) t = t.slice(0, -2) + '…';
+    g.fillText(t, 150, y);
+  });
+  return c.toDataURL('image/png');
+}
+Object.assign(ACT, { diaryImg() { try { UI.diaryImg = diaryImage(); } catch (e) { UI.diaryImg = ''; } render(); } });
+const _viewEndUX = viewEnd;
+viewEnd = function () {
+  let h = _viewEndUX();
+  const r = S.result;
+  let add = '<div class="row-btns"><button class="btn ghost" data-a="diaryImg">把這輪做成一張圖</button></div>';
+  if (UI.diaryImg) add += '<p class="meta">長按圖片可以存到相簿或分享。</p><img class="diary-img" src="' + UI.diaryImg + '" alt="這一輪的日記">';
+  if (S.daily && S.daily.startsWith('S:')) add += '<p class="meta">這局的種子碼：<b class="num">' + esc(S.daily.slice(2)) + '</b>，傳給朋友就能玩一模一樣的開局。</p>';
+  const i = h.indexOf('<div class="cat">這一輪的紀錄</div>');
+  return i > 0 ? h.slice(0, i) + add + h.slice(i) : h + add;
+};
+const _startDiary = ACT.start, _menuDiary = ACT.menu;
+ACT.start = function () { UI.diaryImg = null; _startDiary(); };
+ACT.menu = function () { UI.diaryImg = null; _menuDiary(); };
+
+/* ---------- 行動排程：先排好，再一次執行 ---------- */
+const QUEUEABLE = ['cookx', 'reinforce', 'gen', 'pedal', 'plant', 'rest', 'craft', 'wash', 'refine', 'brew', 'juice', 'buildRoom', 'drinkFull', 'eatFull'];
+function queueIntercept(a, v) {
+  if (!UI.qmode || !S || S.phase !== 'survive' || !QUEUEABLE.includes(a)) return false;
+  UI.queue = UI.queue || [];
+  if (UI.queue.length < 12) UI.queue.push([a, v]);
+  render(); return true;
+}
+const QNAME = { cookx: v => COOKS[v] ? COOKS[v].n : '煮', reinforce: v => '加固（' + ITEMS[v].n + '）', gen: () => '開發電機', pedal: () => '踩發電機', plant: v => '種' + ITEMS[v].n, rest: () => '休息', craft: v => '做' + RECIPES[v].n, wash: () => '清理', refine: () => '精煉', brew: () => '釀酒', juice: () => '榨汁', buildRoom: v => '蓋' + ROOMS[v].n, drinkFull: () => '喝到滿', eatFull: () => '吃到飽' };
+Object.assign(SACT, {
+  qmode() { UI.qmode = !UI.qmode; if (!UI.qmode) UI.queue = []; render(); },
+  qdel(i) { UI.queue.splice(Number(i), 1); render(); },
+  qrun() {
+    const q = (UI.queue || []).slice(); UI.queue = []; UI.qmode = false;
+    let done = 0;
+    for (const [a, v] of q) {
+      if (S.phase !== 'survive' || !S.sv || S.sv.out) break;
+      const before = JSON.stringify([S.sv.hour, S.sv.sat, S.sv.hyd, S.sv.def, S.sv.power]);
+      SACT[a](v);
+      if (JSON.stringify([S.sv.hour, S.sv.sat, S.sv.hyd, S.sv.def, S.sv.power]) !== before) done++;
+    }
+    slog('排程執行完畢：完成 ' + done + '/' + q.length + ' 項' + (done < q.length ? '（有些因為時間、體力或材料不夠沒做）' : '') + '。');
+    render();
+  }
+});
+function viewQueue() {
+  const sv = S.sv;
+  if (sv.out) return '';
+  let h = '<div class="qbar"><button class="btn' + (UI.qmode ? ' red' : ' ghost') + '" data-a="qmode">' + (UI.qmode ? '取消排程' : '排程模式') + '</button>';
+  if (UI.qmode) h += '<span class="meta">點下面的「做事」按鈕加入排程（最多 12 項）</span>';
+  h += '</div>';
+  if (UI.qmode && UI.queue && UI.queue.length) {
+    h += '<div class="sheet">' + UI.queue.map(([a, v], i) => '<div class="item"><div><div class="nm">' + (i + 1) + '. ' + (QNAME[a] ? QNAME[a](v) : a) + '</div></div><button class="btn ghost" data-a="qdel" data-v="' + i + '">移除</button></div>').join('') + '</div>' +
+      '<div class="row-btns"><button class="btn red" data-a="qrun">執行 ' + UI.queue.length + ' 項</button></div>';
+  }
+  return h;
+}
+
+/* ---------- 掛進畫面 ---------- */
+const _renderUX = render;
+render = function () { applyStyle(); _renderUX(); };
+const _viewActsUX = viewActs;
+viewActs = function () { const h = _viewActsUX(); return S.sv.out ? h : viewQueue() + h; };
+const _viewJournalUX = viewJournal;
+viewJournal = function (outside) {
+  const h = _viewJournalUX(outside);
+  const i = h.indexOf('<details class="guide"><summary>生存圖鑑');
+  const extra = viewCareer();
+  const withCareer = i >= 0 ? h.slice(0, i) + extra + h.slice(i) : h + extra;
+  const j = withCareer.indexOf('<div class="dev">');
+  return j >= 0 ? withCareer.slice(0, j) + viewUIPrefs() + withCareer.slice(j) : withCareer + viewUIPrefs();
+};
+const _sceneUX = sceneSVG;
+sceneSVG = function (kind) {
+  if (kind !== 'nightmkt') return _sceneUX(kind);
+  const b = [60, 150, 240].map(x => '<path d="M' + x + ' 58 L' + (x + 70) + ' 58 L' + (x + 62) + ' 44 L' + (x + 8) + ' 44 Z" fill="' + RED + '" opacity="0.8" stroke="' + INK + '" stroke-width="1.4"/>' + rc(x + 4, 58, 62, 60, PAPER) + '<circle cx="' + (x + 35) + '" cy="36" r="6" fill="' + TAPE + '" stroke="' + INK + '"/>').join('') + ln(40, 30, 320, 30, 1) + tx(180, 20, '夜市', 15);
+  return '<div class="scene"><svg viewBox="0 -12 360 134" role="img" aria-label="夜市">' + b + ln(0, 118, 360, 118, 1.6) + '</svg></div>';
+};
+applyUI();
+
 // ---- 90-save.js ----
 /* ================= 存檔續玩 ================= */
 // 進行中的一輪每次畫面更新都存進瀏覽器；關掉網頁再打開可以繼續。
@@ -2936,6 +3121,302 @@ function viewSummary() {
   return '<div class="summary"><span class="hand">第 ' + s.day + ' 天小結</span>' + s.items.map(([k, v]) => '<span>' + k + ' <b class="' + (v.startsWith('-') ? 'neg' : v.startsWith('+') ? 'pos' : '') + '">' + v + '</b></span>').join('') + '</div>';
 }
 
+// ---- 94z-local.js ----
+/* ================= 在地化：颱風、地震、夜市、台灣場景 ================= */
+Object.assign(ITEMS, {
+  friedchk: { n: '鹹酥雞', cat: 'food', w: 0.5, note: '飽足 40 · 心態 +8' },
+  bubble:   { n: '珍珠奶茶', cat: 'food', w: 0.6, note: '飽足 15 · 心態 +15' }
+});
+Object.assign(FOOD, { friedchk: { sat: 40, mor: 8 }, bubble: { sat: 15, mor: 15 } });
+EAT_ORDER.push('friedchk', 'bubble');
+STORES.nightmkt = { n: '夜市', x: -2, y: 1, opens: 480, closes: 600, desc: '16:00 才開。吃的便宜又好吃，心情會好一點。', items: { friedchk: [7, 10], bubble: [6, 10], sausage: [3, 20], veg: [6, 8] } };
+STORE_ORDER.push('nightmkt');
+const _isOpenBase = isOpen;
+isOpen = function (store, t) { const st = STORES[store]; return _isOpenBase(store, t) && !(st.opens && t < st.opens); };
+
+// 颱風（兩次，每次兩天）與地震（一次）的日子，每輪固定、每日挑戰相同
+function disasterDays() {
+  const sv = S.sv;
+  if (!sv.natural) {
+    const t1 = 12 + Math.floor(rndAt('ty1') * 8), t2 = 55 + Math.floor(rndAt('ty2') * 10), q = 30 + Math.floor(rndAt('eq') * 50);
+    sv.natural = { ty: [t1, t1 + 1, t2, t2 + 1], eq: q };
+  }
+  return sv.natural;
+}
+function isTyphoon(d) { return !!(S && S.sv && disasterDays().ty.includes(d)); }
+const _m8Local = m8Morning;
+m8Morning = function (nd) {
+  const sv = S.sv, st = sv.st, N = disasterDays();
+  if (N.ty.includes(nd + 1) && !N.ty.includes(nd)) slog('收音機：颱風明天登陸，請做好防颱準備。地下室小心淹水。', true);
+  if (N.ty.includes(nd)) {
+    const first = !N.ty.includes(nd - 1);
+    if (first) chron(nd, '颱風登陸。', 'bad');
+    sv.def = Math.max(0, sv.def - 30);
+    if (st.rain) { st.wu += st.rain * 4; slog('颱風帶來大量雨水，收集器裝了 ' + st.rain * 4 + ' 份水。'); }
+    slog('颱風天：狂風暴雨，太陽能完全不發電，防線被吹壞 30。', true);
+    sv.mor = clamp(sv.mor - 4);
+    if (first && sv.floors.includes('B1')) {
+      const keys = Object.keys(st).filter(k => k !== 'wu' && ITEMS[k] && ITEMS[k].cat !== 'equip' && st[k] > 0);
+      const lost = [];
+      for (let i = 0; i < 3 && keys.length; i++) { const k = keys.splice(Math.floor(rnd() * keys.length), 1)[0]; const n = Math.ceil(st[k] * 0.3); st[k] -= n; if (!st[k]) delete st[k]; lost.push(ITEMS[k].n + '×' + n); }
+      if (lost.length) { slog('地下室淹水，泡壞了 ' + lost.join('、') + '。', true); chron(nd, '地下室淹水，損失 ' + lost.join('、') + '。', 'bad'); }
+    }
+  }
+  if (nd === N.eq) {
+    const lose = Math.round(sv.def * 0.3); sv.def -= lose;
+    sv.mor = clamp(sv.mor - 10);
+    for (const t of sv.traps) t.uses = Math.max(1, t.uses - 1);
+    let msg = '大地震！防線 -' + lose + '，陷阱受損。';
+    if (typeof normRooms === 'function') normRooms();
+    const built = sv.rooms.map((r, i) => r ? i : -1).filter(i => i >= 0);
+    if (built.length && rnd() < 0.25) { const i = built[Math.floor(rnd() * built.length)]; msg += ROOMS[sv.rooms[i]].n + '倒塌了。'; sv.rooms[i] = null; }
+    slog(msg, true); chron(nd, msg, 'bad');
+  }
+  _m8Local(nd);
+};
+const _swLocal = sleepWarnings;
+sleepWarnings = function () { const w = _swLocal(); if (S.sv && disasterDays().ty.includes(S.sv.day + 1)) w.push('明天颱風，太陽能不會發電，有地下室的話東西可能泡水。'); return w; };
+
+/* ---------- 台灣場景：只換名稱和說明，玩法不變 ---------- */
+const TW = {
+  stores: { home: ['老公寓', '五樓公寓，樓下就是巷口。門口有收舊家具的阿姨。爆發後會停電，用電要自己想辦法。'], conv: ['巷口超商', '24 小時開，什麼都有一點，價格偏貴。'], pharm: ['藥局', '藥師認識你，醫療用品只有這裡買得到。'], mart: ['量販店', '便宜量大。電視說今天可能會有搶購潮。'], tool: ['五金行', '建材和柴油。老闆說柴油只剩這些。'], reno: ['系統櫃裝潢行', '大型設備都在這。16:00 前下單才送得到。'], farm: ['傳統市場', '種子和新鮮蔬菜。阿桑會多送你一把蔥。'], cars: ['機車行', '一台二手機車 $500，不要了可以 $450 賣回。'], news: ['廟口', '廟公什麼都聽說過一點。買過的消息會記在日誌裡。'], gas: ['加油站', '柴油比五金行貴一點，但不用排隊。'], nightmkt: ['夜市', '16:00 才開。鹹酥雞和珍奶，吃了心情會好一點。'] },
+  items: { sausage: '香腸', noodle: '泡麵', biscuit: '蘇打餅乾', can: '肉醬罐頭', veg: '高麗菜', water: '礦泉水（一箱）', rice: '米（一包）', choco: '黑糖糕' },
+  locs: { smarket: '廢棄量販店', residential: '透天厝社區', subway: '捷運站', police: '派出所', hardware: '五金行廢墟', school: '國小', hospital: '醫院', tech: '科技園區' }
+};
+const ORIG = { stores: {}, items: {}, locs: {} };
+function applyStyle() {
+  const tw = J.style === 'tw';
+  for (const [k, [n, d]] of Object.entries(TW.stores)) { if (!STORES[k]) continue; if (!ORIG.stores[k]) ORIG.stores[k] = [STORES[k].n, STORES[k].desc]; STORES[k].n = tw ? n : ORIG.stores[k][0]; STORES[k].desc = tw ? d : ORIG.stores[k][1]; }
+  for (const [k, n] of Object.entries(TW.items)) { if (!ITEMS[k]) continue; if (!ORIG.items[k]) ORIG.items[k] = ITEMS[k].n; ITEMS[k].n = tw ? n : ORIG.items[k]; }
+  for (const [k, n] of Object.entries(TW.locs)) { if (!LOCS[k]) continue; if (!ORIG.locs[k]) ORIG.locs[k] = LOCS[k].n; LOCS[k].n = tw ? n : ORIG.locs[k]; }
+}
+Object.assign(ACT, { style(v) { J.style = v === 'tw' ? 'tw' : 'normal'; saveJournal(); applyStyle(); render(); } });
+function viewStylePick() {
+  const tw = J.style === 'tw';
+  return '<div class="setrow"><span>場景</span><button class="pill' + (!tw ? ' on' : '') + '" data-a="style" data-v="normal">一般</button><button class="pill' + (tw ? ' on' : '') + '" data-a="style" data-v="tw">台灣</button></div>';
+}
+const _viewSetupLocal = viewSetup;
+viewSetup = function () { const h = _viewSetupLocal(); const i = h.lastIndexOf('</div>'); return h.slice(0, i) + viewStylePick() + h.slice(i); };
+
+// ---- 95-fight.js ----
+/* ================= 外出遭遇戰與武器 ================= */
+Object.assign(ITEMS, {
+  bat:     { n: '球棒', cat: 'mat', w: 2, note: '武器 · 戰力 1 · 可用 8 次' },
+  crowbar: { n: '撬棍', cat: 'mat', w: 2, note: '武器 · 戰力 2 · 可用 12 次' },
+  bow:     { n: '自製弓', cat: 'mat', w: 1.5, note: '武器 · 戰力 2 · 安靜，躲藏更容易 · 可用 10 次' }
+});
+const WEAP = { crowbar: { p: 2, dur: 12 }, bow: { p: 2, dur: 10 }, bat: { p: 1, dur: 8 } };
+Object.assign(RECIPES, {
+  bat:     { n: '球棒', need: { board: 2 }, h: 1, out: { bat: 1 }, base: true, d: '武器 · 戰力 1' },
+  crowbar: { n: '撬棍', need: { metal: 2 }, h: 1, out: { crowbar: 1 }, base: true, d: '武器 · 戰力 2' },
+  bow:     { n: '自製弓', need: { board: 1, plastic: 2 }, h: 2, out: { bow: 1 }, base: true, d: '武器 · 戰力 2，安靜' }
+});
+LOCS.police.loot.push(['crowbar', 1, 1, 10]);
+LOCS.hardware.loot.push(['crowbar', 1, 1, 5]);
+
+function weapon() { const st = S.sv.st; return Object.keys(WEAP).find(k => st[k] > 0) || null; }
+function wearWeapon() {
+  const sv = S.sv, k = weapon(); if (!k) return;
+  sv.wear = sv.wear || {};
+  if (sv.wear[k] == null) sv.wear[k] = WEAP[k].dur;
+  sv.wear[k]--;
+  if (sv.wear[k] <= 0) { sv.st[k]--; if (!sv.st[k]) delete sv.st[k]; sv.wear[k] = null; slog(ITEMS[k].n + '壞掉了。', true); }
+}
+const _searchFight = SACT.search;
+SACT.search = function (i) {
+  const sv = S.sv;
+  if (sv.out && sv.out.enc) return;
+  const before = sv.out;
+  _searchFight(i);
+  if (S.phase === 'survive' && sv.out && sv.out === before && rnd() < 0.18) {
+    const z = rnd() < 0.75;
+    sv.out.enc = z ? { t: 'z', n: 1 + Math.floor(rnd() * 3) } : { t: 's' };
+    slog(z ? '轉角突然冒出 ' + sv.out.enc.n + ' 隻殭屍！' : '你撞見另一個倖存者，他手上拿著東西，警戒地看著你。', true);
+    render();
+  }
+};
+const _goHomeFight = SACT.goHome;
+SACT.goHome = function () { if (S.sv.out && S.sv.out.enc && S.sv.out.enc.t === 'z') return; _goHomeFight(); };
+function lootOne() { const [k, q] = rollLoot(LOCS[S.sv.out.loc].loot); S.sv.out.bag[k] = (S.sv.out.bag[k] || 0) + q; return ITEMS[k].n + '×' + q; }
+Object.assign(SACT, {
+  enc(v) {
+    const sv = S.sv, o = sv.out;
+    if (!o || !o.enc) return;
+    const e = o.enc, wk = weapon(), P = wk ? WEAP[wk].p : 0;
+    if (e.t === 'z') {
+      if (v === 'hide') {
+        o.exp += 15 * expMul();
+        if (rnd() < 0.7 + (wk === 'bow' ? 0.15 : 0)) slog('你屏住呼吸躲在櫃子後面，牠們走過去了。');
+        else { hurt(8, 'ambush'); slog('被發現了！你推開牠們逃走，受了點傷（生命 -8）。', true); }
+        o.enc = null;
+      } else if (v === 'flee') {
+        for (const k of Object.keys(o.bag)) { o.bag[k] = Math.floor(o.bag[k] * 0.75); if (!o.bag[k]) delete o.bag[k]; }
+        o.enc = null; slog('你轉身就跑，背包掉了一些東西。'); SACT.goHome(); return;
+      } else if (v === 'fight') {
+        const win = rnd() < 0.35 + 0.2 * P - 0.08 * (e.n - 1);
+        const loss = win ? Math.max(0, 6 * e.n - 4 * P) : 12 + 6 * e.n;
+        if (loss) hurt(loss, 'ambush');
+        if (wk) wearWeapon();
+        sv.defXp = (sv.defXp || 0) + 2 * e.n;
+        sv.kills = (sv.kills || 0) + (win ? e.n : 0);
+        if (win) slog('你' + (wk ? '用' + ITEMS[wk].n : '赤手空拳') + '解決了 ' + e.n + ' 隻殭屍' + (loss ? '，生命 -' + loss : '，毫髮無傷') + '。搜到：' + lootOne() + '。', true);
+        else { slog('打不過！你負傷逃開（生命 -' + loss + '）。', true); if (!sv.inj.inf && rnd() < 0.3) { sv.inj.inf = 1; slog('傷口感染了。', true); } }
+        o.exp += 10; o.enc = null;
+      }
+    } else {
+      if (v === 'trade') {
+        const food = ALLY_FOOD.reduce((a, k) => a + sv_has(k), 0);
+        if (food < 1) { slog('你身上沒有食物可以換。'); render(); return; }
+        takeFrom(ALLY_FOOD, 1);
+        const got = [lootOne(), lootOne()];
+        slog('你用 1 份食物跟他換到 ' + got.join('、') + '。他點點頭離開了。'); o.enc = null;
+      } else if (v === 'rob') {
+        sv.mor = clamp(sv.mor - 15);
+        if (rnd() < 0.5) { hurt(10, 'ambush'); slog('他反抗了，扭打中你受了傷（生命 -10）。', true); }
+        slog('你搶到：' + lootOne() + '。心裡不太好受（心態 -15）。'); o.enc = null;
+      } else { slog('你們互相點頭，各走各的路。'); o.enc = null; }
+    }
+    if (checkDeath()) { render(); return; }
+    if (o.exp >= 100 && sv.out) ambush();
+    render();
+  }
+});
+function viewEnc() {
+  const o = S.sv.out; if (!o || !o.enc) return '';
+  const wk = weapon(), e = o.enc;
+  if (e.t === 'z') {
+    const P = wk ? WEAP[wk].p : 0, win = Math.round(Math.max(0, Math.min(1, 0.35 + 0.2 * P - 0.08 * (e.n - 1))) * 100);
+    return '<div class="warnbox"><b>' + e.n + ' 隻殭屍擋在前面</b><p class="meta">武器：' + (wk ? ITEMS[wk].n + '（剩 ' + ((S.sv.wear && S.sv.wear[wk]) != null ? S.sv.wear[wk] : WEAP[wk].dur) + ' 次）' : '沒有（工作台可以做球棒、撬棍、弓）') + '</p><div class="row-btns" style="margin:6px 0 0">' +
+      '<button class="btn" data-a="enc" data-v="hide">躲起來（暴露 +15）</button><button class="btn" data-a="enc" data-v="fight">硬打（勝率約 ' + win + '%）</button><button class="btn ghost" data-a="enc" data-v="flee">逃回家（掉 25% 東西）</button></div></div>';
+  }
+  return '<div class="warnbox" style="border-color:var(--ink)"><b style="color:var(--ink)">遇到一個倖存者</b><div class="row-btns" style="margin:6px 0 0">' +
+    '<button class="btn" data-a="enc" data-v="trade">用 1 份食物交換</button><button class="btn ghost" data-a="enc" data-v="ignore">各走各的</button><button class="btn ghost" data-a="enc" data-v="rob">搶他的東西</button></div></div>';
+}
+const _viewOutFight = viewOut;
+viewOut = function () { const h = _viewOutFight(); const i = h.indexOf('<div class="cat">暴露值'); return i < 0 ? viewEnc() + h : h.slice(0, i) + viewEnc() + h.slice(i); };
+const _htmFight = hordeTypeMul;
+hordeTypeMul = function (d, watch) { return _htmFight(d, watch) * (watch && S.sv && weapon() ? 0.95 : 1); };
+
+// ---- 95-life.js ----
+/* ================= 噪音、衛生、傷病 ================= */
+Object.assign(ITEMS, {
+  soap:   { n: '肥皂', cat: 'med', w: 0.2, note: '衛生 +40，不用水' },
+  antib:  { n: '抗生素', cat: 'med', w: 0.1, note: '治好感染' },
+  splint: { n: '夾板', cat: 'med', w: 0.5, note: '骨折剩 2 天就好' }
+});
+STORES.conv.items.soap = [6, 8];
+STORES.pharm.items.antib = [30, 3];
+LOCS.hospital.loot.push(['antib', 1, 1, 15]);
+LOCS.residential.loot.push(['soap', 1, 2, 10]);
+RECIPES.splint = { n: '夾板', need: { board: 1, pills: 1 }, h: 1, out: { splint: 1 }, base: true, d: '骨折剩 2 天就好' };
+
+function lifeInit() {
+  const sv = S.sv;
+  if (sv.noise == null) sv.noise = 0;
+  if (sv.hyg == null) sv.hyg = 80;
+  if (!sv.inj) sv.inj = { frac: 0, inf: 0 };
+}
+const noiseLevel = () => (S && S.sv && S.sv.noise) || 0;
+function addNoise(v) { lifeInit(); S.sv.noise = Math.min(150, S.sv.noise + v); }
+
+// 會發出聲音的動作（真的有做才算：時間有往前走）
+const NOISY = { gen: 15, pedal: 3, craft: 6, reinforce: 8, buildRoom: 12, buildFloor: 15, refine: 10, brew: 4, cookx: 2, demolish: 10 };
+for (const [k, v] of Object.entries(NOISY)) {
+  const base = SACT[k];
+  if (!base) continue;
+  SACT[k] = function (...a) { const h0 = S.sv && S.sv.hour; base.apply(this, a); if (S.sv && S.sv.hour > h0) addNoise(v); };
+}
+// 噪音讓屍潮變大（今晚的預估也會算進去）
+const _htm = hordeTypeMul;
+hordeTypeMul = function (d, watch) { return _htm(d, watch) * (1 + noiseLevel() / 250); };
+
+// 早上：被吵來的屍群、衛生、傷病
+const _m8 = m8Morning;
+m8Morning = function (nd) {
+  lifeInit();
+  const sv = S.sv, st = sv.st;
+  const last = nd - 1;
+  if (!hordeOn(last) && sv.noise > 60 && rnd() < (sv.noise - 60) / 80) {
+    const dmg = Math.round(40 + sv.noise);
+    sv.def -= dmg;
+    if (sv.def < 0) { const h = Math.round(-sv.def * 0.25 + 8); sv.def = 0; hurt(h, 'horde'); chron(last, '噪音引來一小群屍群，防線被突破，受傷 ' + h + '。', 'bad'); slog('昨晚的噪音把屍群引來了！防線被突破。', true); }
+    else { chron(last, '噪音引來一小群屍群，防線 -' + dmg + '。', 'bad'); slog('昨晚的噪音引來一小群屍群，防線 -' + dmg + '。', true); }
+  }
+  sv.noise = Math.round(sv.noise * 0.6);
+  // 衛生
+  sv.hyg = clamp(sv.hyg - 6);
+  st.fert = (st.fert || 0) + 1;
+  if (sv.hyg < 30) { sv.mor = clamp(sv.mor - 3); if (!sv.inj.inf && rnd() < 0.15) { sv.inj.inf = 1; slog('太久沒清理，傷口感染了。需要抗生素。', true); chron(nd, '感染了。', 'bad'); } }
+  // 傷病
+  if (sv.inj.inf) { hurt(3, 'other'); sv.mor = clamp(sv.mor - 2); }
+  if (sv.inj.frac > 0) { sv.inj.frac--; if (!sv.inj.frac) slog('骨折好了，可以出門了。', true); }
+  _m8(nd);
+};
+// 屍潮突破時可能骨折
+for (const k of ['sleep', 'watch']) {
+  const base = SACT[k];
+  SACT[k] = function () {
+    const sv = S.sv, d0 = sv && sv.day, n0 = sv ? sv.chron.length : 0;
+    base();
+    if (S.phase === 'survive' && S.sv.day > d0 && S.sv.chron.slice(n0).some(c => c.txt.includes('突破防線') && !c.txt.includes('噪音'))) {
+      lifeInit();
+      if (rnd() < 0.35 && !S.sv.inj.frac) { S.sv.inj.frac = 6; slog('混亂中你摔斷了手臂。骨折 6 天內不能出門，做夾板可以好得快。', true); chron(d0, '骨折了。', 'bad'); render(); }
+    }
+  };
+}
+const _ambush = ambush;
+ambush = function () { _ambush(); if (S.phase === 'survive') { lifeInit(); if (!S.sv.inj.inf && rnd() < 0.4) { S.sv.inj.inf = 1; slog('逃跑時被抓傷，傷口感染了。', true); } } };
+const _goOutLife = SACT.goOut;
+SACT.goOut = function (loc) { lifeInit(); if (S.sv.inj.frac > 0) { slog('骨折還沒好，出不了門（還要 ' + S.sv.inj.frac + ' 天）。'); render(); return; } _goOutLife(loc); };
+
+Object.assign(SACT, {
+  wash() {
+    const sv = S.sv; lifeInit();
+    const tap = sv.day <= 5;
+    if (!canAct(1) || (!tap && sv.st.wu < 1)) return;
+    if (!tap) sv.st.wu -= 1;
+    sv.hyg = clamp(sv.hyg + 35); sv.mor = clamp(sv.mor + 3);
+    slog('用一份水擦洗身體、清了廁所。衛生 +35。');
+    passHours(1); render();
+  },
+  cure(k) {
+    const sv = S.sv; lifeInit();
+    if (!(sv.st[k] > 0)) return;
+    if (k === 'soap') sv.hyg = clamp(sv.hyg + 40);
+    else if (k === 'antib') { if (!sv.inj.inf) return; sv.inj.inf = 0; }
+    else if (k === 'splint') { if (!sv.inj.frac) return; sv.inj.frac = Math.min(sv.inj.frac, 2); }
+    sv.st[k]--; if (!sv.st[k]) delete sv.st[k];
+    slog('用了' + ITEMS[k].n + '。' + (k === 'antib' ? '感染好了。' : k === 'splint' ? '骨折剩 ' + sv.inj.frac + ' 天。' : '衛生 +40。'));
+    render();
+  }
+});
+function viewLife() {
+  lifeInit();
+  const sv = S.sv, st = sv.st;
+  let h = '';
+  const inj = [];
+  if (sv.inj.frac) inj.push('骨折（還要 ' + sv.inj.frac + ' 天，不能出門）');
+  if (sv.inj.inf) inj.push('感染（每天 -3 生命，需要抗生素）');
+  if (inj.length) h += '<p class="alert-line">' + inj.join('；') + '</p>';
+  h += '<div class="cat">衛生與傷病</div><div class="sheet">';
+  h += actRow('清理身體和廁所', '衛生 ' + Math.round(sv.hyg) + ' → +35 · ' + (sv.day <= 5 ? '自來水還沒停' : '用 1 份水') + ' · 1 小時 · 衛生低於 30 會開始感染、心情變差', '清理', 'wash', '', canAct(1) && (sv.day <= 5 || st.wu >= 1) && sv.hyg < 100);
+  if (st.soap) h += actRow('肥皂 ×' + st.soap, '衛生 +40，不用水、不花時間', '用', 'cure', 'soap', sv.hyg < 100);
+  if (st.antib) h += actRow('抗生素 ×' + st.antib, '治好感染', '吃', 'cure', 'antib', !!sv.inj.inf);
+  if (st.splint) h += actRow('夾板 ×' + st.splint, '骨折剩 2 天就好', '固定', 'cure', 'splint', sv.inj.frac > 2);
+  return h + '</div><p class="meta">馬桶每天產出 1 份肥料。噪音 ' + noiseLevel() + '：發電、施工、加固都會吵，超過 60 晚上可能引來屍群，屍潮夜也會更大。</p>';
+}
+const _viewUsableLife = viewUsable;
+viewUsable = function () { return viewLife() + _viewUsableLife(); };
+const _swLife = sleepWarnings;
+sleepWarnings = function () {
+  const w = _swLife(), sv = S.sv;
+  lifeInit();
+  if (sv.noise > 60 && !hordeOn(sv.day)) w.push('今天噪音 ' + sv.noise + '，晚上可能引來屍群。');
+  if (sv.hyg < 30) w.push('衛生只有 ' + Math.round(sv.hyg) + '，容易感染。');
+  if (sv.inj.inf) w.push('感染還沒治，每天會掉血。');
+  return w;
+};
+
 // ---- 96-horde.js ----
 /* ================= 屍潮種類 ================= */
 const HTYPES = {
@@ -3080,10 +3561,10 @@ function writeDiary(d) {
   else if (sv.hp < 35) t = pickLine(['傷口一直在痛。我不知道還能撐多久。', '今天幾乎下不了床。']);
   else if (sv.sat < 20) t = '好餓。我開始數剩下的食物，數了三次。';
   else if (sv.hyd < 20) t = '嘴唇裂開了。今天只敢喝一小口。';
-  else if (inCold(d)) t = pickLine(['又是冷的一天。抱著棉被聽收音機。', '呼出的氣都是白的。']);
+  else if (inCold(d)) t = pickLine(['又是冷的一天。抱著棉被聽收音機。', '呼出的氣都是白的。', '手指凍到拿不穩筆。', '把所有衣服都穿上了，還是冷。', '窗外一片白，安靜得像另一個世界。']);
   else if (sv.mor > 70) t = pickLine(['今天還不錯，甚至笑了一下。', '番茄長出新芽了，這讓我很開心。', '把家裡整理了一遍，感覺像以前的週末。']);
   else if (sv.mor < 25) t = pickLine(['好安靜。安靜到我開始跟自己說話。', '我想念街上的吵鬧聲。']);
-  else t = pickLine(['平靜的一天。平靜得讓人不安。', '把能做的都做了，明天再說。', '外面偶爾有拖著腳走路的聲音。', '數了數存糧，還夠。']);
+  else t = pickLine(['平靜的一天。平靜得讓人不安。', '把能做的都做了，明天再說。', '外面偶爾有拖著腳走路的聲音。', '數了數存糧，還夠。', '翻到以前的照片，看了很久。', '對面那棟樓的燈今天沒亮。', '練習用一隻手開罐頭。', '收音機裡有人在唱歌，跑調了，但很好聽。', '今天的晚霞是橘紅色的。', '想起以前抱怨通勤，現在覺得好奢侈。'])
   sv.diary.push({ d, t });
   if (sv.diary.length > 150) sv.diary.shift();
 }
@@ -3108,6 +3589,33 @@ function viewDiary(list, open) {
   } catch (e) {}
 })();
 
+// ---- 98z-setup.js ----
+/* ================= 開局設定畫面（整合版） ================= */
+viewSetup = function () {
+  const s = runSetup();
+  const pill = (act, v, label, on) => '<button class="pill' + (on ? ' on' : '') + '" data-a="' + act + '" data-v="' + v + '">' + label + '</button>';
+  let h = '<div class="cat">開局設定</div><div class="sheet" style="padding:10px 12px">';
+  h += '<div class="setrow"><span>模式</span>' + pill('setMode', 'normal', '一般', s.mode === 'normal') + pill('setMode', 'daily', '每日挑戰', s.mode === 'daily') + pill('setMode', 'seed', '種子', s.mode === 'seed') + '</div>';
+  if (s.mode === 'daily') {
+    const best = J.daily && J.daily[todayKey()];
+    h += '<p class="meta">今天（' + todayKey() + '）的挑戰：事件、天災、圖紙、屍潮種類每個人都一樣。普通難度、角色固定為鄰居、不套用升級，也不會用掉復活。' + (best != null ? '今天最佳：' + best + ' 天。' : '') + '</p>';
+  } else if (s.mode === 'seed') {
+    const code = s.seed || '', best = J.daily && J.daily['S:' + code];
+    h += '<div class="setrow"><span>種子</span><input id="seed-in" class="seed-in" maxlength="12" value="' + esc(code) + '" placeholder="例如 ABC123"><button class="pill" data-a="seedRandom">隨機</button></div>' +
+      '<p class="meta">輸入朋友給你的種子碼，或按「隨機」產生一組分享出去。同一組種子碼，事件、天災、圖紙、屍潮都一樣。普通難度、角色固定、不套用升級、不用掉復活。' + (best != null ? '這組最佳：' + best + ' 天。' : '') + '</p>';
+  } else {
+    h += '<div class="setrow"><span>難度</span>' + Object.entries(DIFFS).map(([k, d]) => pill('setDiff', k, d.n, s.diff === k)).join('') + '</div><p class="meta">' + DIFFS[s.diff].d + '</p>';
+    h += '<div class="setrow"><span>挑戰</span>' + Object.entries(MODS).map(([k, m]) => pill('setMod', k, m.n, !!s.mods[k])).join('') + '</div>';
+    const on = Object.keys(MODS).filter(k => s.mods[k]);
+    h += '<p class="meta">' + (on.length ? on.map(k => MODS[k].d).join('；') + '。撐過 100 天有專屬成就。' : '可以加上限制條件挑戰自己，撐過 100 天有專屬成就。') + '</p>';
+  }
+  h += viewStylePick() + '<p class="meta">台灣場景只換地名和物品名稱，玩法一樣。</p>';
+  return h + '</div>';
+};
+// 換日動畫只在守家時出現
+const _animOverlayFinal = animOverlay;
+animOverlay = function () { if (UI.anim && UI.anim.kind === 'day' && (!S || S.phase !== 'survive')) { UI.anim = null; return ''; } return _animOverlayFinal(); };
+
 // ---- 99-boot.js ----
 /* ================= 事件綁定 ================= */
 $app.addEventListener('click', e => {
@@ -3115,6 +3623,7 @@ $app.addEventListener('click', e => {
   if (!b || b.disabled) return;
   const a = b.getAttribute('data-a');
   sfx(a === 'buy' ? 'buy' : a === 'sleep' || a === 'watch' ? 'sleep' : 'click');
+  if (typeof queueIntercept === 'function' && queueIntercept(a, b.getAttribute('data-v'))) return;
   if (ACT[a]) ACT[a](b.getAttribute('data-v'));
   else if (SACT[a]) SACT[a](b.getAttribute('data-v'));
 });

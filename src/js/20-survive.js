@@ -37,6 +37,7 @@ function startSurvive() {
   m5Init(S.sv);
   m6Init(S.sv);
   m7Init(S.sv);
+  S.sv.noise = 0; S.sv.hyg = 80; S.sv.inj = { frac: 0, inf: 0 };
   S.snaps = [];
   S.sv.mark = dayMark();
   snapshot();
@@ -191,7 +192,7 @@ function night(watch) {
   const cap = powerCap();
 
   // 1. 白天太陽能入帳
-  const solar = (st.solar || 0) * 1.5 * powerMul() * (rain ? 0.1 : cold ? 0.6 : 1);
+  const solar = (st.solar || 0) * 1.5 * powerMul() * (rain ? 0.1 : cold ? 0.6 : 1) * (typeof isTyphoon === 'function' && isTyphoon(d) ? 0 : 1);
   if (solar > 0) sv.power = Math.min(cap, sv.power + solar);
 
   // 2. 設備耗電（冷氣 > 冰櫃 > 種植箱）
@@ -346,7 +347,7 @@ function renderSurvive() {
     '<main class="wrap">' +
       '<div class="ticker">' + sv.log.slice(0, 3).map(l => '<p class="' + (l.alert ? 'alert' : '') + '">' + esc(l.txt) + '</p>').join('') + '</div>' +
       ((UI.tab === 'act' || UI.tab === 'base') && !sv.out ? houseSVG() : '') +
-      '<div class="chips"><span>防線 <b class="num">' + Math.round(sv.def) + '</b>/' + sv.defMax + '</span><span>電 <b class="num">' + (Math.round(sv.power * 10) / 10) + '</b>/' + powerCap() + ' 度</span><span>水 <b class="num">' + sv.st.wu + '</b> 份</span>' +
+      '<div class="chips">' + (sv.noise != null ? '<span>噪音 <b class="num"' + (sv.noise > 60 ? ' style="color:var(--stamp)"' : '') + '>' + sv.noise + '</b></span><span>衛生 <b class="num"' + (sv.hyg < 30 ? ' style="color:var(--stamp)"' : '') + '>' + Math.round(sv.hyg) + '</b></span>' : '') + '<span>防線 <b class="num">' + Math.round(sv.def) + '</b>/' + sv.defMax + '</span><span>電 <b class="num">' + (Math.round(sv.power * 10) / 10) + '</b>/' + powerCap() + ' 度</span><span>水 <b class="num">' + sv.st.wu + '</b> 份</span>' +
         (inCold(sv.day) ? '<span class="tag red">寒潮</span>' : '') + (inRain(sv.day) ? '<span class="tag amber">陰雨</span>' : '') + '</div>' +
       body +
     '</main>' +

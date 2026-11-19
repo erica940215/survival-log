@@ -4,6 +4,7 @@ $app.addEventListener('click', e => {
   if (!b || b.disabled) return;
   const a = b.getAttribute('data-a');
   sfx(a === 'buy' ? 'buy' : a === 'sleep' || a === 'watch' ? 'sleep' : 'click');
+  if (typeof queueIntercept === 'function' && queueIntercept(a, b.getAttribute('data-v'))) return;
   if (ACT[a]) ACT[a](b.getAttribute('data-v'));
   else if (SACT[a]) SACT[a](b.getAttribute('data-v'));
 });

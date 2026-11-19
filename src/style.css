@@ -198,3 +198,15 @@ details.guide p { margin: 6px 0 2px; font-size: 14px; }
 @keyframes walk { from { transform: translateX(30px); } to { transform: translateX(270px); } }
 @keyframes animFade { 0%, 80% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
 @keyframes dayFade { 0% { opacity: 0; } 15%, 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+:root[data-dark="1"] {
+  --paper: #171b21; --paper-2: #232a33; --grid: rgba(255,255,255,0.035); --ink: #e8e4da; --muted: #a2aab4; --line: #3a424d;
+  --stamp: #e46a5e; --tape: #c9a94a; --good: #7cc191; --warn: #e0a85a; color-scheme: dark;
+}
+:root[data-dark="1"] .sheet, :root[data-dark="1"] .kv > div, :root[data-dark="1"] .slot, :root[data-dark="1"] .summary, :root[data-dark="1"] .roompanel { background: rgba(255,255,255,0.04); }
+:root[data-dark="1"] .scene svg, :root[data-dark="1"] .map svg { background: #f3f0e6; border-radius: 8px; }
+:root[data-dark="1"] .tipcard { background: rgba(201,169,74,0.12); }
+:root[data-dark="1"] .anim.travel { background: #f3f0e6; color: #1d2733; }
+.cell { color: #1d2733; }
+.qbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0 2px; }
+.seed-in { font-family: var(--f-num); font-size: 15px; border: 1.5px solid var(--ink); border-radius: 6px; padding: 3px 8px; width: 140px; background: transparent; color: var(--ink); text-transform: uppercase; }
+.diary-img { width: 100%; border: 1px solid var(--line); border-radius: 6px; margin: 6px 0 12px; }

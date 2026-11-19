@@ -47,14 +47,14 @@ function viewHere() {
   }
   if (id === 'cars') {
     const open = isOpen('cars', S.t);
-    h += '<div class="sheet"><div class="item"><div><div class="nm">二手小車</div><div class="meta">移動時間約減半 · 後車廂 +80kg · 買賣各花 10 分鐘</div></div><div class="price">' + (S.car ? '+$450' : money(carPrice())) + '</div><div class="ctrl">' +
+    h += '<div class="sheet"><div class="item"><div><div class="nm">' + (J.style === 'tw' ? '二手機車' : '二手小車') + '</div><div class="meta">移動時間約減半 · 後車廂 +80kg · 買賣各花 10 分鐘</div></div><div class="price">' + (S.car ? '+$450' : money(carPrice())) + '</div><div class="ctrl">' +
       (S.car ? '<button class="btn ghost" data-a="sellCar"' + (open ? '' : ' disabled') + '>賣回車行</button>'
              : '<button class="btn" data-a="buyCar"' + (open && S.money >= carPrice() ? '' : ' disabled') + '>買下</button>') +
       '</div></div></div>';
     return h;
   }
   const open = isOpen(id, S.t);
-  if (!open) return h + '<p class="empty">已經關門了。去別的地方吧。</p>';
+  if (!open) return h + '<p class="empty">' + (st.opens && S.t < st.opens ? '還沒開，' + clock(st.opens) + ' 才營業。' : '已經關門了。去別的地方吧。') + '</p>';
   const items = Object.keys(st.items);
   for (const cat of CAT_ORDER) {
     const ks = items.filter(k => ITEMS[k].cat === cat);

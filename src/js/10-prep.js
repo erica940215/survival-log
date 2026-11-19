@@ -2,7 +2,8 @@
 function newRun() {
   if (J.saveOverNote) { J.saveOverNote = false; saveJournal(); }
   const set = runSetup();
-  const daily = set.mode === 'daily';
+  const daily = set.mode === 'daily' || set.mode === 'seed';
+  const seedKey = set.mode === 'seed' ? 'S:' + (set.seed || '0000') : todayKey();
   const up = k => daily ? 0 : J.upg[k];
   const ch = daily ? 'neighbor' : (J.char || 'neighbor');
   const bonusT = up('time') * 30;
@@ -18,12 +19,12 @@ function newRun() {
     phase: 'play', t: -bonusT, money: 1070 + D.money + up('money') * 150 + (ch === 'student' ? 100 : 0), loc: 'home', char: ch,
     car: false, loan: false, carry: {}, home: (ch === 'nurse' ? { medkit: 2 } : ch === 'veteran' ? { molotov: 2 } : {}), sold: {}, stock,
     fired: {}, log: [], seenStores: { home: true }, result: null,
-    diff: daily ? 'normal' : set.diff, daily: daily ? todayKey() : null, mods: daily ? {} : Object.assign({}, set.mods), upgBag: up('bag'),
-    rng: daily ? seedOf(todayKey()) : (Math.random() * 4294967296) >>> 0
+    diff: daily ? 'normal' : set.diff, daily: daily ? seedKey : null, mods: daily ? {} : Object.assign({}, set.mods), upgBag: up('bag'),
+    rng: daily ? seedOf(seedKey) : (Math.random() * 4294967296) >>> 0
   };
   UI = { tab: 'here', qty: {} };
   log('你從惡夢中驚醒。這次你知道：今天 18:00，城市會被屍群淹沒。', true);
-  if (daily) log('每日挑戰 ' + todayKey() + '：今天每個人遇到的事件、天災、圖紙都一樣。不套用升級、角色固定為鄰居。');
+  if (daily) log((set.mode === 'seed' ? '種子挑戰「' + (set.seed || '0000') + '」：用同一組種子碼的人' : '每日挑戰 ' + todayKey() + '：今天每個人') + '遇到的事件、天災、圖紙都一樣。不套用升級、角色固定為鄰居。');
   if (bonusT) log('你提早 ' + bonusT + ' 分鐘醒來。');
   render();
 }
