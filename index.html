@@ -2510,6 +2510,7 @@ Object.assign(SACT, {
 /* ---------- 畫面 ---------- */
 const IW = 32, IH = 16, WALL = 64;
 function isoSVG() {
+  if (camTop()) return topSVG();
   const sv = S.sv, objs = isoSync();
   const I = UI.iso = UI.iso || {};
   if (!I.floor || !sv.floors.includes(I.floor)) I.floor = '1F';
@@ -2566,7 +2567,7 @@ function viewIso() {
   const sv = S.sv, I = UI.iso || {};
   isoSync();
   let h = '<div class="setrow" style="margin-top:10px">' + ['1F', '2F', 'B1'].filter(f => sv.floors.includes(f)).map(f => '<button class="pill' + ((I.floor || '1F') === f ? ' on' : '') + '" data-a="isoFloor" data-v="' + f + '">' + ISO_FLOORS[f].n + '</button>').join('') + '</div>';
-  h += isoSVG();
+  h += isoSVG() + viewCamPick();
   const sel = I.sel && isoObjects().find(o => o.id === I.sel);
   if (sel) {
     const D = ISO[sel.k], p = sv.place[sel.id];
@@ -2595,7 +2596,7 @@ SACT.roomTap = function (v) {
 
 // ---- 64-live.js ----
 /* ================= 生動化：家裡的角色、動畫、光線、天氣 ================= */
-const isoProj = f => { const F = ISO_FLOORS[f]; const ox = F.h * IW + 20, oy = WALL + 18; return (x, y, z) => [ox + (x - y) * IW, oy + (x + y) * IH - (z || 0)]; };
+const isoProj = f => { if (camTop()) return topProj(f); const F = ISO_FLOORS[f]; const ox = F.h * IW + 20, oy = WALL + 18; return (x, y, z) => [ox + (x - y) * IW, oy + (x + y) * IH - (z || 0)]; };
 function objTile(k) {
   const sv = S.sv; if (!sv || !sv.place) return null;
   const ks = k.split('|');
@@ -2648,8 +2649,10 @@ isoSVG = function () {
   if (f !== 'B1') {
     const wins = ISO_WIN[f].y0.map(x => [x, 0, 'y']).concat(ISO_WIN[f].x0.map(y => [0, y, 'x']));
     for (const [wx, wy, side] of wins) {
-      const c = side === 'y' ? P(wx + 0.5, 0, 36) : P(0, wy + 0.5, 36);
-      if (hr >= 20 || hr < 6) s += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="9" fill="#1c2a44" opacity="0.55"/>';
+      let c = side === 'y' ? P(wx + 0.5, 0, 36) : P(0, wy + 0.5, 36);
+      if (camTop()) { const o = P(0, 0); c = side === 'y' ? [P(wx + 0.5, 0)[0], o[1] - TWALL + 30] : [o[0] - 9, P(0, wy + 0.5)[1] - 4]; }
+      const big = camTop() && side === 'y' ? 14 : 9;
+      if (hr >= 20 || hr < 6) s += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="' + big + '" fill="#1c2a44" opacity="0.55"/>';
       if (rain || ty) for (let i = 0; i < (ty ? 4 : 2); i++) s += '<line class="' + (anim ? 'lv-rain' : '') + '" x1="' + (c[0] - 6 + i * 4) + '" y1="' + (c[1] - 10) + '" x2="' + (c[0] - 8 + i * 4) + '" y2="' + (c[1] - 4) + '" stroke="#5f86b0" stroke-width="1.2" style="animation-delay:' + (i * 0.17) + 's"/>';
       if (cold) for (let i = 0; i < 3; i++) s += '<circle class="' + (anim ? 'lv-snow' : '') + '" cx="' + (c[0] - 6 + i * 6) + '" cy="' + (c[1] - 8) + '" r="1.4" fill="#fff" style="animation-delay:' + (i * 0.4) + 's"/>';
       if (!rain && !ty && !cold && hr >= 8 && hr < 17) s += '<circle cx="' + (c[0] + 3) + '" cy="' + (c[1] - 5) + '" r="3" fill="#f6d36b" opacity="0.8"/>';
@@ -2707,7 +2710,7 @@ isoSVG = function () {
     if (w && w.label && Date.now() - w.ts < 2600) s += '<text class="' + (anim ? 'lv-float' : '') + '" x="' + to[0].toFixed(1) + '" y="' + (to[1] - 44).toFixed(1) + '" text-anchor="middle" font-size="12" font-weight="700" fill="#1d2733" stroke="#f3f0e6" stroke-width="3" paint-order="stroke">' + esc(w.label) + '</text>';
   }
   // 日夜光線
-  const width = (F.w + F.h) * IW + 40, height = WALL + 18 + (F.w + F.h) * IH + 26;
+  const { w: width, h: height } = sceneSize(f);
   let tint = '';
   if (f === 'B1') tint = 'rgba(20,24,32,0.18)';
   else if (hr >= 20 || hr < 6) tint = 'rgba(18,28,60,0.32)';
@@ -2756,6 +2759,71 @@ sceneSVG = function (kind) {
   const add = '<g class="' + (reduceMotion() ? '' : 'lv-bob') + '" transform="translate(332 118) scale(1.35)"><rect x="-4.5" y="-17" width="9" height="12" rx="3" fill="#3b5b8a" stroke="#1d2733"/><circle cx="0" cy="-22" r="5" fill="#f1d3b3" stroke="#1d2733"/><rect x="-4" y="-6" width="3" height="6" fill="#2a3442"/><rect x="1" y="-6" width="3" height="6" fill="#2a3442"/>' + (S.car ? '' : '<rect x="4" y="-16" width="6" height="9" rx="2" fill="#b8322a" stroke="#1d2733"/>') + '</g>';
   return h.replace('</svg></div>', add + '</svg></div>');
 };
+
+// ---- 65-top.js ----
+/* ================= 俯視視角：由上往下看的房間（預設） ================= */
+const camTop = () => UIS.cam !== 'iso';
+const TOPW = 56, TD = 46, TZ = 0.72, TWALL = 74, TML = 64, TMT = 16;
+function topProj(f) { const ox = TML, oy = TMT + TWALL; return (x, y, z) => [ox + x * TOPW, oy + y * TD - (z || 0) * TZ]; }
+function sceneSize(f) {
+  const F = ISO_FLOORS[f];
+  if (camTop()) return { w: TML * 2 + F.w * TOPW, h: TMT + TWALL + F.h * TD + 30 };
+  return { w: (F.w + F.h) * IW + 40, h: WALL + 18 + (F.w + F.h) * IH + 26 };
+}
+function topSVG() {
+  const sv = S.sv, objs = isoSync();
+  const I = UI.iso = UI.iso || {};
+  if (!I.floor || !sv.floors.includes(I.floor)) I.floor = '1F';
+  const f = I.floor, F = ISO_FLOORS[f], P = topProj(f), Z = sceneSize(f);
+  const dark = f === 'B1';
+  const x0 = P(0, 0)[0], x1 = P(F.w, 0)[0], y0 = P(0, 0)[1], y1 = P(0, F.h)[1];
+  let s = '';
+  // 牆：後牆、左右側牆（往外斜一點，做出深度）
+  const wallC = dark ? '#575b62' : '#e7dcc4', wallSide = dark ? '#4a4e55' : '#d8cbb0', trim = dark ? '#3a3e44' : '#8a6a46';
+  s += '<polygon points="' + [[x0, y0], [x1, y0], [x1, y0 - TWALL], [x0, y0 - TWALL]].map(p => p.join(',')).join(' ') + '" fill="' + wallC + '" stroke="' + INK + '" stroke-width="1.2"/>';
+  s += '<rect x="' + x0 + '" y="' + (y0 - 16) + '" width="' + (x1 - x0) + '" height="16" fill="' + trim + '" opacity="0.55"/>';
+  s += '<polygon points="' + [[x0, y0], [x0 - 18, y0 - 10], [x0 - 18, y1 + 6], [x0, y1]].map(p => p.join(',')).join(' ') + '" fill="' + wallSide + '" stroke="' + INK + '" stroke-width="1.2"/>';
+  s += '<polygon points="' + [[x1, y0], [x1 + 18, y0 - 10], [x1 + 18, y1 + 6], [x1, y1]].map(p => p.join(',')).join(' ') + '" fill="' + wallSide + '" stroke="' + INK + '" stroke-width="1.2"/>';
+  // 窗（後牆、左牆）與門（左牆）
+  for (const x of ISO_WIN[f].y0) { const a = P(x + 0.18, 0), b = P(x + 0.82, 0); s += '<rect x="' + a[0] + '" y="' + (y0 - TWALL + 12) + '" width="' + (b[0] - a[0]) + '" height="' + (TWALL - 34) + '" fill="#bcd6ea" stroke="' + INK + '" stroke-width="1.2"/><line x1="' + (a[0] + b[0]) / 2 + '" y1="' + (y0 - TWALL + 12) + '" x2="' + (a[0] + b[0]) / 2 + '" y2="' + (y0 - 22) + '" stroke="' + INK + '" stroke-width="1"/>'; }
+  for (const y of ISO_WIN[f].x0) { const a = P(0, y + 0.2), b = P(0, y + 0.8); s += '<polygon points="' + [[x0 - 3, a[1] - 4], [x0 - 15, a[1] - 11], [x0 - 15, b[1] - 8], [x0 - 3, b[1]]].map(p => p.join(',')).join(' ') + '" fill="#bcd6ea" stroke="' + INK + '" stroke-width="1"/>'; }
+  if (f === ISO_DOOR.f) { const a = P(0, ISO_DOOR.at + 0.1), b = P(0, ISO_DOOR.at + 0.9); const ratio = sv.def / sv.defMax; s += '<polygon data-a="rtObj" data-v="DOOR" style="cursor:pointer" points="' + [[x0 - 1, a[1]], [x0 - 16, a[1] - 9], [x0 - 16, b[1] - 6], [x0 - 1, b[1]]].map(p => p.join(',')).join(' ') + '" fill="' + (ratio > 0.7 ? '#2f6b3f' : ratio > 0.35 ? '#a8661a' : RED) + '" stroke="' + INK + '" stroke-width="1.2"/>'; }
+  // 地板
+  const occ = occupied(f, I.moving ? I.sel : null);
+  for (let y = 0; y < F.h; y++) for (let x = 0; x < F.w; x++) {
+    const a = P(x, y), fill = dark ? ((x + y) % 2 ? '#3d4249' : '#43484f') : ((x + y) % 2 ? '#e9dcc0' : '#f1e6cd');
+    s += '<rect data-a="isoTile" data-v="' + f + ',' + x + ',' + y + '" x="' + a[0] + '" y="' + a[1] + '" width="' + TOPW + '" height="' + TD + '" fill="' + (I.moving && !occ.has(x + ',' + y) ? 'rgba(236,210,122,0.6)' : fill) + '" stroke="' + (dark ? '#2a2e33' : '#d6c6a6') + '" stroke-width="1"/>';
+    if (isWindow(f, x, y) && !dark) s += '<rect x="' + (a[0] + 8) + '" y="' + (a[1] + 6) + '" width="' + (TOPW - 16) + '" height="' + (TD - 14) + '" rx="10" fill="rgba(255,236,160,0.45)" pointer-events="none"/>';
+  }
+  // 地毯（一樓客廳）
+  if (f === '1F') { const a = P(2.1, 2.2), b = P(3.9, 3.8); s += '<ellipse cx="' + (a[0] + b[0]) / 2 + '" cy="' + (a[1] + b[1]) / 2 + '" rx="' + (b[0] - a[0]) / 2 + '" ry="' + (b[1] - a[1]) / 2 + '" fill="#9b6b5a" opacity="0.35" pointer-events="none"/>'; }
+  // 物件（由後往前）
+  const here = objs.map(o => ({ o, p: sv.place[o.id] })).filter(it => it.p && it.p.f === f);
+  const dims = it => { const D = ISO[it.o.k]; return { D, w: it.p.r ? D.d : D.w, d: it.p.r ? D.w : D.d }; };
+  here.sort((a, b) => (a.p.y + dims(a).d) - (b.p.y + dims(b).d) || a.p.x - b.p.x);
+  const shade = (c, k) => { const n = parseInt(c.slice(1), 16); return 'rgb(' + Math.round(((n >> 16) & 255) * k) + ',' + Math.round(((n >> 8) & 255) * k) + ',' + Math.round((n & 255) * k) + ')'; };
+  for (const it of here) {
+    const { o, p } = it, { D, w, d } = dims(it), h = D.h * 1.15, sel = I.sel === o.id;
+    const tl = P(p.x + 0.06, p.y + 0.06, h), br = P(p.x + w - 0.06, p.y + d - 0.06, h), fb = P(p.x + w - 0.06, p.y + d - 0.06, 0);
+    let g = '<g data-a="isoObj" data-v="' + o.id + '" style="cursor:pointer' + (I.moving ? ';pointer-events:none;opacity:' + (sel ? 0.35 : 1) : '') + '">';
+    g += '<ellipse cx="' + (tl[0] + br[0]) / 2 + '" cy="' + (fb[1] - 2) + '" rx="' + (br[0] - tl[0]) / 2 + '" ry="6" fill="rgba(0,0,0,0.18)"/>';
+    if (ISO_ASSETS[o.k]) {
+      const iw = br[0] - tl[0], ih = fb[1] - tl[1] + 10;
+      g += '<image href="' + ISO_ASSETS[o.k] + '" x="' + tl[0] + '" y="' + (fb[1] - ih) + '" width="' + iw + '" height="' + ih + '" preserveAspectRatio="xMidYMax meet"/>';
+    } else {
+      g += '<rect x="' + tl[0] + '" y="' + br[1] + '" width="' + (br[0] - tl[0]) + '" height="' + (fb[1] - br[1]) + '" fill="' + shade(D.c, 0.72) + '" stroke="' + INK + '" stroke-width="1"/>';
+      g += '<rect x="' + tl[0] + '" y="' + tl[1] + '" width="' + (br[0] - tl[0]) + '" height="' + (br[1] - tl[1]) + '" rx="3" fill="' + D.c + '" stroke="' + INK + '" stroke-width="1"/>';
+      g += '<text x="' + (tl[0] + br[0]) / 2 + '" y="' + ((tl[1] + br[1]) / 2 + 4) + '" font-size="11" text-anchor="middle" fill="#1d2733" font-family="Noto Sans TC, sans-serif" pointer-events="none">' + D.n.slice(0, 3) + '</text>';
+    }
+    if (sel) g += '<rect x="' + (tl[0] - 3) + '" y="' + (tl[1] - 3) + '" width="' + (br[0] - tl[0] + 6) + '" height="' + (fb[1] - tl[1] + 6) + '" rx="4" fill="none" stroke="' + RED + '" stroke-width="2.5" stroke-dasharray="5 3" pointer-events="none"/>';
+    s += g + '</g>';
+  }
+  return '<div class="iso top"><svg viewBox="0 0 ' + Z.w + ' ' + Z.h + '" role="img" aria-label="' + F.n + '">' + s + '</svg></div>';
+}
+Object.assign(SACT, { cam(v) { UIS.cam = v === 'iso' ? 'iso' : 'top'; saveUI(); render(); } });
+function viewCamPick() {
+  return '<div class="setrow" style="margin-top:6px"><span>視角</span><button class="pill' + (camTop() ? ' on' : '') + '" data-a="cam" data-v="top">俯視</button><button class="pill' + (!camTop() ? ' on' : '') + '" data-a="cam" data-v="iso">等角</button></div>';
+}
 
 // ---- 70-codex.js ----
 /* ================= 生存圖鑑與成就 ================= */
@@ -4061,6 +4129,99 @@ function viewDiary(list, open) {
   } catch (e) {}
 })();
 
+// ---- 98x-autoprep.js ----
+/* ================= 一鍵籌備（開發用） =================
+   用遊戲本身的規則（ACT.go / ACT.buy …）自動跑一條「最划算」的採購路線：
+   借錢＋賣家具 → 買車 → 超市免費搶購（10:32–11:30）→ 回家卸貨
+   → 裝修公司（大門、微波爐、太陽能、儲電站）→ 工具店 → 藥局 → 農貿 → 回家。
+   每一站都會檢查「到得了、還開著、來得及回家」，不夠錢就自動縮量。 */
+function autoPrep() {
+  if (!S || S.phase !== 'play') return;
+  const realRender = render, realScroll = window.scrollTo;
+  render = function () {}; window.scrollTo = function () {};
+  const steps = [];
+  try {
+    log('[開發] 一鍵籌備開始。');
+    const back = d => travelTime(d, 'home') + 12;
+    const canGo = (d, stay) => {
+      if (S.loc === d) return isOpen(d, S.t);
+      const arr = S.t + travelTime(S.loc, d);
+      return isOpen(d, arr) && arr + (stay || 20) + back(d) < OUTBREAK - 5;
+    };
+    const go = d => { if (S.loc === d) return true; if (!canGo(d)) return false; ACT.go(d); steps.push(STORES[d].n); return S.loc === d; };
+    const roomFor = k => ITEMS[k].cat === 'equip' ? 99 : Math.floor((capacity() - carried() + 1e-9) / Math.max(ITEMS[k].w, 0.01));
+    const buy = (k, n, reserve) => {
+      if (!STORES[S.loc].items || !STORES[S.loc].items[k] || !isOpen(S.loc, S.t)) return 0;
+      const p = price(S.loc, k);
+      let q = Math.min(n, S.stock[S.loc][k], roomFor(k));
+      if (p > 0) q = Math.min(q, Math.floor((S.money - (reserve || 0)) / p));
+      if (q <= 0) return 0;
+      if (ITEMS[k].cat === 'equip' && !deliveryOk()) return 0;
+      UI.qty[k] = Math.min(99, q);
+      const before = (S.home[k] || 0) + (S.carry[k] || 0);
+      ACT.buy(k);
+      return (S.home[k] || 0) + (S.carry[k] || 0) - before;
+    };
+    const has = k => (S.home[k] || 0) + (S.carry[k] || 0);
+
+    // 1. 家：貸款＋賣家具
+    if (S.loc === 'home') {
+      ACT.loan();
+      for (const f of FURNITURE) if (!S.sold[f.id]) ACT.sell(f.id);
+    }
+    // 2. 車：移動時間減半＋80kg 車廂，最划算的投資
+    if (!S.car && !(S.mods && S.mods.noCar) && S.money >= carPrice() + 700 && canGo('cars', 15)) { go('cars'); ACT.buyCar(); }
+    // 3. 超市：免費時段就盡量搶；不是免費就買便宜的
+    if (go('mart')) {
+      if (S.t < 152) { /* 太早到：等到搶購潮 */ advance(152 - S.t); }
+      if (typeof ACT.npc === 'function' && !(S.q && S.q.oldman)) try { ACT.npc('oldman'); } catch (e) {}
+      const free = price('mart', 'water') === 0;
+      const rs = free ? 0 : 650;
+      buy('water', 8, rs); buy('rice', 6, rs); buy('can', 12, rs); buy('biscuit', 10, rs);
+      buy('sausage', 20, rs); buy('noodle', 20, rs);
+      go('home');
+    }
+    // 4. 裝修公司：大門最優先，其次電力
+    if (deliveryOk() && go('reno')) {
+      buy('door', 1, 250); buy('microwave', 1, 200); buy('solar', 1, 260); buy('battery', 1, 220); buy('solar', 1, 420);
+      if (!has('solar')) { buy('gen', 1, 260); }
+    }
+    // 5. 工具店：儲水桶、防禦材料、發電機用柴油
+    if (go('tool')) {
+      buy('barrel', 3, 120);
+      if (has('gen')) buy('diesel', 3, 120);
+      buy('board', 6, 110); buy('metal', 3, 110); buy('glass', 2, 110);
+    }
+    if (carried() > capacity() * 0.75 && S.loc !== 'home') go('home');
+    // 6. 藥局
+    if (go('pharm')) { buy('medkit', 3, 60); buy('pills', 6, 50); }
+    // 7. 農貿：番茄＋花盆，長期食物來源
+    if (go('farm')) { buy('pot', 4, 20); buy('tomato', 3, 10); buy('fert', 1, 0); buy('veg', 4, 0); }
+    // 8. 剩錢再回便利店補水
+    if (S.money >= 40 && carried() + 6 <= capacity() && go('conv')) buy('water', 4, 0);
+    go('home');
+    if (S.loc !== 'home' && S.t + travelTime(S.loc, 'home') < OUTBREAK) ACT.go('home');
+    log('[開發] 一鍵籌備完成：' + (steps.length ? steps.join(' → ') : '只在家處理') + '。剩 ' + money(S.money) + '。', true);
+  } catch (e) {
+    console.error(e);
+    log('[開發] 一鍵籌備中斷：' + e.message, true);
+  } finally {
+    render = realRender; window.scrollTo = realScroll;
+    UI.anim = null; UI.tab = 'here';
+    render();
+  }
+}
+Object.assign(ACT, { autoPrep });
+
+const _viewHereAuto = viewHere;
+viewHere = function () {
+  const h = _viewHereAuto();
+  if (S.loc !== 'home' || S.t > 60) return h;
+  return '<div class="sheet" style="margin-bottom:12px;border-style:dashed"><div class="item"><div><div class="nm">⚡ 一鍵籌備 <span class="meta">（開發用）</span></div>' +
+    '<div class="meta">自動跑最划算路線：貸款賣家具 → 買車 → 超市免費搶購 → 大門／電力 → 建材 → 藥 → 種子 → 回家</div></div>' +
+    '<div class="ctrl"><button class="btn red" data-a="autoPrep">執行</button></div></div></div>' + h;
+};
+
 // ---- 98y-rt.js ----
 /* ================= 即時版守家：時間流動、角色走動、點設備做事 ================= */
 // 1 倍速：遊戲 1 小時 = 現實 30 秒
@@ -4243,7 +4404,7 @@ function rtScene() {
   let svg = isoSVG().replace('<div class="iso">', '<div class="iso rt">').replace(/data-a="isoObj"/g, 'data-a="rtObj"').replace(/data-a="isoTile"/g, 'data-a="rtTile"');
   let add = '';
   // 門可以點
-  if (f === '1F') { const y = ISO_DOOR.at; add += '<polygon data-a="rtObj" data-v="DOOR" points="' + [P(0, y + 0.1, 0), P(0, y + 0.9, 0), P(0, y + 0.9, 50), P(0, y + 0.1, 50)].map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ') + '" fill="transparent" style="cursor:pointer"/>'; }
+  if (f === '1F' && !camTop()) { const y = ISO_DOOR.at; add += '<polygon data-a="rtObj" data-v="DOOR" points="' + [P(0, y + 0.1, 0), P(0, y + 0.9, 0), P(0, y + 0.9, 50), P(0, y + 0.1, 50)].map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ') + '" fill="transparent" style="cursor:pointer"/>'; }
   // 設備頭上的狀態
   const label = (o, txt, col) => { const p = sv.place[o.id]; const D = ISO[o.k], w = p.r ? D.d : D.w, d = p.r ? D.w : D.d; const q = P(p.x + w / 2, p.y + d / 2, D.h + 16); return '<text x="' + q[0].toFixed(1) + '" y="' + q[1].toFixed(1) + '" text-anchor="middle" font-size="10" font-weight="700" fill="' + (col || '#f3f0e6') + '" stroke="#1d2733" stroke-width="2.6" paint-order="stroke" pointer-events="none">' + txt + '</text>'; };
   const powered = sv.powered || {};
@@ -4290,6 +4451,7 @@ function rtPanel() {
   if (pl.length) h += '<details class="guide"><summary>家中植物（' + pl.length + '）</summary><ul class="list">' + pl.map(p => '<li>' + ITEMS[p.k].n + '：' + (p.age < growDays() ? '還要 ' + (growDays() - p.age) + ' 天' : '成熟，持續收成') + '</li>').join('') + '</ul></details>';
   h += viewSleepWarn();
   h += '<details class="guide"><summary>全部行動（選單）</summary>' + _viewActsRT() + '</details>';
+  h += viewCamPick();
   h += '<div class="row-btns"><button class="btn ghost" data-a="rtMode">切換成選單模式</button></div>';
   return h;
 }

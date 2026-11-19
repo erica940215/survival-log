@@ -168,6 +168,7 @@ Object.assign(SACT, {
 /* ---------- 畫面 ---------- */
 const IW = 32, IH = 16, WALL = 64;
 function isoSVG() {
+  if (camTop()) return topSVG();
   const sv = S.sv, objs = isoSync();
   const I = UI.iso = UI.iso || {};
   if (!I.floor || !sv.floors.includes(I.floor)) I.floor = '1F';
@@ -224,7 +225,7 @@ function viewIso() {
   const sv = S.sv, I = UI.iso || {};
   isoSync();
   let h = '<div class="setrow" style="margin-top:10px">' + ['1F', '2F', 'B1'].filter(f => sv.floors.includes(f)).map(f => '<button class="pill' + ((I.floor || '1F') === f ? ' on' : '') + '" data-a="isoFloor" data-v="' + f + '">' + ISO_FLOORS[f].n + '</button>').join('') + '</div>';
-  h += isoSVG();
+  h += isoSVG() + viewCamPick();
   const sel = I.sel && isoObjects().find(o => o.id === I.sel);
   if (sel) {
     const D = ISO[sel.k], p = sv.place[sel.id];

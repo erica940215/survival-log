@@ -1,5 +1,5 @@
 /* ================= 生動化：家裡的角色、動畫、光線、天氣 ================= */
-const isoProj = f => { const F = ISO_FLOORS[f]; const ox = F.h * IW + 20, oy = WALL + 18; return (x, y, z) => [ox + (x - y) * IW, oy + (x + y) * IH - (z || 0)]; };
+const isoProj = f => { if (camTop()) return topProj(f); const F = ISO_FLOORS[f]; const ox = F.h * IW + 20, oy = WALL + 18; return (x, y, z) => [ox + (x - y) * IW, oy + (x + y) * IH - (z || 0)]; };
 function objTile(k) {
   const sv = S.sv; if (!sv || !sv.place) return null;
   const ks = k.split('|');
@@ -52,8 +52,10 @@ isoSVG = function () {
   if (f !== 'B1') {
     const wins = ISO_WIN[f].y0.map(x => [x, 0, 'y']).concat(ISO_WIN[f].x0.map(y => [0, y, 'x']));
     for (const [wx, wy, side] of wins) {
-      const c = side === 'y' ? P(wx + 0.5, 0, 36) : P(0, wy + 0.5, 36);
-      if (hr >= 20 || hr < 6) s += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="9" fill="#1c2a44" opacity="0.55"/>';
+      let c = side === 'y' ? P(wx + 0.5, 0, 36) : P(0, wy + 0.5, 36);
+      if (camTop()) { const o = P(0, 0); c = side === 'y' ? [P(wx + 0.5, 0)[0], o[1] - TWALL + 30] : [o[0] - 9, P(0, wy + 0.5)[1] - 4]; }
+      const big = camTop() && side === 'y' ? 14 : 9;
+      if (hr >= 20 || hr < 6) s += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="' + big + '" fill="#1c2a44" opacity="0.55"/>';
       if (rain || ty) for (let i = 0; i < (ty ? 4 : 2); i++) s += '<line class="' + (anim ? 'lv-rain' : '') + '" x1="' + (c[0] - 6 + i * 4) + '" y1="' + (c[1] - 10) + '" x2="' + (c[0] - 8 + i * 4) + '" y2="' + (c[1] - 4) + '" stroke="#5f86b0" stroke-width="1.2" style="animation-delay:' + (i * 0.17) + 's"/>';
       if (cold) for (let i = 0; i < 3; i++) s += '<circle class="' + (anim ? 'lv-snow' : '') + '" cx="' + (c[0] - 6 + i * 6) + '" cy="' + (c[1] - 8) + '" r="1.4" fill="#fff" style="animation-delay:' + (i * 0.4) + 's"/>';
       if (!rain && !ty && !cold && hr >= 8 && hr < 17) s += '<circle cx="' + (c[0] + 3) + '" cy="' + (c[1] - 5) + '" r="3" fill="#f6d36b" opacity="0.8"/>';
@@ -111,7 +113,7 @@ isoSVG = function () {
     if (w && w.label && Date.now() - w.ts < 2600) s += '<text class="' + (anim ? 'lv-float' : '') + '" x="' + to[0].toFixed(1) + '" y="' + (to[1] - 44).toFixed(1) + '" text-anchor="middle" font-size="12" font-weight="700" fill="#1d2733" stroke="#f3f0e6" stroke-width="3" paint-order="stroke">' + esc(w.label) + '</text>';
   }
   // 日夜光線
-  const width = (F.w + F.h) * IW + 40, height = WALL + 18 + (F.w + F.h) * IH + 26;
+  const { w: width, h: height } = sceneSize(f);
   let tint = '';
   if (f === 'B1') tint = 'rgba(20,24,32,0.18)';
   else if (hr >= 20 || hr < 6) tint = 'rgba(18,28,60,0.32)';

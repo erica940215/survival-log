@@ -179,7 +179,7 @@ function rtScene() {
   let svg = isoSVG().replace('<div class="iso">', '<div class="iso rt">').replace(/data-a="isoObj"/g, 'data-a="rtObj"').replace(/data-a="isoTile"/g, 'data-a="rtTile"');
   let add = '';
   // 門可以點
-  if (f === '1F') { const y = ISO_DOOR.at; add += '<polygon data-a="rtObj" data-v="DOOR" points="' + [P(0, y + 0.1, 0), P(0, y + 0.9, 0), P(0, y + 0.9, 50), P(0, y + 0.1, 50)].map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ') + '" fill="transparent" style="cursor:pointer"/>'; }
+  if (f === '1F' && !camTop()) { const y = ISO_DOOR.at; add += '<polygon data-a="rtObj" data-v="DOOR" points="' + [P(0, y + 0.1, 0), P(0, y + 0.9, 0), P(0, y + 0.9, 50), P(0, y + 0.1, 50)].map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ') + '" fill="transparent" style="cursor:pointer"/>'; }
   // 設備頭上的狀態
   const label = (o, txt, col) => { const p = sv.place[o.id]; const D = ISO[o.k], w = p.r ? D.d : D.w, d = p.r ? D.w : D.d; const q = P(p.x + w / 2, p.y + d / 2, D.h + 16); return '<text x="' + q[0].toFixed(1) + '" y="' + q[1].toFixed(1) + '" text-anchor="middle" font-size="10" font-weight="700" fill="' + (col || '#f3f0e6') + '" stroke="#1d2733" stroke-width="2.6" paint-order="stroke" pointer-events="none">' + txt + '</text>'; };
   const powered = sv.powered || {};
@@ -226,6 +226,7 @@ function rtPanel() {
   if (pl.length) h += '<details class="guide"><summary>家中植物（' + pl.length + '）</summary><ul class="list">' + pl.map(p => '<li>' + ITEMS[p.k].n + '：' + (p.age < growDays() ? '還要 ' + (growDays() - p.age) + ' 天' : '成熟，持續收成') + '</li>').join('') + '</ul></details>';
   h += viewSleepWarn();
   h += '<details class="guide"><summary>全部行動（選單）</summary>' + _viewActsRT() + '</details>';
+  h += viewCamPick();
   h += '<div class="row-btns"><button class="btn ghost" data-a="rtMode">切換成選單模式</button></div>';
   return h;
 }
