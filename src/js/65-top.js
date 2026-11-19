@@ -49,8 +49,13 @@ function topSVG() {
       g += '<image href="' + ISO_ASSETS[o.k] + '" x="' + tl[0] + '" y="' + (fb[1] - ih) + '" width="' + iw + '" height="' + ih + '" preserveAspectRatio="xMidYMax meet"/>';
     } else {
       g += '<rect x="' + tl[0] + '" y="' + br[1] + '" width="' + (br[0] - tl[0]) + '" height="' + (fb[1] - br[1]) + '" fill="' + shade(D.c, 0.72) + '" stroke="' + INK + '" stroke-width="1"/>';
-      g += '<rect x="' + tl[0] + '" y="' + tl[1] + '" width="' + (br[0] - tl[0]) + '" height="' + (br[1] - tl[1]) + '" rx="3" fill="' + D.c + '" stroke="' + INK + '" stroke-width="1"/>';
-      g += '<text x="' + (tl[0] + br[0]) / 2 + '" y="' + ((tl[1] + br[1]) / 2 + 4) + '" font-size="11" text-anchor="middle" fill="#1d2733" font-family="Noto Sans TC, sans-serif" pointer-events="none">' + D.n.slice(0, 3) + '</text>';
+      const art = typeof topArt === 'function' ? topArt(o.k, tl[0], tl[1], br[0] - tl[0], br[1] - tl[1], p.r) : null;
+      if (art) {
+        g += topFront(o.k, tl[0], br[1], br[0] - tl[0], fb[1] - br[1]) + art;
+      } else {
+        g += '<rect x="' + tl[0] + '" y="' + tl[1] + '" width="' + (br[0] - tl[0]) + '" height="' + (br[1] - tl[1]) + '" rx="3" fill="' + D.c + '" stroke="' + INK + '" stroke-width="1"/>';
+        g += '<text x="' + (tl[0] + br[0]) / 2 + '" y="' + ((tl[1] + br[1]) / 2 + 4) + '" font-size="11" text-anchor="middle" fill="#1d2733" font-family="Noto Sans TC, sans-serif" pointer-events="none">' + D.n.slice(0, 3) + '</text>';
+      }
     }
     if (sel) g += '<rect x="' + (tl[0] - 3) + '" y="' + (tl[1] - 3) + '" width="' + (br[0] - tl[0] + 6) + '" height="' + (fb[1] - tl[1] + 6) + '" rx="4" fill="none" stroke="' + RED + '" stroke-width="2.5" stroke-dasharray="5 3" pointer-events="none"/>';
     s += g + '</g>';

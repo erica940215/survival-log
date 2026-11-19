@@ -274,6 +274,15 @@ details.guide p { margin: 6px 0 2px; font-size: 14px; }
 .rt-tags { grid-column: 1 / -1; display: flex; gap: 4px; flex-wrap: wrap; }
 .rt-tags span { font-size: 11.5px; padding: 1px 7px; border-radius: 3px; color: #fff; }
 .rt-tags .g { background: #2f6b3f; } .rt-tags .r { background: #b8322a; }
+
+/* 屍潮 */
+.sg-box { border: 2px solid #b8322a; background: rgba(184,50,42,0.08); border-radius: 10px; padding: 10px 12px; margin: 8px 0; }
+.sg-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.sg-h b:first-child { color: #b8322a; font-size: 1.05em; }
+.sg-box .bar i { background: #b8322a; }
+.sg-warn { border-left: 4px solid #b8322a; padding: 6px 10px; margin: 8px 0; background: rgba(184,50,42,0.07); font-size: 0.92em; }
+svg.sg-on { animation: sgPulse 2.4s ease-in-out infinite; }
+@keyframes sgPulse { 50% { filter: saturate(0.8) brightness(0.92); } }
 </style>
 </head>
 <body>
@@ -2812,8 +2821,13 @@ function topSVG() {
       g += '<image href="' + ISO_ASSETS[o.k] + '" x="' + tl[0] + '" y="' + (fb[1] - ih) + '" width="' + iw + '" height="' + ih + '" preserveAspectRatio="xMidYMax meet"/>';
     } else {
       g += '<rect x="' + tl[0] + '" y="' + br[1] + '" width="' + (br[0] - tl[0]) + '" height="' + (fb[1] - br[1]) + '" fill="' + shade(D.c, 0.72) + '" stroke="' + INK + '" stroke-width="1"/>';
-      g += '<rect x="' + tl[0] + '" y="' + tl[1] + '" width="' + (br[0] - tl[0]) + '" height="' + (br[1] - tl[1]) + '" rx="3" fill="' + D.c + '" stroke="' + INK + '" stroke-width="1"/>';
-      g += '<text x="' + (tl[0] + br[0]) / 2 + '" y="' + ((tl[1] + br[1]) / 2 + 4) + '" font-size="11" text-anchor="middle" fill="#1d2733" font-family="Noto Sans TC, sans-serif" pointer-events="none">' + D.n.slice(0, 3) + '</text>';
+      const art = typeof topArt === 'function' ? topArt(o.k, tl[0], tl[1], br[0] - tl[0], br[1] - tl[1], p.r) : null;
+      if (art) {
+        g += topFront(o.k, tl[0], br[1], br[0] - tl[0], fb[1] - br[1]) + art;
+      } else {
+        g += '<rect x="' + tl[0] + '" y="' + tl[1] + '" width="' + (br[0] - tl[0]) + '" height="' + (br[1] - tl[1]) + '" rx="3" fill="' + D.c + '" stroke="' + INK + '" stroke-width="1"/>';
+        g += '<text x="' + (tl[0] + br[0]) / 2 + '" y="' + ((tl[1] + br[1]) / 2 + 4) + '" font-size="11" text-anchor="middle" fill="#1d2733" font-family="Noto Sans TC, sans-serif" pointer-events="none">' + D.n.slice(0, 3) + '</text>';
+      }
     }
     if (sel) g += '<rect x="' + (tl[0] - 3) + '" y="' + (tl[1] - 3) + '" width="' + (br[0] - tl[0] + 6) + '" height="' + (fb[1] - tl[1] + 6) + '" rx="4" fill="none" stroke="' + RED + '" stroke-width="2.5" stroke-dasharray="5 3" pointer-events="none"/>';
     s += g + '</g>';
@@ -2823,6 +2837,177 @@ function topSVG() {
 Object.assign(SACT, { cam(v) { UIS.cam = v === 'iso' ? 'iso' : 'top'; saveUI(); render(); } });
 function viewCamPick() {
   return '<div class="setrow" style="margin-top:6px"><span>視角</span><button class="pill' + (camTop() ? ' on' : '') + '" data-a="cam" data-v="top">俯視</button><button class="pill' + (!camTop() ? ' on' : '') + '" data-a="cam" data-v="iso">等角</button></div>';
+}
+
+// ---- 66-topart.js ----
+/* ================= 俯視美術：每樣東西從上往下看的樣子 =================
+   topArt(k, x, y, W, H) 畫在物件頂面（x,y 左上，W×H）；
+   topFront(k, x, y, W, H) 畫在物件正面（看得到的那一面）。 */
+const TA = {
+  r: (x, y, w, h, f, rx, ex) => '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + Math.max(0, w).toFixed(1) + '" height="' + Math.max(0, h).toFixed(1) + '"' + (rx ? ' rx="' + rx + '"' : '') + ' fill="' + f + '"' + (ex || ' stroke="#1d2733" stroke-width="0.8"') + '/>',
+  c: (x, y, r, f, ex) => '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + r.toFixed(1) + '" fill="' + f + '"' + (ex || ' stroke="#1d2733" stroke-width="0.8"') + '/>',
+  e: (x, y, rx, ry, f, ex) => '<ellipse cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" rx="' + rx.toFixed(1) + '" ry="' + ry.toFixed(1) + '" fill="' + f + '"' + (ex || ' stroke="#1d2733" stroke-width="0.8"') + '/>',
+  l: (x1, y1, x2, y2, s, w) => '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="' + (s || '#1d2733') + '" stroke-width="' + (w || 1) + '" stroke-linecap="round"/>',
+  p: (d, f, ex) => '<path d="' + d + '" fill="' + (f || 'none') + '"' + (ex || ' stroke="#1d2733" stroke-width="0.8"') + '/>'
+};
+function topSprout(x, y, s, col) {
+  return TA.p('M' + x + ' ' + y + ' q -' + 3 * s + ' -' + 3 * s + ' -' + 5 * s + ' -' + 1 * s + ' M' + x + ' ' + y + ' q ' + 3 * s + ' -' + 3 * s + ' ' + 5 * s + ' -' + 1 * s, 'none', ' stroke="' + (col || '#3f8a3f') + '" stroke-width="' + (1.6 * s) + '" stroke-linecap="round"') + TA.c(x, y, 1.2 * s, col || '#4e9d4e', ' stroke="none"');
+}
+function topArt(k, x, y, W, H, rot) {
+  const { r, c, e, l, p } = TA, cx = x + W / 2, cy = y + H / 2, m = Math.min(W, H);
+  let s = '';
+  switch (k) {
+    case 'bed': case 'bedroom': {
+      const blank = k === 'bed' ? '#5c7fa8' : '#c46d7e', blank2 = k === 'bed' ? '#4a6a90' : '#a95668';
+      s += r(x, y, W, H, '#8a6a46', 4);
+      s += r(x + 3, y + 3, W - 6, H - 6, '#f4efe4', 3);
+      const pw = Math.min(W, H) * 0.42;
+      if (W >= H) {
+        s += r(x + 6, y + 6, pw, H - 12, '#ffffff', 5);
+        if (k === 'bedroom') s += l(x + 6 + pw / 2 - 0.5, y + 8, x + 6 + pw / 2 - 0.5, y + H - 8, '#ddd', 1);
+        s += r(x + W * 0.36, y + 3, W * 0.64 - 3, H - 6, blank, 3);
+        s += r(x + W * 0.36, y + 3, 7, H - 6, '#e8e2d4', 2);
+        s += l(x + W * 0.55, y + 6, x + W * 0.62, y + H - 6, blank2, 1.4) + l(x + W * 0.78, y + 6, x + W * 0.72, y + H - 6, blank2, 1.4);
+      } else {
+        s += r(x + 6, y + 6, W - 12, pw, '#ffffff', 5);
+        s += r(x + 3, y + H * 0.36, W - 6, H * 0.64 - 3, blank, 3);
+      }
+      break;
+    }
+    case 'toilet':
+      s += r(x + W * 0.22, y + 2, W * 0.56, H * 0.28, '#f6f8fa', 3);
+      s += r(x + W * 0.44, y + 4, W * 0.12, 3, '#9aa7b4', 1);
+      s += e(cx, y + H * 0.64, W * 0.3, H * 0.32, '#f6f8fa');
+      s += e(cx, y + H * 0.66, W * 0.18, H * 0.2, '#bfe0ee');
+      break;
+    case 'bench': case 'workshop':
+      s += r(x, y, W, H, k === 'bench' ? '#b48a5c' : '#6e5c4a', 2);
+      for (let i = 1; i < 4; i++) s += l(x + 2, y + H * i / 4, x + W - 2, y + H * i / 4, k === 'bench' ? '#946c42' : '#5a4a3a', 0.8);
+      if (k === 'workshop') for (let i = 0; i < 9; i++) for (let j = 0; j < 3; j++) s += c(x + 6 + i * (W - 12) / 8, y + 5 + j * (H - 10) / 2, 0.8, '#3a3028', ' stroke="none"');
+      // 鐵鎚
+      s += r(x + W * 0.12, y + H * 0.3, W * 0.2, 3.5, '#7a5a3a', 1) + r(x + W * 0.1, y + H * 0.2, 5, H * 0.3, '#5d6b7a', 1);
+      // 鋸子
+      s += p('M' + (x + W * 0.42) + ' ' + (y + H * 0.7) + ' l ' + W * 0.22 + ' -' + H * 0.4 + ' l 4 3 l -' + (W * 0.2) + ' ' + H * 0.42 + 'z', '#c8cdd2');
+      s += r(x + W * 0.4, y + H * 0.62, 7, 5, '#b8322a', 1.5);
+      // 扳手、螺絲
+      s += l(x + W * 0.74, y + H * 0.25, x + W * 0.9, y + H * 0.7, '#8a96a3', 3) + c(x + W * 0.74, y + H * 0.25, 3, '#8a96a3');
+      s += c(x + W * 0.66, y + H * 0.78, 1.2, '#444', ' stroke="none"') + c(x + W * 0.7, y + H * 0.82, 1.2, '#444', ' stroke="none"');
+      break;
+    case 'freezer':
+      s += r(x, y, W, H, '#eef5fa', 4);
+      s += r(x + 4, y + 4, W - 8, H - 8, '#dcebf4', 3);
+      s += r(cx - W * 0.22, y + H - 9, W * 0.44, 3.5, '#8aa2b4', 1.5);
+      s += l(x + 8, y + 9, x + 14, y + 15, '#ffffff', 1.4) + l(x + 14, y + 9, x + 8, y + 15, '#ffffff', 1.4) + l(x + 11, y + 8, x + 11, y + 16, '#ffffff', 1.4);
+      break;
+    case 'microwave':
+      s += r(x, y, W, H, '#cfd3d6', 3);
+      for (let i = 0; i < 5; i++) s += l(x + W * 0.6 + i * 3, y + 5, x + W * 0.6 + i * 3, y + H - 5, '#9aa0a6', 1);
+      s += r(x + 5, y + 5, W * 0.45, H - 10, '#b9bec2', 2);
+      break;
+    case 'gen':
+      s += r(x, y, W, H, '#e08a4a', 4);
+      s += r(x + 4, y + 4, W * 0.55, H - 8, '#3b3f45', 3);
+      s += c(x + 4 + W * 0.275, cy, m * 0.26, '#565c64') + c(x + 4 + W * 0.275, cy, m * 0.1, '#2a2d31');
+      s += c(x + W * 0.78, y + H * 0.3, 4, '#2a2d31') + r(x + W * 0.7, y + H * 0.58, W * 0.2, 5, '#c8cdd2', 2);
+      s += r(x + W * 0.66, y + 2, 4, H * 0.3, '#5d6b7a', 1);
+      break;
+    case 'battery': case 'powerroom':
+      s += r(x, y, W, H, k === 'battery' ? '#5f7f99' : '#4d5862', 3);
+      s += r(x + W * 0.2, y + H * 0.2, W * 0.6, H * 0.6, '#2c3a46', 2);
+      if (k === 'battery') { for (let i = 0; i < 4; i++) s += r(x + W * 0.26 + i * W * 0.13, y + H * 0.3, W * 0.1, H * 0.4, i < 3 ? '#6fd18a' : '#3c4c58', 1, ' stroke="none"'); }
+      else for (let i = 0; i < 4; i++) s += r(x + W * 0.26 + i * W * 0.13, y + H * 0.32, W * 0.08, H * 0.36, i % 2 ? '#ecd27a' : '#e8edf2', 1, ' stroke="none"');
+      break;
+    case 'ac':
+      s += r(x, y, W, H, '#f2f5f8', 6);
+      s += c(cx, cy, m * 0.34, '#dfe5ea');
+      for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + 0.4; s += l(cx, cy, cx + Math.cos(a) * m * 0.3, cy + Math.sin(a) * m * 0.3, '#9aa7b4', 2.4); }
+      s += c(cx, cy, 2.4, '#5d6b7a');
+      break;
+    case 'heater':
+      s += r(x, y, W, H, '#7d3a2e', 4);
+      s += r(x + 5, y + 5, W - 10, H - 10, '#3a1c16', 3);
+      for (let i = 0; i < 4; i++) s += l(x + 8, y + 8 + i * (H - 16) / 3, x + W - 8, y + 8 + i * (H - 16) / 3, '#f08a3a', 1.8);
+      break;
+    case 'lightbox': case 'greenhouse': {
+      s += r(x, y, W, H, k === 'lightbox' ? '#6b5a48' : '#cfeedd', 3);
+      if (k === 'greenhouse') { s += r(x + 3, y + 3, W - 6, H - 6, '#e9f8ef', 2); s += l(cx, y + 2, cx, y + H - 2, '#9cc9ae', 1); }
+      s += r(x + 4, y + 5, W - 8, H - 10, '#5a3e2a', 2);
+      const n = Math.max(2, Math.round(W / 14));
+      for (let i = 0; i < n; i++) for (let j = 0; j < 2; j++) s += topSprout(x + 8 + i * (W - 16) / (n - 1), y + H * (0.42 + j * 0.3), 1, '#4e9d4e');
+      if (k === 'lightbox') s += r(x + 2, y + 1, W - 4, 3, '#c98cf0', 1.5, ' stroke="none" opacity="0.9"');
+      break;
+    }
+    case 'potrack':
+      s += r(x, y, W, H, '#a37d55', 2);
+      for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { const px = x + W * (0.28 + i * 0.44), py = y + H * (0.3 + j * 0.42); s += c(px, py, m * 0.17, '#c46a3a') + c(px, py, m * 0.12, '#5a3e2a', ' stroke="none"') + topSprout(px, py + 2, 0.8); }
+      break;
+    case 'pedal':
+      s += e(cx, cy, W * 0.14, H * 0.42, '#2a2d31');
+      s += r(cx - 3, y + H * 0.25, 6, H * 0.5, '#5d6b7a', 2);
+      s += e(cx, y + H * 0.66, W * 0.13, H * 0.09, '#222');
+      s += l(x + W * 0.22, y + H * 0.2, x + W * 0.78, y + H * 0.2, '#3a3f45', 3);
+      s += r(x + W * 0.28, y + H * 0.8, W * 0.44, 4, '#ecd27a', 2);
+      break;
+    case 'juicer':
+      s += r(x + 3, y + 3, W - 6, H - 6, '#f6c650', 6);
+      s += c(cx, cy, m * 0.3, '#fff3c4') + c(cx, cy, m * 0.12, '#f2a33a');
+      break;
+    case 'brewer':
+      s += c(x + W * 0.38, y + H * 0.42, m * 0.3, '#9c7350') + c(x + W * 0.38, y + H * 0.42, m * 0.22, 'none', ' stroke="#5a3e2a" stroke-width="1.6"');
+      s += c(x + W * 0.38, y + H * 0.42, m * 0.06, '#5a3e2a');
+      s += p('M' + (x + W * 0.62) + ' ' + (y + H * 0.42) + ' q ' + W * 0.2 + ' 0 ' + W * 0.2 + ' ' + H * 0.3, 'none', ' stroke="#c7783a" stroke-width="3" stroke-linecap="round"');
+      s += r(x + W * 0.68, y + H * 0.72, W * 0.22, H * 0.18, '#7aa7c7', 2);
+      break;
+    case 'refinery':
+      s += r(x, y, W, H, '#5b5f68', 3);
+      s += c(x + W * 0.25, cy, m * 0.32, '#8a919c') + c(x + W * 0.25, cy, m * 0.16, '#3b3f45');
+      s += c(x + W * 0.62, cy, m * 0.26, '#8a919c') + c(x + W * 0.62, cy, m * 0.1, '#3b3f45');
+      s += l(x + W * 0.25 + m * 0.32, cy - 3, x + W * 0.62 - m * 0.26, cy - 3, '#c7783a', 3);
+      s += r(x + W * 0.84, y + 4, 6, H - 8, '#e0b13a', 2);
+      break;
+    case 'radar':
+      s += r(x + 4, y + 4, W - 8, H - 8, '#3e6455', 3);
+      s += c(cx, cy, m * 0.36, '#d8e2dc');
+      for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; s += l(cx, cy, cx + Math.cos(a) * m * 0.34, cy + Math.sin(a) * m * 0.34, '#9fb4a8', 0.8); }
+      s += c(cx, cy, 3, '#4f7d6a') + c(cx + m * 0.18, cy - m * 0.12, 1.8, '#ff6b5a', ' stroke="none"');
+      break;
+    case 'bot_farm': case 'bot_fix': case 'bot_cook': {
+      const col = { bot_farm: '#9fc3e0', bot_fix: '#e0b39f', bot_cook: '#e0d59f' }[k];
+      s += c(cx, cy, m * 0.4, col) + c(cx, cy, m * 0.28, '#f3f0e6');
+      s += r(cx - m * 0.2, cy - m * 0.08, m * 0.4, m * 0.14, '#1d2733', 3);
+      s += c(cx - m * 0.08, cy - 0.5, 1.6, '#6ff0ff', ' stroke="none"') + c(cx + m * 0.08, cy - 0.5, 1.6, '#6ff0ff', ' stroke="none"');
+      break;
+    }
+    case 'shelf': case 'storage': {
+      s += r(x, y, W, H, k === 'shelf' ? '#b89a6a' : '#8f7350', 2);
+      const n = k === 'shelf' ? 2 : 4;
+      const box = ['#c9a36a', '#7aa7c7', '#d36b5a', '#8fbf6a', '#e0c25a'];
+      for (let i = 0; i < n; i++) {
+        const bx = x + 4 + i * (W - 8) / n, bw = (W - 8) / n - 3;
+        s += r(bx, y + 4, bw, H * 0.42, box[i % 5], 1.5);
+        s += r(bx + 1, y + H * 0.52, bw - 2, H * 0.36, box[(i + 2) % 5], 1.5);
+        s += l(bx + 2, y + 4 + H * 0.21, bx + bw - 2, y + 4 + H * 0.21, 'rgba(0,0,0,0.25)', 1);
+      }
+      break;
+    }
+    default:
+      return null;
+  }
+  return s;
+}
+// 正面細節
+function topFront(k, x, y, W, H) {
+  if (H < 6) return '';
+  const { r, l, c } = TA;
+  switch (k) {
+    case 'microwave': return r(x + 4, y + 2, W * 0.6, H - 4, '#2f3a44', 1.5) + c(x + W * 0.82, y + H / 2, 1.8, '#46d16a', ' stroke="none"');
+    case 'freezer': return l(x + 4, y + 3, x + W - 4, y + 3, '#a9bccb', 1);
+    case 'battery': return r(x + W / 2 - 5, y + 2, 10, Math.max(2, H - 4), '#2c3a46', 1.5);
+    case 'storage': case 'shelf': return l(x + W / 2, y + 1, x + W / 2, y + H - 1, 'rgba(0,0,0,0.35)', 1) + c(x + W / 2 - 3, y + H / 2, 1.3, '#ecd27a', ' stroke="none"') + c(x + W / 2 + 3, y + H / 2, 1.3, '#ecd27a', ' stroke="none"');
+    case 'gen': return r(x + 4, y + 2, W * 0.3, H - 4, '#3b3f45', 1);
+    case 'heater': return r(x + 5, y + 2, W - 10, H - 4, '#f08a3a', 1.5, ' stroke="none" opacity="0.7"');
+    default: return '';
+  }
 }
 
 // ---- 70-codex.js ----
@@ -4555,6 +4740,675 @@ musicTick = function () {
 const _musicStopAsset = musicStop;
 musicStop = function () { if (MUS_AUDIO) { MUS_AUDIO.pause(); MUS_AUDIO = null; MUS_AUDIO_MOOD = ''; } _musicStopAsset(); };
 
+// ---- 98za-siege.js ----
+/* ================= 看得到的屍潮（即時模式） =================
+   屍潮夜 21:00 起，殭屍從大門外和窗外湧上來撞門。
+   點殭屍可以隔著門窗打（耗精力）、丟燃燒瓶、去門口加固。
+   打倒越多，當晚真正結算的屍潮傷害越低（最多 -60%）。結束後自動守夜睡覺。 */
+const SIEGE_HOUR = 21, SIEGE_LEN = 1.5; // 遊戲小時
+
+/* ---------- 額外音效 ---------- */
+const _sfxBaseSg = sfx;
+sfx = function (type) {
+  if (!['hit', 'bash', 'fire', 'knock', 'squeak', 'groan', 'pop', 'fix', 'eat'].includes(type)) return _sfxBaseSg(type);
+  if (J.sound === false) return;
+  try {
+    if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+    const t0 = AC.currentTime;
+    const tone = (f, st, len, wave, vol, f2) => { const o = AC.createOscillator(), g = AC.createGain(); o.type = wave || 'sine'; o.frequency.setValueAtTime(f, t0 + st); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + st + len); g.gain.setValueAtTime(0.0001, t0 + st); g.gain.exponentialRampToValueAtTime(vol || 0.08, t0 + st + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + st + len); o.connect(g).connect(AC.destination); o.start(t0 + st); o.stop(t0 + st + len + 0.02); };
+    const noise = (st, len, vol, hp) => { const n = Math.floor(AC.sampleRate * len), buf = AC.createBuffer(1, n, AC.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n); const src = AC.createBufferSource(), g = AC.createGain(), fl = AC.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = hp || 900; src.buffer = buf; g.gain.value = vol || 0.12; src.connect(fl).connect(g).connect(AC.destination); src.start(t0 + st); };
+    if (type === 'hit') { noise(0, 0.12, 0.2, 1800); tone(140, 0, 0.12, 'square', 0.05, 70); }
+    else if (type === 'bash') { noise(0, 0.18, 0.18, 380); tone(70, 0, 0.18, 'sine', 0.12, 45); }
+    else if (type === 'fire') { noise(0, 0.6, 0.18, 2400); tone(300, 0, 0.3, 'sawtooth', 0.04, 90); }
+    else if (type === 'knock') { [0, 0.18, 0.36].forEach(s => { noise(s, 0.06, 0.25, 600); tone(180, s, 0.06, 'sine', 0.08); }); }
+    else if (type === 'squeak') { tone(2400, 0, 0.06, 'square', 0.03, 3200); tone(2600, 0.1, 0.05, 'square', 0.03, 3400); }
+    else if (type === 'groan') tone(110, 0, 0.7, 'sawtooth', 0.035, 80);
+    else if (type === 'pop') tone(520, 0, 0.09, 'triangle', 0.06, 900);
+    else if (type === 'fix') { noise(0, 0.05, 0.15, 3000); noise(0.15, 0.05, 0.15, 3000); }
+    else if (type === 'eat') { noise(0, 0.05, 0.08, 1200); noise(0.12, 0.05, 0.08, 1200); }
+  } catch (e) {}
+};
+
+/* ---------- 屍潮狀態 ---------- */
+function siegeOf() { const sv = S && S.sv; return sv && sv.siege && sv.siege.d === sv.day ? sv.siege : null; }
+const siegeMulNow = sg => sg && sg.n ? 1 - 0.6 * sg.kills / sg.n : 1;
+// 真正結算時，打倒的殭屍會降低傷害
+const _hordeMulSiege = hordeMul;
+hordeMul = function () { const sg = siegeOf(); return _hordeMulSiege() * (sg && sg.done ? siegeMulNow(sg) : 1); };
+
+function siegeStart() {
+  const sv = S.sv, hz = hordeOn(sv.day), rt = rtState();
+  const n = Math.max(5, Math.min(16, Math.round(hz[1] / 6)));
+  sv.siege = { d: sv.day, p: 0, n, kills: 0, spawned: 0, z: [], fx: [], id: 0, done: false };
+  if (UIS.speed > 1) { UIS.speed = 1; saveUI(); }
+  rt.queue = rt.queue.filter(q => q.a === 'reinforce');
+  if (rt.task && rt.task.a !== 'reinforce') rt.task = null;
+  UI.iso = Object.assign(UI.iso || {}, { floor: '1F' });
+  UI.rtSel = null; UI.rtOut = false;
+  if (rt.pos.f === '1F' && !rt.task) { const g = rtGoalTiles('DOOR'); rt.path = rtPath('1F', rt.pos, g.tiles); }
+  slog('外面傳來此起彼落的嘶吼——' + HTYPES[hordeType(sv.day)].n + '來了！點殭屍可以隔著門窗打，撐到牠們退去。', true);
+  sfx('groan');
+  render();
+}
+function siegeSpawn(sg) {
+  const win = ISO_WIN['1F'], door = ISO_DOOR.at;
+  const spots = [];
+  for (let i = 0; i < 3; i++) spots.push({ kind: 'door', tx: -0.55 - (i % 2) * 0.35, ty: door + 0.25 + i * 0.25 });
+  for (const x of win.y0) spots.push({ kind: 'win', tx: x + 0.5, ty: -0.35 });
+  for (const y of win.x0) spots.push({ kind: 'win', tx: -0.55, ty: y + 0.5 });
+  const s = spots[sg.spawned % spots.length], fast = hordeType(S.sv.day) === 'fast', heavy = hordeType(S.sv.day) === 'heavy';
+  const z = { id: ++sg.id, kind: s.kind, tx: s.tx + (rnd() - 0.5) * 0.2, ty: s.ty + (rnd() - 0.5) * 0.15, hp: heavy ? 3 : 2, st: 'walk', t: 0, sp: fast ? 1.4 : 0.6 };
+  if (s.kind === 'door') { z.x = -1.6; z.y = z.ty + (rnd() - 0.5); } else { z.x = z.tx; z.y = z.ty; z.st = 'rise'; }
+  sg.z.push(z); sg.spawned++;
+}
+function siegeEnd() {
+  const sg = siegeOf(); if (!sg || sg.done) return;
+  sg.done = true;
+  const rt = rtState(); rt.task = null; rt.queue = []; rt.path = [];
+  slog('剩下的殭屍慢慢散去。你打倒了 ' + sg.kills + '/' + sg.n + ' 隻' + (sg.kills ? '，屍潮傷害 -' + Math.round(60 * sg.kills / sg.n) + '%' : '') + '。你靠在門邊守到天亮。', true);
+  SACT.watch();
+}
+
+/* ---------- 每一格 ---------- */
+let SG_LAST = 0, SG_GROAN = 0;
+function siegeTick(now) {
+  requestAnimationFrame(siegeTick);
+  const dt = SG_LAST ? Math.min(0.25, (now - SG_LAST) / 1000) : 0; SG_LAST = now;
+  if (!rtActive() || document.querySelector('.anim.day')) return;
+  const sv = S.sv, sp = RT_SPEEDS[UIS.speed] || 0;
+  if (!sp) return;
+  let sg = siegeOf();
+  if (!sg) { if (hordeOn(sv.day) && sv.hour >= SIEGE_HOUR && sv.hour < LAST_HOUR) siegeStart(); return; }
+  if (sg.done) return;
+  const gdt = dt * sp;
+  sg.p += gdt * RT_MIN_PER_SEC / 60 / SIEGE_LEN;
+  // 前 60% 時間陸續出現
+  while (sg.spawned < sg.n && sg.spawned < Math.ceil(sg.n * Math.min(1, sg.p / 0.6 + 0.08))) siegeSpawn(sg);
+  for (const z of sg.z) {
+    z.t += gdt;
+    if (z.st === 'walk') { const dx = z.tx - z.x, dy = z.ty - z.y, d = Math.hypot(dx, dy), st = z.sp * gdt; if (d <= st) { z.x = z.tx; z.y = z.ty; z.st = 'bash'; z.t = 0; } else { z.x += dx / d * st; z.y += dy / d * st; } }
+    else if (z.st === 'rise' && z.t > 0.8) { z.st = 'bash'; z.t = 0; }
+    else if (z.st === 'bash' && z.t > 1.1 + (z.id % 3) * 0.25) { z.t = 0; z.hitAt = now; if (z.kind === 'door') { sg.bash = now; sfx('bash'); } }
+  }
+  sg.z = sg.z.filter(z => z.st !== 'dead' || now - z.deadAt < 900);
+  sg.fx = sg.fx.filter(f => now - f.t0 < 900);
+  if (now - SG_GROAN > 4000 && sg.z.some(z => z.st !== 'dead')) { SG_GROAN = now; sfx('groan'); }
+  const alive = sg.z.filter(z => z.st !== 'dead').length;
+  if (sg.p >= 1 || (sg.spawned >= sg.n && !alive)) { siegeEnd(); return; }
+  siegePaint(now);
+}
+requestAnimationFrame(siegeTick);
+
+/* ---------- 畫面 ---------- */
+function zombieSVG(z, P, now) {
+  const q = P(z.x, z.y, 0);
+  const dead = z.st === 'dead', rise = z.st === 'rise';
+  const shake = z.st === 'bash' && z.hitAt && now - z.hitAt < 160 ? (z.kind === 'door' ? -3 : 0) : 0;
+  const op = dead ? Math.max(0, 1 - (now - z.deadAt) / 900) : rise ? Math.min(1, z.t / 0.8) : 1;
+  const bob = Math.sin(now / 180 + z.id) * 1.2;
+  const flash = z.hurtAt && now - z.hurtAt < 140;
+  return '<g transform="translate(' + (q[0] + shake).toFixed(1) + ' ' + (q[1] + bob).toFixed(1) + ')' + (dead ? ' rotate(80)' : '') + '" opacity="' + op.toFixed(2) + '">' +
+    '<ellipse cx="0" cy="2" rx="9" ry="3.5" fill="rgba(0,0,0,0.25)"/>' +
+    '<rect x="-6" y="-16" width="12" height="15" rx="4" fill="' + (flash ? '#fff' : '#5e7258') + '" stroke="#1d2733" stroke-width="1"/>' +
+    '<path d="M-5 -13 l 9 -2 M5 -10 l 8 -1" stroke="#7d8f73" stroke-width="3" stroke-linecap="round"/>' +
+    '<circle cx="0" cy="-21" r="6" fill="' + (flash ? '#fff' : '#8fa37f') + '" stroke="#1d2733" stroke-width="1"/>' +
+    '<circle cx="-2.2" cy="-21.5" r="1.3" fill="#d6322a"/><circle cx="2.2" cy="-21.5" r="1.3" fill="#d6322a"/>' +
+    '<path d="M-2.5 -18 h5" stroke="#3a2a2a" stroke-width="1"/>' +
+    '<rect x="-8" y="-29" width="16" height="3" rx="1.5" fill="#1d2733" opacity="' + (dead ? 0 : 0.85) + '"/><rect x="-7.5" y="-28.5" width="' + (15 * z.hp / (hordeType(S.sv.day) === 'heavy' ? 3 : 2)).toFixed(1) + '" height="2" rx="1" fill="#d6322a" opacity="' + (dead ? 0 : 1) + '"/>' +
+    '<circle cx="0" cy="-14" r="15" fill="transparent" data-z="' + z.id + '" style="cursor:crosshair"/></g>';
+}
+function siegeLayer(now) {
+  const sg = siegeOf(); if (!sg || sg.done) return '';
+  const f = (UI.iso && UI.iso.floor) || '1F'; if (f !== '1F') return '';
+  const P = isoProj('1F'), Z = sceneSize('1F');
+  now = now || performance.now();
+  let s = '<rect x="0" y="0" width="' + Z.w + '" height="' + Z.h + '" fill="url(#sg-vig)" pointer-events="none"/>';
+  // 門被撞
+  if (sg.bash && now - sg.bash < 200) { const a = P(0, ISO_DOOR.at), b = P(0, ISO_DOOR.at + 1); s += '<rect x="' + (a[0] - 18) + '" y="' + a[1] + '" width="20" height="' + (b[1] - a[1]) + '" fill="#ff5a3a" opacity="0.35" pointer-events="none"/>'; }
+  for (const z of [...sg.z].sort((a, b) => a.y - b.y)) s += zombieSVG(z, P, now);
+  for (const fx of sg.fx) {
+    const k = (now - fx.t0) / 900;
+    if (fx.kind === 'fire') s += '<g pointer-events="none" opacity="' + (1 - k).toFixed(2) + '"><circle cx="' + fx.x + '" cy="' + fx.y + '" r="' + (12 + k * 30).toFixed(1) + '" fill="#f59a3a" opacity="0.55"/><circle cx="' + fx.x + '" cy="' + fx.y + '" r="' + (6 + k * 16).toFixed(1) + '" fill="#ffd36a"/></g>';
+    else s += '<text x="' + fx.x + '" y="' + (fx.y - k * 18).toFixed(1) + '" text-anchor="middle" font-size="12" font-weight="800" fill="' + (fx.col || '#ffd36a') + '" stroke="#1d2733" stroke-width="2.4" paint-order="stroke" opacity="' + (1 - k).toFixed(2) + '" pointer-events="none">' + fx.txt + '</text>';
+  }
+  return s;
+}
+function siegePaint(now) {
+  const g = document.getElementById('sg-layer'); if (!g) return;
+  g.innerHTML = siegeLayer(now);
+  const sg = siegeOf(), bar = document.getElementById('sg-p');
+  if (bar && sg) bar.style.width = Math.round(Math.min(1, sg.p) * 100) + '%';
+  const k = document.getElementById('sg-k'); if (k && sg) k.textContent = sg.kills + '/' + sg.n;
+}
+
+/* ---------- 互動 ---------- */
+function siegeHit(id) {
+  const sg = siegeOf(); if (!sg || sg.done) return;
+  const sv = S.sv, z = sg.z.find(q => q.id === id && q.st !== 'dead'); if (!z) return;
+  const now = performance.now();
+  if (sg.cd && now - sg.cd < 350) return;
+  if (sv.sta < 2) { siegeFx(z, '沒力氣', '#9aa7b4'); return; }
+  sg.cd = now; sv.sta = Math.max(0, sv.sta - 2);
+  z.hp -= S.char === 'veteran' ? 2 : 1; z.hurtAt = now; sfx('hit');
+  if (z.hp <= 0) { z.st = 'dead'; z.deadAt = now; sg.kills++; siegeFx(z, '擊倒！', '#ffd36a'); if (sv.dog && sv.dog.state === 'pet') sv.dog.xp = (sv.dog.xp || 0) + 0.2; }
+  else siegeFx(z, '-1', '#ff8a6a');
+  siegePaint(now);
+}
+function siegeFx(z, txt, col) { const sg = siegeOf(), q = isoProj('1F')(z.x, z.y, 0); sg.fx.push({ x: q[0], y: q[1] - 34, txt, col, t0: performance.now() }); }
+Object.assign(SACT, {
+  sgMolo() {
+    const sg = siegeOf(), sv = S.sv; if (!sg || sg.done || !(sv.st.molotov > 0)) return;
+    sv.st.molotov--; if (!sv.st.molotov) delete sv.st.molotov;
+    const now = performance.now(), live = sg.z.filter(z => z.st !== 'dead').sort((a, b) => (a.kind === 'door' ? 0 : 1) - (b.kind === 'door' ? 0 : 1)).slice(0, 3);
+    const P = isoProj('1F'), c = P(-0.7, ISO_DOOR.at + 0.5, 0);
+    sg.fx.push({ kind: 'fire', x: c[0], y: c[1] - 8, t0: now });
+    for (const z of live) { z.st = 'dead'; z.deadAt = now; sg.kills++; }
+    sfx('fire'); slog('你從門縫丟出燃燒瓶，燒倒 ' + live.length + ' 隻。');
+    render();
+  },
+  sgSkip() { siegeEnd(); }
+});
+// 點殭屍：用 pointerdown，殭屍每格都在動
+document.addEventListener('pointerdown', e => {
+  const t = e.target.closest && e.target.closest('[data-z]');
+  if (!t) return;
+  e.preventDefault(); e.stopPropagation();
+  siegeHit(Number(t.getAttribute('data-z')));
+}, true);
+
+// 掛進場景與面板
+const _rtSceneSiege = rtScene;
+rtScene = function () {
+  let h = _rtSceneSiege();
+  const sg = siegeOf();
+  if (sg && !sg.done) {
+    h = h.replace('<svg viewBox=', '<svg class="sg-on" viewBox=');
+    h = h.replace(/(<svg class="sg-on"[^>]*>)/, '$1<defs><radialGradient id="sg-vig" cx="50%" cy="50%" r="70%"><stop offset="60%" stop-color="#7a0f0f" stop-opacity="0"/><stop offset="100%" stop-color="#7a0f0f" stop-opacity="0.45"/></radialGradient></defs>');
+    h = h.replace('</svg></div>', '<g id="sg-layer">' + siegeLayer() + '</g></svg></div>');
+  }
+  return h;
+};
+const _rtPanelSiege = rtPanel;
+rtPanel = function () {
+  const sg = siegeOf(), sv = S.sv;
+  if (!sg || sg.done) {
+    const hz = hordeOn(sv.day);
+    const note = hz && sv.hour < SIEGE_HOUR ? '<div class="sg-warn">今晚 ' + SIEGE_HOUR + ':00 ' + HTYPES[hordeType(sv.day)].n + '會來。醒著的話可以在門口跟牠們打；先睡的話就直接結算（沒守夜）。</div>' : '';
+    return note + _rtPanelSiege();
+  }
+  return '<div class="sg-box"><div class="sg-h"><b>屍潮來襲</b><span>打倒 <b id="sg-k">' + sg.kills + '/' + sg.n + '</b>（每隻 -' + Math.round(60 / sg.n) + '% 傷害）</span></div>' +
+    '<div class="bar"><i id="sg-p" style="width:' + Math.round(sg.p * 100) + '%"></i></div>' +
+    '<p class="meta">點畫面上的殭屍隔著門窗打（每下 2 精力，精力 ' + Math.round(sv.sta) + '）。點大門可以加固。</p>' +
+    '<div class="row-btns"><button class="btn red" data-a="sgMolo"' + (sv.st.molotov > 0 ? '' : ' disabled') + '>丟燃燒瓶（' + (sv.st.molotov || 0) + '）</button><button class="btn ghost" data-a="sgSkip">直接守到天亮</button></div></div>' + _rtPanelSiege();
+};
+
+// ---- 98zb-events.js ----
+/* ================= 白天的隨機小事件＋做事動作（即時模式） =================
+   每過一個遊戲小時有機會發生：有人敲門、老鼠偷吃、漏水、設備故障、窗外殭屍、收音機廣播。
+   會在畫面上出現「！」，點它處理；放著不管會有小損失。
+   角色做事時頭上顯示在做什麼，做完跳出「✓」。 */
+const EV_TYPES = {
+  knock:  { n: '有人敲門', ic: '✊', life: 2 },
+  rat:    { n: '老鼠', ic: '🐀', life: 1.5 },
+  leak:   { n: '漏水', ic: '💧', life: 2 },
+  broke:  { n: '設備故障', ic: '🔧', life: 99 },
+  walker: { n: '窗外殭屍', ic: '🧟', life: 1.5 },
+  radio:  { n: '收音機廣播', ic: '📻', life: 2 }
+};
+const TASK_IC = { gen: '⚡', pedal: '🚲', cookx: '🍳', cook: '🍳', craft: '🔨', reinforce: '🔨', rest: '📖', wash: '🚿', plant: '🌱', refine: '⚗️', brew: '🍶', juice: '🧃', evRepair: '🔧', eatFull: '🍚', drinkFull: '💧', sleep: '💤', watch: '👀' };
+
+function evState() {
+  const sv = S.sv;
+  if (!sv.ev || sv.ev.day !== sv.day) sv.ev = { day: sv.day, list: (sv.ev && sv.ev.list || []).filter(e => e.k === 'broke' && !e.gone), n: 0, lastHour: sv.hour, id: (sv.ev && sv.ev.id) || 0 };
+  return sv.ev;
+}
+const evAlive = k => evState().list.find(e => e.k === k && !e.gone);
+function evSpot(k) {
+  const sv = S.sv, objs = isoObjects().filter(o => sv.place[o.id] && sv.place[o.id].f === '1F');
+  const at = o => { const p = sv.place[o.id], D = ISO[o.k], w = p.r ? D.d : D.w, d = p.r ? D.w : D.d; return { x: p.x + w / 2, y: p.y + d / 2, id: o.id, k: o.k }; };
+  if (k === 'knock') return { x: 0.25, y: ISO_DOOR.at + 0.5 };
+  if (k === 'rat') { const o = objs.find(o => ['storage', 'shelf', 'freezer', 'bench'].includes(o.k)); const c = o ? at(o) : { x: 1, y: 1 }; return { x: c.x, y: c.y + 0.8 }; }
+  if (k === 'leak') { const ok = [...rtWalkable('1F')]; const t = ok[Math.floor(rnd() * ok.length)] || '3,3'; const [x, y] = t.split(',').map(Number); return { x: x + 0.5, y: y + 0.5 }; }
+  if (k === 'walker') { const w = ISO_WIN['1F'].y0; const x = w[Math.floor(rnd() * w.length)]; return { x: x + 0.5, y: -0.35 }; }
+  if (k === 'radio') { const o = objs.find(o => o.k === 'bed' || o.k === 'bedroom'); const c = o ? at(o) : { x: 4, y: 1 }; return { x: c.x, y: c.y }; }
+  if (k === 'broke') {
+    const cand = isoObjects().filter(o => ['gen', 'freezer', 'battery', 'ac', 'lightbox', 'pedal', 'microwave'].includes(o.k) && sv.place[o.id] && !(sv.broken || {})[o.k]);
+    if (!cand.length) return null;
+    const o = cand[Math.floor(rnd() * cand.length)], p = sv.place[o.id], D = ISO[o.k], w = p.r ? D.d : D.w, d = p.r ? D.w : D.d;
+    return { x: p.x + w / 2, y: p.y + d / 2, f: p.f, obj: o.k };
+  }
+  return null;
+}
+function evSpawn() {
+  const sv = S.sv, E = evState();
+  const pool = [['knock', 3], ['rat', sv.day >= 3 ? 3 : 0], ['leak', inRain(sv.day) || (typeof isTyphoon === 'function' && isTyphoon(sv.day)) ? 4 : 1], ['broke', sv.day >= 4 ? 2 : 0], ['walker', 3], ['radio', 2]]
+    .filter(([k, w]) => w > 0 && !evAlive(k));
+  const tot = pool.reduce((a, [, w]) => a + w, 0); if (!tot) return;
+  let r = rnd() * tot, k = pool[0][0];
+  for (const [kk, w] of pool) { if ((r -= w) <= 0) { k = kk; break; } }
+  const at = evSpot(k); if (!at) return;
+  const e = Object.assign({ id: ++E.id, k, until: sv.hour + EV_TYPES[k].life, t0: performance.now(), f: '1F', hp: 2 }, at);
+  E.list.push(e); E.n++;
+  if (k === 'broke') { sv.broken = sv.broken || {}; sv.broken[e.obj] = true; }
+  const msg = { knock: '咚咚咚——有人在敲門。', rat: '倉庫那邊傳來窸窸窣窣的聲音……有老鼠！', leak: '天花板開始滴水了。', broke: (e.obj ? ITEMS[e.obj].n : '') + '突然冒出一陣煙，故障了！', walker: '一隻殭屍在窗外晃來晃去，盯著你看。', radio: '收音機沙沙地響了，好像有人在廣播。' }[k];
+  slog(msg, k !== 'radio');
+  sfx({ knock: 'knock', rat: 'squeak', leak: 'pop', broke: 'bash', walker: 'groan', radio: 'pop' }[k]);
+}
+function evExpire(e) {
+  const sv = S.sv; e.gone = true;
+  if (e.k === 'rat') { const foods = Object.keys(sv.st).filter(k => ITEMS[k] && ITEMS[k].cat === 'food' && sv.st[k] > 0); if (foods.length) { const k = foods[Math.floor(rnd() * foods.length)]; const n = Math.min(sv.st[k], 2); sv.st[k] -= n; if (!sv.st[k]) delete sv.st[k]; slog('老鼠跑了，還咬壞了 ' + ITEMS[k].n + ' ×' + n + '。', true); } }
+  else if (e.k === 'leak') { sv.hyg = Math.max(0, (sv.hyg == null ? 80 : sv.hyg) - 8); slog('漏水把地板弄得一團糟，衛生 -8。'); }
+  else if (e.k === 'walker') { sv.def = Math.max(0, sv.def - 8); slog('窗外那隻殭屍抓了半天窗框，防線 -8。'); }
+  else if (e.k === 'knock') slog('敲門聲停了，外面的人走了。');
+}
+
+/* ---------- 處理事件 ---------- */
+function evResolve(id) {
+  const sv = S.sv, E = evState(), e = E.list.find(q => q.id === id && !q.gone); if (!e) return;
+  const now = performance.now();
+  if (e.k === 'rat') {
+    if (rnd() < 0.65) { e.gone = true; sfx('hit'); sv.mor = clamp(sv.mor + 3); evFloat(e, '抓到了！', '#ffd36a'); slog('你一腳踩住老鼠，丟出窗外。心態 +3。'); }
+    else { e.x = Math.max(0.5, Math.min(5.5, e.x + (rnd() - 0.5) * 2.5)); e.y = Math.max(0.5, Math.min(4.5, e.y + (rnd() - 0.5) * 2)); sfx('squeak'); evFloat(e, '溜走了', '#9aa7b4'); }
+  } else if (e.k === 'leak') { e.gone = true; sv.st.wu = (sv.st.wu || 0) + 2; sfx('pop'); evFloat(e, '水 +2', '#6fb3e0'); slog('你拿水桶接了漏下來的水，飲用水 +2 份。'); }
+  else if (e.k === 'walker') {
+    if (sv.sta < 2) { evFloat(e, '沒力氣', '#9aa7b4'); return; }
+    sv.sta -= 2; e.hp -= S.char === 'veteran' ? 2 : 1; e.hurtAt = now; sfx('hit');
+    if (e.hp <= 0) { e.gone = true; evFloat(e, '擊倒！', '#ffd36a'); slog('你拿撬棍從窗縫捅倒了那隻殭屍。'); sv.mor = clamp(sv.mor + 2); } else evFloat(e, '-1', '#ff8a6a');
+  } else if (e.k === 'radio') { e.gone = true; sv.mor = clamp(sv.mor + 8); sfx('pop'); evFloat(e, '心態 +8', '#d97ab8'); slog(evRadioMsg()); }
+  else if (e.k === 'knock') { UI.evKnock = e.id; UI.rtSel = null; render(); return; }
+  else if (e.k === 'broke') { UI.rtSel = (isoObjects().find(o => o.k === e.obj && sv.place[o.id]) || {}).id || null; render(); return; }
+  render();
+}
+function evRadioMsg() {
+  const sv = S.sv; let next = null;
+  for (let d = sv.day + 1; d < sv.day + 15; d++) if (hordeOn(d)) { next = d; break; }
+  const tips = ['廣播：「……倖存者請注意，' + (next ? '第 ' + next + ' 天晚上北邊有大群移動' : '最近幾天屍群活動比較少') + '……」', '廣播：「……' + (inCold(sv.day + 2) ? '兩天後寒流來襲，請準備保暖' : '未來幾天天氣穩定') + '……」', '廣播放了一首老歌，你跟著哼了起來。'];
+  return tips[Math.floor(rnd() * tips.length)] + '心態 +8。';
+}
+function evFloat(e, txt, col) { const E = evState(); E.fx = (E.fx || []).concat([{ x: e.x, y: e.y, txt, col, t0: performance.now() }]); }
+Object.assign(SACT, {
+  evKnockOpen() {
+    const sv = S.sv, E = evState(), e = E.list.find(q => q.id === UI.evKnock && !q.gone); UI.evKnock = null; if (!e) { render(); return; }
+    e.gone = true; const r = rnd();
+    if (r < 0.4) { const mats = ['board', 'metal', 'glass', 'plastic', 'diesel', 'pills']; const a = mats[Math.floor(rnd() * mats.length)]; sv.st[a] = (sv.st[a] || 0) + (a === 'diesel' ? 1 : 2); slog('門外是個背著大包的旅人，送你 ' + ITEMS[a].n + ' ×' + (a === 'diesel' ? 1 : 2) + '，說謝謝你沒拿槍指他。', true); sfx('buy'); }
+    else if (r < 0.75) { UI.evBeg = true; slog('門外是個餓壞的小孩，眼巴巴看著你。'); }
+    else { const h = 8 + Math.floor(rnd() * 8); hurt(h, 'horde'); sv.def = Math.max(0, sv.def - 20); slog('一開門就是一隻殭屍撲上來！你把牠推出去，受傷 ' + h + '、防線 -20。', true); sfx('bash'); checkDeath(); }
+    render();
+  },
+  evKnockIgnore() { const E = evState(), e = E.list.find(q => q.id === UI.evKnock); if (e) e.gone = true; UI.evKnock = null; slog('你屏住呼吸裝作家裡沒人。'); render(); },
+  evBegGive(k) {
+    const sv = S.sv; UI.evBeg = false;
+    if (k && sv_has(k) > 0) { sv_take(k, 1); sv.mor = clamp(sv.mor + 15); slog('你分了' + ITEMS[k].n + '給小孩，他說會記得你。心態 +15。', true); J.kids = (J.kids || 0) + 1; }
+    else { sv.mor = clamp(sv.mor - 6); slog('你關上門。那雙眼睛一直在你腦海裡。心態 -6。'); }
+    render();
+  },
+  evRepair(k) {
+    const sv = S.sv;
+    if (!canAct(1, 6) || !(sv.broken || {})[k]) return;
+    const m = ['metal', 'board', 'plastic'].find(x => sv.st[x] > 0);
+    if (!m) { slog('沒有材料可以修（要鐵片、木板或塑膠 1 個）。'); render(); return; }
+    sv.st[m]--; if (!sv.st[m]) delete sv.st[m];
+    delete sv.broken[k]; sv.sta -= 6;
+    const e = evState().list.find(q => q.k === 'broke' && q.obj === k && !q.gone); if (e) e.gone = true;
+    slog('用 1 個' + ITEMS[m].n + '修好了' + ITEMS[k].n + '。'); sfx('fix');
+    passHours(1); render();
+  }
+});
+// 壞掉的設備只能修
+const _rtActionsEv = rtActions;
+rtActions = function (k) {
+  const sv = S.sv, A = _rtActionsEv(k);
+  if (!(sv.broken || {})[k]) return A;
+  const m = ['metal', 'board', 'plastic'].find(x => sv.st[x] > 0);
+  return [{ label: '修理（用 1 個鐵片／木板／塑膠）', a: 'evRepair', v: k, h: 1, ok: !!m, note: m ? '會用掉' + ITEMS[m].n : '沒有材料' }].concat(A.map(x => Object.assign({}, x, { ok: false, note: '故障中' })));
+};
+// 故障的設備：發電機、儲電站不能用；睡前漏電
+const _genEv = SACT.gen; SACT.gen = function () { if ((S.sv.broken || {}).gen) { slog('發電機故障了，要先修。'); render(); return; } _genEv(); };
+const _pedalEv = SACT.pedal; SACT.pedal = function () { if ((S.sv.broken || {}).pedal) { slog('人力發電機壞了，要先修。'); render(); return; } _pedalEv(); };
+const _nightEv = night;
+night = function (watch) {
+  const sv = S.sv;
+  const br = Object.keys(sv.broken || {});
+  if (br.length && S.phase === 'survive') { sv.power = Math.max(0, sv.power - br.length); slog('故障的' + br.map(k => ITEMS[k].n).join('、') + '漏電，電力 -' + br.length + ' 度。', true); }
+  _nightEv(watch);
+};
+
+/* ---------- 每一格 ---------- */
+let EV_LAST = 0;
+const RT_LAST_TASK = { key: null, label: '', a: '' };
+function evTick(now) {
+  requestAnimationFrame(evTick);
+  if (!rtActive() || document.querySelector('.anim.day')) return;
+  const sv = S.sv, E = evState(), rt = rtState();
+  // 每過一小時：到期、擲骰
+  if (sv.hour !== E.lastHour) {
+    const passed = sv.hour > E.lastHour;
+    E.lastHour = sv.hour;
+    if (passed) {
+      for (const e of E.list) if (!e.gone && e.k !== 'broke' && sv.hour >= e.until) evExpire(e);
+      const sg = typeof siegeOf === 'function' && siegeOf();
+      if (!sg && sv.day >= 2 && sv.hour >= 8 && sv.hour <= 19 && E.n < 3 && rnd() < 0.22) evSpawn();
+      render();
+    }
+  }
+  // 做完事跳出 ✓
+  const key = rt.task ? rt.task.where + rt.task.a + rt.task.label : null;
+  if (key !== RT_LAST_TASK.key) {
+    if (RT_LAST_TASK.key && RT_LAST_TASK.a) { E.fx = (E.fx || []).concat([{ x: rt.pos.x, y: rt.pos.y, txt: (TASK_IC[RT_LAST_TASK.a] || '') + ' ✓', col: '#ecd27a', t0: now }]); if (RT_LAST_TASK.a === 'eatFull') sfx('eat'); }
+    RT_LAST_TASK.key = key; RT_LAST_TASK.label = rt.task ? rt.task.label : ''; RT_LAST_TASK.a = rt.task ? rt.task.a : '';
+  }
+  // 做事的聲音
+  if (rt.task && rt.task.h && !(rt.path && rt.path.length) && (UIS.speed || 0) > 0 && now - EV_LAST > 900) {
+    EV_LAST = now;
+    if (['craft', 'reinforce', 'evRepair'].includes(rt.task.a)) sfx('fix');
+  }
+  // 老鼠亂跑
+  for (const e of E.list) if (e.k === 'rat' && !e.gone && (UIS.speed || 0) > 0) { const t = now / 1000 + e.id; e.dx = Math.sin(t * 1.7) * 0.45; e.dy = Math.cos(t * 1.3) * 0.25; }
+  E.fx = (E.fx || []).filter(f => now - f.t0 < 1200);
+  const g = document.getElementById('ev-layer'); if (g) g.innerHTML = evLayer(now);
+}
+requestAnimationFrame(evTick);
+
+function evLayer(now) {
+  const sv = S.sv, E = evState(), rt = rtState(), f = (UI.iso && UI.iso.floor) || '1F', P = isoProj(f);
+  now = now || performance.now();
+  let s = '';
+  for (const e of E.list) {
+    if (e.gone || (e.f || '1F') !== f) continue;
+    const q = P(e.x + (e.dx || 0), e.y + (e.dy || 0), 0), pulse = 1 + Math.sin(now / 220) * 0.08;
+    if (e.k === 'rat') s += '<g transform="translate(' + q[0].toFixed(1) + ' ' + q[1].toFixed(1) + ')"><ellipse cx="0" cy="0" rx="7" ry="4" fill="#6b625a" stroke="#1d2733" stroke-width="0.8"/><circle cx="6" cy="-1" r="3" fill="#6b625a" stroke="#1d2733" stroke-width="0.8"/><circle cx="7.5" cy="-2" r="0.8" fill="#111"/><path d="M-7 0 q -6 3 -10 -2" stroke="#b07d7d" stroke-width="1.2" fill="none"/></g>';
+    else if (e.k === 'leak') { const k = (now % 1100) / 1100; s += '<ellipse cx="' + q[0] + '" cy="' + q[1] + '" rx="16" ry="7" fill="#7fb6dc" opacity="0.55"/><circle cx="' + q[0] + '" cy="' + (q[1] - 40 + k * 38).toFixed(1) + '" r="2" fill="#5f9fd0"/>'; }
+    else if (e.k === 'walker') { const flash = e.hurtAt && now - e.hurtAt < 140; s += '<g transform="translate(' + q[0].toFixed(1) + ' ' + (q[1] + Math.sin(now / 300) * 1.5).toFixed(1) + ')"><rect x="-6" y="-16" width="12" height="15" rx="4" fill="' + (flash ? '#fff' : '#5e7258') + '" stroke="#1d2733"/><circle cx="0" cy="-21" r="6" fill="' + (flash ? '#fff' : '#8fa37f') + '" stroke="#1d2733"/><circle cx="-2.2" cy="-21.5" r="1.3" fill="#d6322a"/><circle cx="2.2" cy="-21.5" r="1.3" fill="#d6322a"/></g>'; }
+    else if (e.k === 'broke') { for (let i = 0; i < 3; i++) { const k = ((now / 1400) + i / 3) % 1; s += '<circle cx="' + (q[0] + Math.sin(k * 6 + i) * 4).toFixed(1) + '" cy="' + (q[1] - 18 - k * 26).toFixed(1) + '" r="' + (4 + k * 6).toFixed(1) + '" fill="#8a8f96" opacity="' + (0.6 * (1 - k)).toFixed(2) + '" pointer-events="none"/>'; } }
+    // 「！」泡泡
+    s += '<g data-ev="' + e.id + '" style="cursor:pointer" transform="translate(' + q[0].toFixed(1) + ' ' + (q[1] - (e.k === 'walker' ? 44 : 30)).toFixed(1) + ') scale(' + pulse.toFixed(3) + ')"><circle r="22" fill="transparent"/><path d="M-11 -11 h22 a3 3 0 0 1 3 3 v14 a3 3 0 0 1 -3 3 h-7 l-4 5 l-4 -5 h-7 a3 3 0 0 1 -3 -3 v-14 a3 3 0 0 1 3 -3z" fill="' + (e.k === 'radio' ? '#f3f0e6' : '#ecd27a') + '" stroke="#1d2733" stroke-width="1.2"/><text y="4" text-anchor="middle" font-size="11" font-weight="800">' + (e.k === 'radio' ? '📻' : '！') + '</text></g>';
+  }
+  // 角色頭上：在做什麼
+  if (rt.pos.f === f && rt.task) {
+    const q = P(rt.pos.x, rt.pos.y, 0), walking = rt.path && rt.path.length, ic = walking ? '🚶' : TASK_IC[rt.task.a] || '…';
+    s += '<g transform="translate(' + (q[0] + 16).toFixed(1) + ' ' + (q[1] - 50 + Math.sin(now / 260) * 1.5).toFixed(1) + ')" pointer-events="none"><circle r="10" fill="#f3f0e6" stroke="#1d2733" stroke-width="1"/><text y="4" text-anchor="middle" font-size="11">' + ic + '</text></g>';
+  }
+  for (const fx of E.fx || []) {
+    const k = (now - fx.t0) / 1200, q = P(fx.x, fx.y, 0);
+    s += '<text x="' + q[0].toFixed(1) + '" y="' + (q[1] - 58 - k * 20).toFixed(1) + '" text-anchor="middle" font-size="12" font-weight="800" fill="' + fx.col + '" stroke="#1d2733" stroke-width="2.4" paint-order="stroke" opacity="' + (1 - k).toFixed(2) + '" pointer-events="none">' + fx.txt + '</text>';
+  }
+  return s;
+}
+document.addEventListener('pointerdown', e => {
+  const t = e.target.closest && e.target.closest('[data-ev]');
+  if (!t) return;
+  e.preventDefault(); e.stopPropagation();
+  evResolve(Number(t.getAttribute('data-ev')));
+}, true);
+
+const _rtSceneEv = rtScene;
+rtScene = function () { return _rtSceneEv().replace('</svg></div>', '<g id="ev-layer">' + evLayer() + '</g></svg></div>'); };
+const _rtPanelEv = rtPanel;
+rtPanel = function () {
+  const sv = S.sv;
+  let h = '';
+  if (UI.evKnock) h += '<div class="sg-box" style="border-color:var(--ink);background:transparent"><div class="sg-h"><b style="color:inherit">有人在敲門</b></div><p class="meta">可能是需要幫忙的人，也可能不是人。</p><div class="row-btns"><button class="btn" data-a="evKnockOpen">開門看看</button><button class="btn ghost" data-a="evKnockIgnore">裝作沒人在家</button></div></div>';
+  if (UI.evBeg) {
+    const gifts = ['biscuit', 'can', 'sausage', 'noodle', 'choco', 'juice'].filter(k => sv_has(k) > 0);
+    h += '<div class="sg-box" style="border-color:var(--ink);background:transparent"><div class="sg-h"><b style="color:inherit">餓壞的小孩</b></div><div class="row-btns">' + gifts.map(k => '<button class="btn" data-a="evBegGive" data-v="' + k + '">給' + ITEMS[k].n + '</button>').join('') + '<button class="btn ghost" data-a="evBegGive" data-v="">關門</button></div></div>';
+  }
+  const live = evState().list.filter(e => !e.gone);
+  if (live.length) h += '<div class="meta" style="margin:6px 0">待處理：' + live.map(e => EV_TYPES[e.k].ic + ' ' + (e.k === 'broke' ? ITEMS[e.obj].n + '故障' : EV_TYPES[e.k].n)).join('、') + '（點畫面上的「！」）</div>';
+  return h + _rtPanelEv();
+};
+window.__evSpawn = () => evSpawn();
+
+// ---- 98zc-outing.js ----
+/* ================= 即時外出：走進建築，一間一間翻 =================
+   外出時畫面變成那個地點的平面圖：上下各三個房間，中間走廊，左邊是出口。
+   點房間 → 角色走過去 → 進度條搜 1 小時（真正結算用 SACT.search）。
+   走廊有殭屍晃來晃去，靠太近會被發現（暴露值 +12），點牠可以打。
+   天黑後只剩手電筒照得到的範圍。點出口回家。 */
+const OT = { W: 9, H: 8, T: 40, ML: 26, MT: 12 };
+const OT_ROOMS = [[0, 0], [3, 0], [6, 0], [0, 5], [3, 5], [6, 5]];
+const OT_CONT_ART = ['shelf', 'storage', 'freezer', 'bench', 'shelf', 'storage'];
+function otArtFor(n, idx) {
+  if (/冷藏|冰|飲料/.test(n)) return 'freezer';
+  if (/倉|儲|器材|油料/.test(n)) return 'storage';
+  if (/櫃台|辦公|工作|研發|護理|掛號|實驗|教室/.test(n)) return 'bench';
+  if (/機房|頂樓/.test(n)) return 'battery';
+  if (/病房|保健/.test(n)) return 'bed';
+  if (/建材|後院/.test(n)) return 'workshop';
+  return OT_CONT_ART[idx] || 'shelf';
+}
+const OT_FLOOR = { smarket: ['#efe3c8', '#e6d6b4'], school: ['#dfe9d6', '#d2dfc6'], hardware: ['#e3d6c4', '#d6c6ae'], hospital: ['#e4eef3', '#d5e3ea'], tech: ['#dfe2e8', '#d0d4dc'] };
+const otOn = () => rtOn() && S && S.phase === 'survive' && S.sv && S.sv.out && UI.tab === 'act';
+const otP = (x, y) => [OT.ML + x * OT.T, OT.MT + y * OT.T];
+
+function otState() {
+  const o = S.sv.out;
+  if (!o.rt) {
+    o.rt = { pos: { x: 0.5, y: 3.5 }, path: [], task: null, frac: 0, z: [], zid: 0, fx: [], seen: {} };
+    const n = 1 + Math.floor(o.exp / 35) + (S.sv.hour >= 18 ? 1 : 0) + (LOCS[o.loc].lv >= 2 ? 1 : 0);
+    for (let i = 0; i < Math.min(4, n); i++) otAddZ(o.rt);
+  }
+  return o.rt;
+}
+function otAddZ(rt) { rt.z.push({ id: ++rt.zid, x: 3 + rnd() * 5.5, y: 3.2 + rnd() * 0.6, dir: rnd() < 0.5 ? -1 : 1, hp: 2, st: 'walk', sp: 0.25 + rnd() * 0.25 }); }
+// 每個搜刮點在哪
+function otSpot(c, idx) {
+  if (idx < 6) { const [rx, ry] = OT_ROOMS[idx]; return { x: rx + 1.5, y: ry + (ry === 0 ? 1.2 : 1.8), door: { x: rx + 1.5, y: ry === 0 ? 3 : 5 } }; }
+  return { x: 8.2, y: idx === 6 ? 3.3 : 4.7, door: { x: 7.6, y: idx === 6 ? 3.4 : 4.6 } };
+}
+function otPathTo(dest) {
+  const rt = otState(), p = rt.pos, pts = [];
+  const corrY = Math.max(3.3, Math.min(4.7, p.y));
+  if (p.y < 3 || p.y > 5) pts.push({ x: Math.floor(p.x / 3) * 3 + 1.5, y: p.y < 3 ? 2.6 : 5.4 }, { x: Math.floor(p.x / 3) * 3 + 1.5, y: 4 });
+  else pts.push({ x: p.x, y: corrY });
+  if (dest.door) { pts.push({ x: dest.door.x, y: 4 }); pts.push({ x: dest.x, y: dest.y }); }
+  else pts.push({ x: dest.x, y: dest.y });
+  return pts;
+}
+
+/* ---------- 指令 ---------- */
+Object.assign(SACT, {
+  otGo(i) {
+    const sv = S.sv, o = sv.out; if (!o || o.enc) return;
+    const idx = o.conts.findIndex(c => String(c.i) === String(i)); if (idx < 0) return;
+    if (sv.locs[o.loc].done.includes(String(i))) { slog('這裡已經搜過了。'); render(); return; }
+    const rt = otState(), sp = otSpot(o.conts[idx], idx);
+    rt.task = { i: String(i), n: o.conts[idx].n, p: 0 }; rt.path = otPathTo(sp);
+    render();
+  },
+  otExit() {
+    const o = S.sv.out; if (!o || (o.enc && o.enc.t === 'z')) return;
+    const rt = otState(); rt.task = { i: 'EXIT', n: '回家', p: 0 }; rt.path = otPathTo({ x: 0.3, y: 3.6 });
+    render();
+  },
+  otCancel() { const rt = otState(); rt.task = null; rt.path = []; render(); }
+});
+function otFinish() {
+  const rt = otState(), t = rt.task; rt.task = null; rt.path = [];
+  if (!t) return;
+  if (t.i === 'EXIT') { SACT.goHome(); return; }
+  sfx('pop');
+  const sv = S.sv, before = Object.assign({}, sv.out.bag);
+  SACT.search(t.i);
+  const o = S.sv.out;
+  if (o) {
+    const got = Object.entries(o.bag).filter(([k, q]) => q > (before[k] || 0)).map(([k, q]) => (k === 'bp' ? '圖紙' : ITEMS[k].n) + '+' + (q - (before[k] || 0)));
+    const sp = otSpot(null, o.conts.findIndex(c => String(c.i) === t.i));
+    o.rt.fx.push({ x: sp.x, y: sp.y, txt: got.length ? got.slice(0, 2).join(' ') : '空空的', col: got.length ? '#ecd27a' : '#9aa7b4', t0: performance.now() });
+    if (o.enc && o.enc.t === 'z') { for (let k = 0; k < o.enc.n; k++) o.rt.z.push({ id: ++o.rt.zid, x: Math.min(8.5, rt.pos.x + 0.8 + k * 0.4), y: Math.min(7.5, rt.pos.y + 0.3), dir: -1, hp: 2, st: 'chase', sp: 0.5, enc: true }); }
+  }
+}
+
+/* ---------- 每一格 ---------- */
+let OT_LAST = 0;
+function otTick(now) {
+  requestAnimationFrame(otTick);
+  const dt = OT_LAST ? Math.min(0.25, (now - OT_LAST) / 1000) : 0; OT_LAST = now;
+  if (!otOn()) return;
+  const sv = S.sv, o = sv.out, rt = otState(), sp = RT_SPEEDS[UIS.speed] || 0;
+  if (!o.enc && rt.z.some(z => z.enc)) rt.z = rt.z.filter(z => !z.enc);
+  if (!sp || o.enc) { otPaint(now); return; }
+  let full = false;
+  // 走路
+  if (rt.path.length) {
+    let step = dt * 2.4 * Math.min(sp, 3);
+    while (step > 0 && rt.path.length) {
+      const n = rt.path[0], dx = n.x - rt.pos.x, dy = n.y - rt.pos.y, d = Math.hypot(dx, dy);
+      if (d <= step) { rt.pos.x = n.x; rt.pos.y = n.y; rt.path.shift(); step -= d; } else { rt.pos.x += dx / d * step; rt.pos.y += dy / d * step; step = 0; }
+    }
+    if (!rt.path.length && rt.task && rt.task.i === 'EXIT') { otFinish(); render(); return; }
+  }
+  const gh = dt * RT_MIN_PER_SEC * sp / 60;
+  if (rt.task && !rt.path.length) {
+    rt.task.p += gh;
+    if (rt.task.p >= 1) { otFinish(); full = true; }
+  } else {
+    rt.frac += gh;
+    if (rt.frac >= 1) {
+      rt.frac -= 1;
+      if (sv.hour + LOCS[o.loc].trip >= LAST_HOUR) { slog('天快亮不起來了——再不走就回不了家！你只好往回走。', true); SACT.otExit(); }
+      else { passHours(1); full = true; }
+    }
+  }
+  // 殭屍
+  const night = sv.hour >= 18;
+  for (const z of rt.z) {
+    if (z.st === 'dead') continue;
+    const dx = rt.pos.x - z.x, dy = rt.pos.y - z.y, d = Math.hypot(dx, dy);
+    const sense = night ? 2.2 : 1.5;
+    if (d < sense || z.st === 'chase') { z.st = 'chase'; if (d > 0.45) { z.x += dx / d * z.sp * 1.4 * dt * Math.min(sp, 3); z.y += dy / d * z.sp * 1.4 * dt * Math.min(sp, 3); } }
+    else { z.x += z.dir * z.sp * dt * Math.min(sp, 3); if (z.x < 2 || z.x > 8.6) z.dir *= -1; }
+    if (d < 0.7 && (!rt.seen[z.id] || now - rt.seen[z.id] > 6000)) {
+      rt.seen[z.id] = now; o.exp += 12; sfx('groan');
+      rt.fx.push({ x: rt.pos.x, y: rt.pos.y, txt: '被發現！暴露 +12', col: '#ff7b6e', t0: now });
+      slog('殭屍發現你了，暴露值 +12。', true);
+      if (o.exp >= 100) { ambush(); render(); return; }
+      full = true;
+    }
+  }
+  rt.fx = rt.fx.filter(f => now - f.t0 < 1400);
+  if (full) { render(); return; }
+  otPaint(now);
+}
+requestAnimationFrame(otTick);
+
+/* ---------- 畫面 ---------- */
+function otStatic() {
+  const sv = S.sv, o = sv.out, Lst = sv.locs[o.loc], fl = OT_FLOOR[o.loc] || OT_FLOOR.smarket;
+  const Wp = OT.ML * 2 + OT.W * OT.T, Hp = OT.MT * 2 + OT.H * OT.T;
+  let s = '<rect x="0" y="0" width="' + Wp + '" height="' + Hp + '" fill="#2a2f36"/>';
+  // 地板
+  for (let y = 0; y < OT.H; y++) for (let x = 0; x < OT.W; x++) { const a = otP(x, y), corr = y >= 3 && y < 5; s += '<rect x="' + a[0] + '" y="' + a[1] + '" width="' + OT.T + '" height="' + OT.T + '" fill="' + (corr ? ((x + y) % 2 ? '#cfc8bb' : '#d8d1c4') : fl[(x + y) % 2]) + '" stroke="rgba(0,0,0,0.06)"/>'; }
+  // 出口
+  const ex = otP(0, 3);
+  s += '<g data-a="otExit" style="cursor:pointer"><rect x="' + (ex[0] - 22) + '" y="' + ex[1] + '" width="24" height="' + OT.T * 2 + '" fill="#2f6b3f" stroke="#1d2733" stroke-width="1.2"/><text x="' + (ex[0] - 10) + '" y="' + (ex[1] + OT.T) + '" fill="#f3f0e6" font-size="10" font-weight="700" text-anchor="middle" writing-mode="tb">出口</text></g>';
+  // 房間
+  o.conts.forEach((c, idx) => {
+    const done = Lst.done.includes(String(c.i)), sp = otSpot(c, idx);
+    if (idx < 6) {
+      const [rx, ry] = OT_ROOMS[idx], a = otP(rx, ry), b = otP(rx + 3, ry + 3), d1 = otP(rx + 1, ry === 0 ? 3 : 5), d2 = otP(rx + 2, ry === 0 ? 3 : 5);
+      s += '<g data-a="otGo" data-v="' + c.i + '" style="cursor:pointer">';
+      s += '<rect x="' + a[0] + '" y="' + a[1] + '" width="' + (b[0] - a[0]) + '" height="' + (b[1] - a[1]) + '" fill="transparent"/>';
+      // 牆（門口留空）
+      const wy = ry === 0 ? b[1] : a[1];
+      s += '<path d="M' + a[0] + ' ' + a[1] + ' H' + b[0] + ' V' + b[1] + ' H' + a[0] + ' Z" fill="none" stroke="#3a3f45" stroke-width="5"/>';
+      s += '<line x1="' + (d1[0] + 4) + '" y1="' + wy + '" x2="' + (d2[0] - 4) + '" y2="' + wy + '" stroke="' + fl[0] + '" stroke-width="7"/>';
+      const cw = OT.T * 1.6, ch = OT.T * 0.75, cx = otP(sp.x, sp.y)[0] - cw / 2, cy = otP(sp.x, sp.y)[1] - ch / 2;
+      const art = topArt(otArtFor(c.n, idx), cx, cy, cw, ch);
+      s += '<g opacity="' + (done ? 0.4 : 1) + '">' + (art || '') + '</g>';
+      s += '<text x="' + (a[0] + b[0]) / 2 + '" y="' + (ry === 0 ? a[1] + 16 : b[1] - 8) + '" text-anchor="middle" font-size="11" font-weight="700" fill="#3a3028" font-family="Noto Sans TC, sans-serif">' + esc(c.n) + (done ? '（空）' : '') + '</text>';
+      if (c.i === 'lock' || c.i === 'truck') s += '<text x="' + (a[0] + b[0]) / 2 + '" y="' + (a[1] + b[1]) / 2 + '" font-size="18" text-anchor="middle">' + (c.i === 'lock' ? '🔒' : '🚚') + '</text>';
+      s += '</g>';
+    } else {
+      const q = otP(sp.x, sp.y);
+      s += '<g data-a="otGo" data-v="' + c.i + '" style="cursor:pointer"><rect x="' + (q[0] - 20) + '" y="' + (q[1] - 16) + '" width="40" height="32" rx="5" fill="' + (done ? '#8a8f96' : c.i === 'lock' ? '#a8661a' : '#5d6b7a') + '" stroke="#1d2733"/><text x="' + q[0] + '" y="' + (q[1] + 5) + '" font-size="14" text-anchor="middle">' + (c.i === 'lock' ? '🔒' : '🚚') + '</text></g>';
+    }
+  });
+  return { s, Wp, Hp };
+}
+function otDyn(now) {
+  const sv = S.sv, o = sv.out, rt = otState();
+  now = now || performance.now();
+  let s = '';
+  // 殭屍
+  for (const z of rt.z) {
+    const q = otP(z.x, z.y), dead = z.st === 'dead';
+    if (dead && now - z.deadAt > 900) continue;
+    const flash = z.hurtAt && now - z.hurtAt < 140, bob = Math.sin(now / 200 + z.id) * 1.2;
+    s += '<g transform="translate(' + q[0].toFixed(1) + ' ' + (q[1] + bob).toFixed(1) + ')' + (dead ? ' rotate(80)' : '') + '" opacity="' + (dead ? Math.max(0, 1 - (now - z.deadAt) / 900).toFixed(2) : 1) + '">' +
+      '<ellipse cy="2" rx="8" ry="3" fill="rgba(0,0,0,0.25)"/><rect x="-5.5" y="-15" width="11" height="14" rx="4" fill="' + (flash ? '#fff' : '#5e7258') + '" stroke="#1d2733"/><path d="M' + (z.dir > 0 ? '4 -12 l8 -1' : '-4 -12 l-8 -1') + '" stroke="#7d8f73" stroke-width="3" stroke-linecap="round"/>' +
+      '<circle cy="-19" r="5.5" fill="' + (flash ? '#fff' : '#8fa37f') + '" stroke="#1d2733"/><circle cx="-2" cy="-19.5" r="1.2" fill="#d6322a"/><circle cx="2" cy="-19.5" r="1.2" fill="#d6322a"/>' +
+      (z.st === 'chase' && !dead ? '<text y="-30" text-anchor="middle" font-size="11" font-weight="800" fill="#ff5a3a" stroke="#1d2733" stroke-width="2" paint-order="stroke">!</text>' : '') +
+      '<circle cy="-12" r="14" fill="transparent" data-oz="' + z.id + '" style="cursor:crosshair"/></g>';
+  }
+  // 角色
+  const q = otP(rt.pos.x, rt.pos.y), walking = rt.path.length > 0;
+  s += '<g transform="translate(' + q[0].toFixed(1) + ' ' + q[1].toFixed(1) + ')" pointer-events="none"><ellipse cy="2" rx="8" ry="3" fill="rgba(0,0,0,0.25)"/>' +
+    '<g transform="translate(0 ' + (walking ? Math.abs(Math.sin(now / 120)) * -2 : 0).toFixed(1) + ')"><rect x="-5" y="-16" width="10" height="13" rx="3" fill="#3b5b8a" stroke="#1d2733"/><rect x="-4.5" y="-14" width="9" height="8" rx="2" fill="#8a6a46" opacity="0.8"/><circle cy="-21" r="5.5" fill="#f1d3b3" stroke="#1d2733"/><path d="M-5.5 -23 q5.5 -6 11 0" fill="#2b2b2b"/></g></g>';
+  // 進度條
+  if (rt.task && !walking && rt.task.i !== 'EXIT') s += '<g transform="translate(' + q[0].toFixed(1) + ' ' + (q[1] - 36).toFixed(1) + ')" pointer-events="none"><rect x="-21" y="-4" width="42" height="8" rx="3" fill="#1d2733"/><rect x="-20" y="-3" width="' + (Math.min(1, rt.task.p) * 40).toFixed(1) + '" height="6" rx="2" fill="#ecd27a"/><text y="-8" text-anchor="middle" font-size="10" font-weight="700" fill="#f3f0e6" stroke="#1d2733" stroke-width="2.4" paint-order="stroke">翻找中…</text></g>';
+  // 天黑：手電筒
+  if (sv.hour >= 18 || LOCS[o.loc].lv >= 3) {
+    const Wp = OT.ML * 2 + OT.W * OT.T, Hp = OT.MT * 2 + OT.H * OT.T;
+    s += '<defs><radialGradient id="ot-torch" gradientUnits="userSpaceOnUse" cx="' + q[0].toFixed(1) + '" cy="' + (q[1] - 10).toFixed(1) + '" r="' + (sv.hour >= 18 ? 95 : 140) + '"><stop offset="0.45" stop-color="#05070a" stop-opacity="0"/><stop offset="1" stop-color="#05070a" stop-opacity="' + (sv.hour >= 18 ? 0.88 : 0.55) + '"/></radialGradient></defs><rect x="0" y="0" width="' + Wp + '" height="' + Hp + '" fill="url(#ot-torch)" pointer-events="none"/>';
+  }
+  for (const f of rt.fx) {
+    const k = (now - f.t0) / 1400, p = otP(f.x, f.y);
+    s += '<text x="' + p[0].toFixed(1) + '" y="' + (p[1] - 30 - k * 20).toFixed(1) + '" text-anchor="middle" font-size="11.5" font-weight="800" fill="' + f.col + '" stroke="#1d2733" stroke-width="2.4" paint-order="stroke" opacity="' + (1 - k).toFixed(2) + '" pointer-events="none">' + esc(f.txt) + '</text>';
+  }
+  return s;
+}
+function otPaint(now) {
+  const g = document.getElementById('ot-layer'); if (g) g.innerHTML = otDyn(now);
+  const rt = S.sv.out && S.sv.out.rt, c = document.getElementById('rt-clock');
+  if (c && rt) { const h = S.sv.hour + (rt.task && !rt.path.length ? rt.task.p : rt.frac); c.textContent = String(Math.floor(h) % 24).padStart(2, '0') + ':' + String(Math.floor((h % 1) * 60)).padStart(2, '0'); }
+}
+function otScene() {
+  const sv = S.sv, o = sv.out, st = otStatic();
+  const speeds = '<div class="rt-sp">' + ['暫停', '▶', '▶▶', '▶▶▶'].map((t, i) => '<button class="' + (UIS.speed === i ? 'on' : '') + '" data-a="rtSpeed" data-v="' + i + '">' + t + '</button>').join('') + '</div>';
+  const hud = '<div class="rt-c"><div class="rt-day">DAY ' + sv.day + '</div><div id="rt-clock" class="rt-time">' + String(sv.hour).padStart(2, '0') + ':00</div><div class="rt-wx">' + LOCS[o.loc].n + '</div></div>';
+  const exp = '<div class="rt-q"><div class="rt-qh">暴露值</div><div class="bar' + (o.exp >= 70 ? ' full' : '') + '" style="width:120px"><i style="width:' + Math.min(100, o.exp) + '%"></i></div><div>' + Math.round(o.exp) + '% · 背包 ' + kg(outWeight()) + '/' + bagCap() + 'kg</div></div>';
+  const bar = (n, v, col) => '<div class="rt-st"><span>' + n + '</span><div class="bar' + (v <= 20 ? ' full' : '') + '"><i style="width:' + clamp(v) + '%;background:' + col + '"></i></div><b class="num">' + Math.round(v) + '</b></div>';
+  const stats = '<div class="rt-stats">' + bar('生命', sv.hp, '#6fc48a') + bar('精力', sv.sta, '#e6c84f') + bar('飽腹', sv.sat, '#e0a85a') + bar('水分', sv.hyd, '#6fb3e0') + '</div>';
+  return '<div class="rt-wrap ot"><div class="iso top"><svg viewBox="0 0 ' + st.Wp + ' ' + st.Hp + '" role="img" aria-label="' + LOCS[o.loc].n + '">' + st.s + '<g id="ot-layer">' + otDyn() + '</g></svg></div>' + exp + hud + speeds + '</div>' + stats;
+}
+// 打殭屍
+document.addEventListener('pointerdown', e => {
+  const t = e.target.closest && e.target.closest('[data-oz]'); if (!t || !S || !S.sv || !S.sv.out) return;
+  e.preventDefault(); e.stopPropagation();
+  const sv = S.sv, rt = otState(), z = rt.z.find(q => q.id === Number(t.getAttribute('data-oz')) && q.st !== 'dead'); if (!z) return;
+  const now = performance.now();
+  if (Math.hypot(z.x - rt.pos.x, z.y - rt.pos.y) > 1.6) { rt.fx.push({ x: z.x, y: z.y, txt: '太遠了', col: '#9aa7b4', t0: now }); return; }
+  if (sv.sta < 3) { rt.fx.push({ x: z.x, y: z.y, txt: '沒力氣', col: '#9aa7b4', t0: now }); return; }
+  sv.sta -= 3; z.hp -= (typeof weapon === 'function' && weapon()) || S.char === 'veteran' ? 2 : 1; z.hurtAt = now; sfx('hit');
+  if (typeof weapon === 'function' && weapon() && typeof wearWeapon === 'function') { try { wearWeapon(); } catch (er) {} }
+  if (z.hp <= 0) { z.st = 'dead'; z.deadAt = now; rt.fx.push({ x: z.x, y: z.y, txt: '擊倒！', col: '#ffd36a', t0: now }); sv.out.exp += 3; }
+  else { rt.fx.push({ x: z.x, y: z.y, txt: '-1', col: '#ff8a6a', t0: now }); }
+  otPaint(now);
+}, true);
+
+// 外出畫面：即時地圖取代原本的插圖和清單
+const _viewOutOT = viewOut;
+viewOut = function () {
+  let h = _viewOutOT();
+  if (!rtOn() || !S.sv.out) return h;
+  const i = h.indexOf('<div class="scene">'), j = h.indexOf('</svg></div>', i);
+  if (i >= 0 && j > i) h = h.slice(0, i) + h.slice(j + 12);
+  h = h.replace(/data-a="search"/g, 'data-a="otGo"');
+  const rt = otState();
+  const task = rt.task ? '<div class="rt-task"><div><b>' + esc(rt.task.n) + '</b><span>' + (rt.path.length ? '（走過去中）' : rt.task.i === 'EXIT' ? '' : '（翻找中）') + '</span></div><button class="btn ghost" data-a="otCancel">取消</button></div>' : '<p class="meta" style="margin:8px 0">點房間，角色會走過去翻找（每處 1 小時）。走廊上的殭屍靠太近會發現你，可以點牠打（要走近一點）。點左邊綠色出口回家。</p>';
+  return otScene() + task + h;
+};
+// 外出時也不顯示上方狀態列
+const _renderOT = render;
+render = function () { _renderOT(); const hd = document.querySelector('.status'); if (hd && otOn()) hd.style.display = 'none'; };
+
+// 標題頁：舊版（文字版）入口
+const _viewTitleClassic = viewTitle;
+viewTitle = function () {
+  return _viewTitleClassic().replace(/<\/main>\s*$/, '') + '<p class="meta" style="text-align:center;margin:14px 0 24px"><a href="classic.html" style="color:inherit">切換到舊版（文字版）</a> · 兩版共用存檔</p>' + (/<\/main>\s*$/.test(_viewTitleClassic()) ? '</main>' : '');
+};
+
 // ---- 99-boot.js ----
 /* ================= 事件綁定 ================= */
 $app.addEventListener('click', e => {
@@ -4593,7 +5447,7 @@ if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude
 else start((window.claude && window.claude.hot && window.claude.hot.data) || {});
 
 // 給測試用
-window.__slog = { get S() { return S; }, ACT, get SACT() { return SACT; }, hordeType, HORDES };
+window.__slog = { get S() { return S; }, ACT, get SACT() { return SACT; }, hordeType, HORDES, hordeOn: d => hordeOn(d), render: () => render(), get UI() { return UI; }, get UIS() { return UIS; } };
 })();
 </script>
 </body>
