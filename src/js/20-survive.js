@@ -196,7 +196,7 @@ function night(watch) {
   if (solar > 0) sv.power = Math.min(cap, sv.power + solar);
 
   // 2. 設備耗電（冷氣 > 冰櫃 > 種植箱）
-  const devs = [['ac', cold ? 1.5 : 0], ['freezer', 1], ['lightbox', (st.lightbox || 0) * 1], ['bot_fix', 0.5], ['bot_farm', 0.5], ['bot_cook', 0.5]];
+  const devs = [['ac', cold ? 1.5 : 0], ['freezer', typeof isoBonus === 'function' ? isoBonus().freezer : 1], ['lightbox', (st.lightbox || 0) * 1], ['bot_fix', 0.5], ['bot_farm', 0.5], ['bot_cook', 0.5]];
   sv.powered = {};
   for (const [k, need] of devs) {
     if (!(st[k] > 0) || !sv.dev[k] || need <= 0) { sv.powered[k] = false; continue; }
@@ -265,7 +265,7 @@ function night(watch) {
   sv.sat = clamp(sv.sat - 10 * diffDecay());
   sv.hyd = clamp(sv.hyd - 14 * diffDecay());
   if (watch) sv.sta = clamp(sv.sta + 15);
-  else sv.sta = clamp(sv.sta + (55 + (roomN('bedroom') ? 10 : 0) + (sv.mor > 50 ? 15 : 0) - (sv.mor < 20 ? 20 : 0)) * (sv.sick ? 0.5 : 1));
+  else sv.sta = clamp(sv.sta + (55 + (roomN('bedroom') ? 10 : 0) + (typeof isoBonus === 'function' ? isoBonus().sleep : 0) + (sv.mor > 50 ? 15 : 0) - (sv.mor < 20 ? 20 : 0)) * (sv.sick ? 0.5 : 1));
   if (sv.sat <= 0) hurt(10, 'food');
   if (sv.hyd <= 0) hurt(20, 'water');
   if (cold && !warmNight) hurt(hasT('warm') ? 3 : 6, 'cold');
@@ -294,7 +294,7 @@ function night(watch) {
     p.age++;
     if (p.age < growDays()) continue;
     if (p.slot === 'light' && !sv.powered.lightbox) continue;
-    const rate = (p.slot === 'pot' ? 0.5 : 1) * (hasT('green') ? 1.3 : 1) * (robotOn('bot_farm') ? 1.25 : 1) * (allyOn('zoe', 'farm') ? 1.3 : 1);
+    const rate = (p.slot === 'pot' ? 0.5 : 1) * (hasT('green') ? 1.3 : 1) * (robotOn('bot_farm') ? 1.25 : 1) * (allyOn('zoe', 'farm') ? 1.3 : 1) * (typeof isoBonus === 'function' ? isoBonus().crop : 1);
     p.acc = (p.acc || 0) + rate * fert;
     const got = Math.floor(p.acc); p.acc -= got;
     if (got) harvest[p.k] = (harvest[p.k] || 0) + got;
@@ -337,7 +337,7 @@ function meter(label, v, warn) {
 function renderSurvive() {
   const sv = S.sv;
   const tonight = hordeOn(sv.day);
-  let body = UI.tab === 'base' ? viewRoomPanel() + viewBase() : UI.tab === 'store' ? viewStore() : UI.tab === 'journal' ? viewJournal(false) : viewActs();
+  let body = UI.tab === 'base' ? viewIso() + viewBase() : UI.tab === 'store' ? viewStore() : UI.tab === 'journal' ? viewJournal(false) : viewActs();
   body = tip(sv.out && UI.tab === 'act' ? 'out' : UI.tab === 'base' ? 'base' : 'survive') + body;
   $app.innerHTML =
     '<header class="status"><div class="status-in">' +
@@ -346,7 +346,7 @@ function renderSurvive() {
     '</div></header>' +
     '<main class="wrap">' +
       '<div class="ticker">' + sv.log.slice(0, 3).map(l => '<p class="' + (l.alert ? 'alert' : '') + '">' + esc(l.txt) + '</p>').join('') + '</div>' +
-      ((UI.tab === 'act' || UI.tab === 'base') && !sv.out ? houseSVG() : '') +
+      (UI.tab === 'act' && !sv.out ? houseSVG() : '') +
       '<div class="chips">' + (sv.noise != null ? '<span>噪音 <b class="num"' + (sv.noise > 60 ? ' style="color:var(--stamp)"' : '') + '>' + sv.noise + '</b></span><span>衛生 <b class="num"' + (sv.hyg < 30 ? ' style="color:var(--stamp)"' : '') + '>' + Math.round(sv.hyg) + '</b></span>' : '') + '<span>防線 <b class="num">' + Math.round(sv.def) + '</b>/' + sv.defMax + '</span><span>電 <b class="num">' + (Math.round(sv.power * 10) / 10) + '</b>/' + powerCap() + ' 度</span><span>水 <b class="num">' + sv.st.wu + '</b> 份</span>' +
         (inCold(sv.day) ? '<span class="tag red">寒潮</span>' : '') + (inRain(sv.day) ? '<span class="tag amber">陰雨</span>' : '') + '</div>' +
       body +

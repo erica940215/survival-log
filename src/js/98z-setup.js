@@ -23,3 +23,29 @@ viewSetup = function () {
 // 換日動畫只在守家時出現
 const _animOverlayFinal = animOverlay;
 animOverlay = function () { if (UI.anim && UI.anim.kind === 'day' && (!S || S.phase !== 'survive')) { UI.anim = null; return ''; } return _animOverlayFinal(); };
+
+/* ================= 素材替換：場景插圖、背景音樂（有列在這裡才會用檔案） ================= */
+const SCENE_ASSETS = {};   // 例：{ mart: 'assets/scenes/mart.png', school: 'assets/scenes/school.png' }
+const MUSIC_ASSETS = {};   // 例：{ tense: 'assets/music/tense.mp3', calm: 'assets/music/calm.mp3', dark: 'assets/music/dark.mp3' }
+const _sceneAsset = sceneSVG;
+sceneSVG = function (kind) {
+  if (SCENE_ASSETS[kind]) return '<div class="scene"><img src="' + SCENE_ASSETS[kind] + '" alt="" style="width:100%;height:auto;display:block;border-radius:8px"></div>';
+  return _sceneAsset(kind);
+};
+let MUS_AUDIO = null, MUS_AUDIO_MOOD = '';
+const _musicTickAsset = musicTick;
+musicTick = function () {
+  const mood = musicMood();
+  if (J.music === true && MUSIC_ASSETS[mood]) {
+    if (MUS_AUDIO_MOOD !== mood) {
+      if (MUS_AUDIO) MUS_AUDIO.pause();
+      MUS_AUDIO = new Audio(MUSIC_ASSETS[mood]); MUS_AUDIO.loop = true; MUS_AUDIO.volume = 0.5; MUS_AUDIO_MOOD = mood;
+      MUS_AUDIO.play().catch(() => {});
+    }
+    return;
+  }
+  if (MUS_AUDIO) { MUS_AUDIO.pause(); MUS_AUDIO = null; MUS_AUDIO_MOOD = ''; }
+  _musicTickAsset();
+};
+const _musicStopAsset = musicStop;
+musicStop = function () { if (MUS_AUDIO) { MUS_AUDIO.pause(); MUS_AUDIO = null; MUS_AUDIO_MOOD = ''; } _musicStopAsset(); };

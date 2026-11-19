@@ -210,3 +210,6 @@ details.guide p { margin: 6px 0 2px; font-size: 14px; }
 .qbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0 2px; }
 .seed-in { font-family: var(--f-num); font-size: 15px; border: 1.5px solid var(--ink); border-radius: 6px; padding: 3px 8px; width: 140px; background: transparent; color: var(--ink); text-transform: uppercase; }
 .diary-img { width: 100%; border: 1px solid var(--line); border-radius: 6px; margin: 6px 0 12px; }
+.iso { margin: 6px -8px 0; }
+.iso svg { width: 100%; height: auto; display: block; touch-action: manipulation; }
+:root[data-dark="1"] .iso svg { background: #f3f0e6; border-radius: 8px; }
