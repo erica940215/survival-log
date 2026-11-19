@@ -238,6 +238,7 @@ function night(watch) {
     sv.def -= dmg;
     if (sv.def >= 0) {
       sv.sp += 10;
+      sv.htSurv = sv.htSurv || {}; sv.htSurv[hordeType(d)] = true;
       if (sv.dog && sv.dog.state === 'pet') sv.dog.xp += 2;
       chron(d, HTYPES[hordeType(d)].n + '（強度 ' + hz[1] + '）' + (trapKill ? '，陷阱擋下 ' + Math.round(trapKill) : '') + (watch ? '，你守了一夜' + (used ? '、邊打邊修用掉 ' + used + ' 份材料' : '') : '') + '。防線剩 ' + Math.round(sv.def) + '。', 'good');
       slog('屍潮退去了，防線剩 ' + Math.round(sv.def) + '。', true);
@@ -335,7 +336,7 @@ function meter(label, v, warn) {
 function renderSurvive() {
   const sv = S.sv;
   const tonight = hordeOn(sv.day);
-  let body = UI.tab === 'base' ? viewBase() : UI.tab === 'store' ? viewStore() : UI.tab === 'journal' ? viewJournal(false) : viewActs();
+  let body = UI.tab === 'base' ? viewRoomPanel() + viewBase() : UI.tab === 'store' ? viewStore() : UI.tab === 'journal' ? viewJournal(false) : viewActs();
   body = tip(sv.out && UI.tab === 'act' ? 'out' : UI.tab === 'base' ? 'base' : 'survive') + body;
   $app.innerHTML =
     '<header class="status"><div class="status-in">' +
@@ -390,6 +391,7 @@ function viewActs() {
     if (st.pills) h += actRow('止痛藥 ×' + st.pills, '生命 +10 · 心態 +3', '用', 'heal', 'pills', sv.hp < 100);
     h += '</div>';
   }
+  h += viewUsable();
   // 睡覺
   const hz = hordeOn(sv.day);
   h += '<div class="cat">結束這一天</div>' + viewSleepWarn() + '<div class="sheet">';
@@ -435,6 +437,7 @@ function viewStore() {
   const sv = S.sv;
   const all = Object.keys(sv.st).filter(k => k !== 'wu' && ITEMS[k] && sv.st[k] > 0);
   let h = '<div class="cat">新鮮食物</div>';
+  h = viewGrid() + h;
   h += sv.fresh.length ? '<div class="sheet">' + sv.fresh.slice().sort((a, b) => a.life - b.life).map(f => '<div class="item"><div><div class="nm">' + ITEMS[f.k].n + '</div><div class="meta">' + Math.ceil(f.life) + ' 天後壞（冰櫃有電時壞得慢）</div></div><div class="price">×' + f.q + '</div></div>').join('') + '</div>' : '<p class="empty">沒有。</p>';
   h += '<div class="cat">庫存</div>';
   h += all.length ? '<div class="sheet">' + CAT_ORDER.flatMap(c => all.filter(k => ITEMS[k].cat === c)).map(k => '<div class="item"><div><div class="nm">' + ITEMS[k].n + '</div><div class="meta">' + ITEMS[k].note + '</div></div><div class="price">×' + sv.st[k] + '</div></div>').join('') + '</div>' : '<p class="empty">空的。</p>';

@@ -40,7 +40,7 @@ function m5Init(sv) {
   sv.xp = 0; sv.trades = 0; sv.out = null;
   sv.locs = {};
   for (const k of Object.keys(LOCS)) sv.locs[k] = { done: [] };
-  sv.zoe = { state: 'wait', given: 0, miss: 0, want: null, today: false };
+  sv.zoe = { state: 'wait', given: S.zoePrep || 0, miss: 0, want: null, today: false };
   sv.mgr = { state: 'none', fed: 0, miss: 0, today: false };
   sv.offers = [];
   if (S.char === 'student') { sv.talents.green = true; sv.talents.chef = true; }
@@ -77,6 +77,7 @@ function m5Morning(nd) {
 Object.assign(SACT, {
   goOut(loc) {
     const sv = S.sv, L = LOCS[loc];
+    if (L && !sv.locs[loc]) sv.locs[loc] = { done: [] };
     if (!L || sv.out || (S.mods && S.mods.noOut) || expLevel(sv.xp) < L.lv || !canAct(L.trip, staCost(10))) return;
     if (L.noise && !(sv.st.noise > 0)) { slog('那裡屍群太多，要先做一個噪音器引開。'); render(); return; }
     if (L.noise) { sv.st.noise--; if (!sv.st.noise) delete sv.st.noise; }
@@ -210,7 +211,7 @@ function bringHome(bag) {
       continue;
     }
     let fit = q;
-    if (k !== 'wu' && ITEMS[k].cat !== 'equip' && ITEMS[k].w > 0) fit = Math.max(0, Math.min(q, Math.floor((storeCap() - storeWeight()) / ITEMS[k].w)));
+    if (k !== 'wu' && ITEMS[k].cat !== 'equip') fit = fitUnits(k, q);
     if (fit < q) got.push(ITEMS[k].n + '×' + (q - fit) + '（倉庫放不下，丟在門口）');
     if (!fit) continue;
     if (k === 'wu') sv.st.wu += fit; else sv.st[k] = (sv.st[k] || 0) + fit;
@@ -256,6 +257,7 @@ function viewOutside() {
   if (S.mods && S.mods.noOut) h += '<p class="empty">挑戰條件「足不出戶」：這輪不能外出。</p>';
   for (const [k, L] of Object.entries(LOCS)) {
     if (S.mods && S.mods.noOut) break;
+    if (!sv.locs[k]) sv.locs[k] = { done: [] };
     const left = L.cont.length - sv.locs[k].done.filter(x => /^\d$/.test(x)).length;
     const locked = lv < L.lv;
     const noNoise = L.noise && !(sv.st.noise > 0);

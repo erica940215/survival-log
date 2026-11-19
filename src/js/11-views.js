@@ -47,9 +47,9 @@ function viewHere() {
   }
   if (id === 'cars') {
     const open = isOpen('cars', S.t);
-    h += '<div class="sheet"><div class="item"><div><div class="nm">二手小車</div><div class="meta">移動時間約減半 · 後車廂 +80kg · 買賣各花 10 分鐘</div></div><div class="price">' + (S.car ? '+$450' : '$500') + '</div><div class="ctrl">' +
+    h += '<div class="sheet"><div class="item"><div><div class="nm">二手小車</div><div class="meta">移動時間約減半 · 後車廂 +80kg · 買賣各花 10 分鐘</div></div><div class="price">' + (S.car ? '+$450' : money(carPrice())) + '</div><div class="ctrl">' +
       (S.car ? '<button class="btn ghost" data-a="sellCar"' + (open ? '' : ' disabled') + '>賣回車行</button>'
-             : '<button class="btn" data-a="buyCar"' + (open && S.money >= 500 ? '' : ' disabled') + '>買下</button>') +
+             : '<button class="btn" data-a="buyCar"' + (open && S.money >= carPrice() ? '' : ' disabled') + '>買下</button>') +
       '</div></div></div>';
     return h;
   }
@@ -81,9 +81,9 @@ function viewHere() {
 }
 
 function viewMap() {
-  const pts = STORE_ORDER.map(id => ({ id, x: 70 + (STORES[id].x + 3) * 62, y: 40 + (STORES[id].y + 1) * 52 }));
+  const pts = STORE_ORDER.map(id => ({ id, x: 70 + (STORES[id].x + 3) * 62, y: 40 + (STORES[id].y + 2) * 52 }));
   const cur = pts.find(p => p.id === S.loc) || pts[0];
-  let svg = '<svg viewBox="0 0 640 300" role="img" aria-label="城市地圖">';
+  let svg = '<svg viewBox="0 0 640 350" role="img" aria-label="城市地圖">';
   for (const p of pts) if (p.id !== S.loc) svg += '<line x1="' + cur.x + '" y1="' + cur.y + '" x2="' + p.x + '" y2="' + p.y + '" stroke="#1d2733" stroke-opacity="0.18" stroke-dasharray="4 5"/>';
   for (const p of pts) {
     const here = p.id === S.loc, closed = STORES[p.id].closes && !isOpen(p.id, S.t);
@@ -175,7 +175,7 @@ function viewJournal(outside) {
   else h += '<p class="empty">規劃點數 ' + J.pp + ' 點，可以在輪與輪之間使用。</p>';
   h += viewCodex();
   h += viewGuide();
-  h += '<div class="row-btns"><button class="btn ghost" data-a="sound">音效：' + (J.sound === false ? '關' : '開') + '</button></div>';
+  h += '<div class="row-btns"><button class="btn ghost" data-a="sound">音效：' + (J.sound === false ? '關' : '開') + '</button><button class="btn ghost" data-a="music">背景音樂：' + (J.music === true ? '開' : '關') + '</button></div>';
   h += '<div class="dev"><label><input type="checkbox" id="devmode" data-a="dev"' + (J.dev ? ' checked' : '') + '> 開發者模式</label>';
   if (J.dev) {
     h += '<div class="row-btns">' + (S && S.phase === 'play' ? '<button class="btn ghost" data-a="devMoney">+$1000</button><button class="btn ghost" data-a="devTime">時間倒回 60 分</button>' : '') +

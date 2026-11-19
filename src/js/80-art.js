@@ -87,8 +87,13 @@ function houseSVG() {
     s += rc(110, y, 140, fh, f === 'B1' ? '#e3ddcd' : 'none');
     s += tx(122, y + 20, f === '1F' ? '1F' : f, 10, MUTE, 'start');
     const idx = { '1F': 0, '2F': 1, 'B1': 2 }[f];
-    const rooms = sv.rooms.slice(idx * 3, idx * 3 + 3);
-    rooms.forEach((r, j) => { s += tx(152 + j * 28, y + 21, ROOMS[r].n.slice(0, 2), 10.5); });
+    if (typeof normRooms === 'function') normRooms();
+    for (let j = 0; j < 3; j++) {
+      const ri = idx * 3 + j, r = sv.rooms[ri], x0 = 138 + j * 32, sel = UI.roomSel === ri;
+      s += '<g data-a="roomTap" data-v="' + ri + '" style="cursor:pointer">' +
+        '<rect x="' + x0 + '" y="' + (y + 5) + '" width="29" height="' + (fh - 10) + '" rx="3" fill="' + (sel ? TAPE : r ? '#fffdf6' : 'transparent') + '" stroke="' + (r ? INK : MUTE) + '" stroke-width="1" stroke-dasharray="' + (r ? '0' : '3 3') + '"/>' +
+        (r ? tx(x0 + 14.5, y + 21, ROOMS[r].n.slice(0, 2), 10.5) : tx(x0 + 14.5, y + 22, '＋', 12, MUTE)) + '</g>';
+    }
   });
   // 大門（顏色代表耐久）
   const ratio = sv.def / sv.defMax;

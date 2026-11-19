@@ -87,9 +87,10 @@ function viewBuild() {
   const has = need => Object.entries(need).every(([m, n]) => (st[m] || 0) >= n);
   const needTxt = need => Object.entries(need).map(([m, n]) => ITEMS[m].n + ' ' + (st[m] || 0) + '/' + n).join('、');
   let h = '<div class="cat">據點擴建（' + sv.floors.map(f => f === '1F' ? '一樓' : FLOORS[f].n).join('、') + '）</div>';
-  h += '<p class="empty">房間 ' + sv.rooms.length + '/' + roomSlots() + '：' + (sv.rooms.length ? sv.rooms.map(r => ROOMS[r].n).join('、') : '還沒蓋') + ' · 倉庫 ' + Math.round(storeWeight()) + '/' + storeCap() + 'kg</p><div class="sheet">';
+  const built = (sv.rooms || []).filter(Boolean);
+  h += '<p class="empty">房間 ' + built.length + '/' + roomSlots() + '：' + (built.length ? built.map(r => ROOMS[r].n).join('、') : '還沒蓋') + ' · 倉庫 ' + storeWeight() + '/' + storeCap() + ' 格 · 也可以直接點上方剖面圖的房間</p><div class="sheet">';
   for (const [k, f] of Object.entries(FLOORS)) if (!sv.floors.includes(k)) h += actRow('擴建' + f.n, '+3 個房間位置 · ' + needTxt(f.need) + ' · ' + f.h + ' 小時 · 體力 -' + staCost(30), '擴建', 'buildFloor', k, has(f.need) && canAct(f.h, staCost(30)));
-  for (const [k, r] of Object.entries(ROOMS)) h += actRow('蓋' + r.n + (roomN(k) ? '<span class="tag green">已有 ' + roomN(k) + '</span>' : ''), r.d + ' · ' + needTxt(r.need) + ' · ' + r.h + ' 小時', '蓋', 'buildRoom', k, sv.rooms.length < roomSlots() && has(r.need) && canAct(r.h, staCost(15)));
+  for (const [k, r] of Object.entries(ROOMS)) h += actRow('蓋' + r.n + (roomN(k) ? '<span class="tag green">已有 ' + roomN(k) + '</span>' : ''), r.d + ' · ' + needTxt(r.need) + ' · ' + r.h + ' 小時', '蓋', 'buildRoom', k, built.length < roomSlots() && has(r.need) && canAct(r.h, staCost(15)));
   h += '</div>';
   return h;
 }

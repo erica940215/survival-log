@@ -179,3 +179,22 @@ details.guide p { margin: 6px 0 2px; font-size: 14px; }
 .diary { list-style: none; margin: 6px 0 0; padding: 0; }
 .diary li { display: grid; grid-template-columns: 64px 1fr; gap: 8px; padding: 5px 0; border-bottom: 1px dashed var(--line); font-size: 15px; }
 .diary .num { color: var(--muted); font-size: 12.5px; padding-top: 2px; }
+.grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin: 6px 0; }
+.cell { aspect-ratio: 1; border: 1px solid var(--ink); border-radius: 4px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; line-height: 1.1; color: var(--ink); }
+.cell b { font-family: var(--f-num); font-size: 11px; }
+.cell.empty { border: 1px dashed var(--line); background: transparent; }
+.cell.sel { outline: 2px solid var(--stamp); outline-offset: 1px; }
+.cell.over { opacity: 0.5; border-color: var(--stamp); }
+.roompanel { border: 2px solid var(--ink); border-radius: 8px; padding: 10px 12px; margin: 10px 0; background: rgba(255,255,255,0.7); }
+.roompanel p { margin: 6px 0; font-size: 14px; }
+.anim { position: fixed; z-index: 20; pointer-events: none; animation: animFade 1.5s ease forwards; }
+.anim.travel { left: 50%; top: 40%; transform: translate(-50%, -50%); width: min(320px, 88vw); background: var(--paper); border: 2px solid var(--ink); border-radius: 10px; padding: 10px 12px 6px; box-shadow: 0 6px 20px rgba(0,0,0,0.15); text-align: center; }
+.anim.travel svg { width: 100%; height: auto; display: block; }
+.anim.travel p { margin: 4px 0; font-family: var(--f-display); font-size: 16px; }
+.anim .walker { animation: walk 1.1s ease-in-out forwards; transform: translateX(30px); }
+.anim.day { inset: 0; background: #11161d; color: var(--paper); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; animation: dayFade 2.2s ease forwards; }
+.anim.day .big { font-size: 44px; color: var(--tape); }
+.anim.day p { max-width: 22em; font-size: 18px; opacity: 0.85; }
+@keyframes walk { from { transform: translateX(30px); } to { transform: translateX(270px); } }
+@keyframes animFade { 0%, 80% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+@keyframes dayFade { 0% { opacity: 0; } 15%, 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }

@@ -189,6 +189,25 @@ details.guide p { margin: 6px 0 2px; font-size: 14px; }
 .diary { list-style: none; margin: 6px 0 0; padding: 0; }
 .diary li { display: grid; grid-template-columns: 64px 1fr; gap: 8px; padding: 5px 0; border-bottom: 1px dashed var(--line); font-size: 15px; }
 .diary .num { color: var(--muted); font-size: 12.5px; padding-top: 2px; }
+.grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin: 6px 0; }
+.cell { aspect-ratio: 1; border: 1px solid var(--ink); border-radius: 4px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; line-height: 1.1; color: var(--ink); }
+.cell b { font-family: var(--f-num); font-size: 11px; }
+.cell.empty { border: 1px dashed var(--line); background: transparent; }
+.cell.sel { outline: 2px solid var(--stamp); outline-offset: 1px; }
+.cell.over { opacity: 0.5; border-color: var(--stamp); }
+.roompanel { border: 2px solid var(--ink); border-radius: 8px; padding: 10px 12px; margin: 10px 0; background: rgba(255,255,255,0.7); }
+.roompanel p { margin: 6px 0; font-size: 14px; }
+.anim { position: fixed; z-index: 20; pointer-events: none; animation: animFade 1.5s ease forwards; }
+.anim.travel { left: 50%; top: 40%; transform: translate(-50%, -50%); width: min(320px, 88vw); background: var(--paper); border: 2px solid var(--ink); border-radius: 10px; padding: 10px 12px 6px; box-shadow: 0 6px 20px rgba(0,0,0,0.15); text-align: center; }
+.anim.travel svg { width: 100%; height: auto; display: block; }
+.anim.travel p { margin: 4px 0; font-family: var(--f-display); font-size: 16px; }
+.anim .walker { animation: walk 1.1s ease-in-out forwards; transform: translateX(30px); }
+.anim.day { inset: 0; background: #11161d; color: var(--paper); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; animation: dayFade 2.2s ease forwards; }
+.anim.day .big { font-size: 44px; color: var(--tape); }
+.anim.day p { max-width: 22em; font-size: 18px; opacity: 0.85; }
+@keyframes walk { from { transform: translateX(30px); } to { transform: translateX(270px); } }
+@keyframes animFade { 0%, 80% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+@keyframes dayFade { 0% { opacity: 0; } 15%, 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
 </style>
 </head>
 <body>
@@ -475,8 +494,8 @@ const ACT = {
   },
   buyCar() {
     if (S.mods && S.mods.noCar) { log('挑戰條件：這輪不能買車。'); render(); return; }
-    if (S.car || S.money < 500 || S.loc !== 'cars' || !isOpen('cars', S.t)) return;
-    S.car = true; S.money -= 500;
+    if (S.car || S.money < carPrice() || S.loc !== 'cars' || !isOpen('cars', S.t)) return;
+    S.car = true; S.money -= carPrice();
     log('買下舊小車。移動時間大約減半，後車廂多 80kg。', true);
     advance(10); checkOutbreak(); render();
   },
@@ -589,9 +608,9 @@ function viewHere() {
   }
   if (id === 'cars') {
     const open = isOpen('cars', S.t);
-    h += '<div class="sheet"><div class="item"><div><div class="nm">二手小車</div><div class="meta">移動時間約減半 · 後車廂 +80kg · 買賣各花 10 分鐘</div></div><div class="price">' + (S.car ? '+$450' : '$500') + '</div><div class="ctrl">' +
+    h += '<div class="sheet"><div class="item"><div><div class="nm">二手小車</div><div class="meta">移動時間約減半 · 後車廂 +80kg · 買賣各花 10 分鐘</div></div><div class="price">' + (S.car ? '+$450' : money(carPrice())) + '</div><div class="ctrl">' +
       (S.car ? '<button class="btn ghost" data-a="sellCar"' + (open ? '' : ' disabled') + '>賣回車行</button>'
-             : '<button class="btn" data-a="buyCar"' + (open && S.money >= 500 ? '' : ' disabled') + '>買下</button>') +
+             : '<button class="btn" data-a="buyCar"' + (open && S.money >= carPrice() ? '' : ' disabled') + '>買下</button>') +
       '</div></div></div>';
     return h;
   }
@@ -623,9 +642,9 @@ function viewHere() {
 }
 
 function viewMap() {
-  const pts = STORE_ORDER.map(id => ({ id, x: 70 + (STORES[id].x + 3) * 62, y: 40 + (STORES[id].y + 1) * 52 }));
+  const pts = STORE_ORDER.map(id => ({ id, x: 70 + (STORES[id].x + 3) * 62, y: 40 + (STORES[id].y + 2) * 52 }));
   const cur = pts.find(p => p.id === S.loc) || pts[0];
-  let svg = '<svg viewBox="0 0 640 300" role="img" aria-label="城市地圖">';
+  let svg = '<svg viewBox="0 0 640 350" role="img" aria-label="城市地圖">';
   for (const p of pts) if (p.id !== S.loc) svg += '<line x1="' + cur.x + '" y1="' + cur.y + '" x2="' + p.x + '" y2="' + p.y + '" stroke="#1d2733" stroke-opacity="0.18" stroke-dasharray="4 5"/>';
   for (const p of pts) {
     const here = p.id === S.loc, closed = STORES[p.id].closes && !isOpen(p.id, S.t);
@@ -717,7 +736,7 @@ function viewJournal(outside) {
   else h += '<p class="empty">規劃點數 ' + J.pp + ' 點，可以在輪與輪之間使用。</p>';
   h += viewCodex();
   h += viewGuide();
-  h += '<div class="row-btns"><button class="btn ghost" data-a="sound">音效：' + (J.sound === false ? '關' : '開') + '</button></div>';
+  h += '<div class="row-btns"><button class="btn ghost" data-a="sound">音效：' + (J.sound === false ? '關' : '開') + '</button><button class="btn ghost" data-a="music">背景音樂：' + (J.music === true ? '開' : '關') + '</button></div>';
   h += '<div class="dev"><label><input type="checkbox" id="devmode" data-a="dev"' + (J.dev ? ' checked' : '') + '> 開發者模式</label>';
   if (J.dev) {
     h += '<div class="row-btns">' + (S && S.phase === 'play' ? '<button class="btn ghost" data-a="devMoney">+$1000</button><button class="btn ghost" data-a="devTime">時間倒回 60 分</button>' : '') +
@@ -1076,6 +1095,7 @@ function night(watch) {
     sv.def -= dmg;
     if (sv.def >= 0) {
       sv.sp += 10;
+      sv.htSurv = sv.htSurv || {}; sv.htSurv[hordeType(d)] = true;
       if (sv.dog && sv.dog.state === 'pet') sv.dog.xp += 2;
       chron(d, HTYPES[hordeType(d)].n + '（強度 ' + hz[1] + '）' + (trapKill ? '，陷阱擋下 ' + Math.round(trapKill) : '') + (watch ? '，你守了一夜' + (used ? '、邊打邊修用掉 ' + used + ' 份材料' : '') : '') + '。防線剩 ' + Math.round(sv.def) + '。', 'good');
       slog('屍潮退去了，防線剩 ' + Math.round(sv.def) + '。', true);
@@ -1173,7 +1193,7 @@ function meter(label, v, warn) {
 function renderSurvive() {
   const sv = S.sv;
   const tonight = hordeOn(sv.day);
-  let body = UI.tab === 'base' ? viewBase() : UI.tab === 'store' ? viewStore() : UI.tab === 'journal' ? viewJournal(false) : viewActs();
+  let body = UI.tab === 'base' ? viewRoomPanel() + viewBase() : UI.tab === 'store' ? viewStore() : UI.tab === 'journal' ? viewJournal(false) : viewActs();
   body = tip(sv.out && UI.tab === 'act' ? 'out' : UI.tab === 'base' ? 'base' : 'survive') + body;
   $app.innerHTML =
     '<header class="status"><div class="status-in">' +
@@ -1228,6 +1248,7 @@ function viewActs() {
     if (st.pills) h += actRow('止痛藥 ×' + st.pills, '生命 +10 · 心態 +3', '用', 'heal', 'pills', sv.hp < 100);
     h += '</div>';
   }
+  h += viewUsable();
   // 睡覺
   const hz = hordeOn(sv.day);
   h += '<div class="cat">結束這一天</div>' + viewSleepWarn() + '<div class="sheet">';
@@ -1273,6 +1294,7 @@ function viewStore() {
   const sv = S.sv;
   const all = Object.keys(sv.st).filter(k => k !== 'wu' && ITEMS[k] && sv.st[k] > 0);
   let h = '<div class="cat">新鮮食物</div>';
+  h = viewGrid() + h;
   h += sv.fresh.length ? '<div class="sheet">' + sv.fresh.slice().sort((a, b) => a.life - b.life).map(f => '<div class="item"><div><div class="nm">' + ITEMS[f.k].n + '</div><div class="meta">' + Math.ceil(f.life) + ' 天後壞（冰櫃有電時壞得慢）</div></div><div class="price">×' + f.q + '</div></div>').join('') + '</div>' : '<p class="empty">沒有。</p>';
   h += '<div class="cat">庫存</div>';
   h += all.length ? '<div class="sheet">' + CAT_ORDER.flatMap(c => all.filter(k => ITEMS[k].cat === c)).map(k => '<div class="item"><div><div class="nm">' + ITEMS[k].n + '</div><div class="meta">' + ITEMS[k].note + '</div></div><div class="price">×' + sv.st[k] + '</div></div>').join('') + '</div>' : '<p class="empty">空的。</p>';
@@ -1518,7 +1540,7 @@ function m5Init(sv) {
   sv.xp = 0; sv.trades = 0; sv.out = null;
   sv.locs = {};
   for (const k of Object.keys(LOCS)) sv.locs[k] = { done: [] };
-  sv.zoe = { state: 'wait', given: 0, miss: 0, want: null, today: false };
+  sv.zoe = { state: 'wait', given: S.zoePrep || 0, miss: 0, want: null, today: false };
   sv.mgr = { state: 'none', fed: 0, miss: 0, today: false };
   sv.offers = [];
   if (S.char === 'student') { sv.talents.green = true; sv.talents.chef = true; }
@@ -1555,6 +1577,7 @@ function m5Morning(nd) {
 Object.assign(SACT, {
   goOut(loc) {
     const sv = S.sv, L = LOCS[loc];
+    if (L && !sv.locs[loc]) sv.locs[loc] = { done: [] };
     if (!L || sv.out || (S.mods && S.mods.noOut) || expLevel(sv.xp) < L.lv || !canAct(L.trip, staCost(10))) return;
     if (L.noise && !(sv.st.noise > 0)) { slog('那裡屍群太多，要先做一個噪音器引開。'); render(); return; }
     if (L.noise) { sv.st.noise--; if (!sv.st.noise) delete sv.st.noise; }
@@ -1688,7 +1711,7 @@ function bringHome(bag) {
       continue;
     }
     let fit = q;
-    if (k !== 'wu' && ITEMS[k].cat !== 'equip' && ITEMS[k].w > 0) fit = Math.max(0, Math.min(q, Math.floor((storeCap() - storeWeight()) / ITEMS[k].w)));
+    if (k !== 'wu' && ITEMS[k].cat !== 'equip') fit = fitUnits(k, q);
     if (fit < q) got.push(ITEMS[k].n + '×' + (q - fit) + '（倉庫放不下，丟在門口）');
     if (!fit) continue;
     if (k === 'wu') sv.st.wu += fit; else sv.st[k] = (sv.st[k] || 0) + fit;
@@ -1734,6 +1757,7 @@ function viewOutside() {
   if (S.mods && S.mods.noOut) h += '<p class="empty">挑戰條件「足不出戶」：這輪不能外出。</p>';
   for (const [k, L] of Object.entries(LOCS)) {
     if (S.mods && S.mods.noOut) break;
+    if (!sv.locs[k]) sv.locs[k] = { done: [] };
     const left = L.cont.length - sv.locs[k].done.filter(x => /^\d$/.test(x)).length;
     const locked = lv < L.lv;
     const noNoise = L.noise && !(sv.st.noise > 0);
@@ -1862,9 +1886,10 @@ function viewBuild() {
   const has = need => Object.entries(need).every(([m, n]) => (st[m] || 0) >= n);
   const needTxt = need => Object.entries(need).map(([m, n]) => ITEMS[m].n + ' ' + (st[m] || 0) + '/' + n).join('、');
   let h = '<div class="cat">據點擴建（' + sv.floors.map(f => f === '1F' ? '一樓' : FLOORS[f].n).join('、') + '）</div>';
-  h += '<p class="empty">房間 ' + sv.rooms.length + '/' + roomSlots() + '：' + (sv.rooms.length ? sv.rooms.map(r => ROOMS[r].n).join('、') : '還沒蓋') + ' · 倉庫 ' + Math.round(storeWeight()) + '/' + storeCap() + 'kg</p><div class="sheet">';
+  const built = (sv.rooms || []).filter(Boolean);
+  h += '<p class="empty">房間 ' + built.length + '/' + roomSlots() + '：' + (built.length ? built.map(r => ROOMS[r].n).join('、') : '還沒蓋') + ' · 倉庫 ' + storeWeight() + '/' + storeCap() + ' 格 · 也可以直接點上方剖面圖的房間</p><div class="sheet">';
   for (const [k, f] of Object.entries(FLOORS)) if (!sv.floors.includes(k)) h += actRow('擴建' + f.n, '+3 個房間位置 · ' + needTxt(f.need) + ' · ' + f.h + ' 小時 · 體力 -' + staCost(30), '擴建', 'buildFloor', k, has(f.need) && canAct(f.h, staCost(30)));
-  for (const [k, r] of Object.entries(ROOMS)) h += actRow('蓋' + r.n + (roomN(k) ? '<span class="tag green">已有 ' + roomN(k) + '</span>' : ''), r.d + ' · ' + needTxt(r.need) + ' · ' + r.h + ' 小時', '蓋', 'buildRoom', k, sv.rooms.length < roomSlots() && has(r.need) && canAct(r.h, staCost(15)));
+  for (const [k, r] of Object.entries(ROOMS)) h += actRow('蓋' + r.n + (roomN(k) ? '<span class="tag green">已有 ' + roomN(k) + '</span>' : ''), r.d + ' · ' + needTxt(r.need) + ' · ' + r.h + ' 小時', '蓋', 'buildRoom', k, built.length < roomSlots() && has(r.need) && canAct(r.h, staCost(15)));
   h += '</div>';
   return h;
 }
@@ -1983,6 +2008,269 @@ function viewRefine() {
   return '<div class="sheet">' + actRow('精煉柴油', '3 個油菜籽（或 6 份蔬果）→ 1 桶柴油 · 2 小時 · 你有油菜籽 ' + (st.rape_p || 0) + ' 個', '煉', 'refine', '', ((st.rape_p || 0) >= 3 || vegPool() >= 6) && canAct(2, staCost(8))) + '</div>';
 }
 
+// ---- 61-prep2.js ----
+/* ================= 準備期深化：隱藏物資、報攤情報、NPC 支線、新地點與道具 ================= */
+Object.assign(ITEMS, {
+  pkg:     { n: '包裹', cat: 'mat', w: 5, note: '便利店店員託你送去藥局' },
+  coffee:  { n: '罐裝咖啡', cat: 'med', w: 0.3, note: '喝了體力 +25' },
+  vitamin: { n: '維他命', cat: 'med', w: 0.1, note: '心態 +10' },
+  cell:    { n: '乾電池組', cat: 'power', w: 0.5, note: '直接充 1 度電' },
+  gasmask: { n: '防毒面具', cat: 'equip', w: 0, note: '外出暴露值 -15%' },
+  shelf:   { n: '置物架', cat: 'equip', w: 0, note: '倉庫 +20 格' }
+});
+STORES.news = { n: '報攤', x: -1, y: 1, closes: 480, desc: '老闆什麼都聽說過一點。買過的情報會記在日誌裡，以後每一輪都用得到。' };
+STORES.gas = { n: '加油站', x: 2, y: -2, closes: 570, desc: '柴油比工具店貴一點，但不用排隊。', items: { diesel: [48, 6], coffee: [8, 10], choco: [6, 10], water: [14, 4], cell: [12, 6] } };
+STORES.pharm.items.vitamin = [10, 5];
+STORE_ORDER.push('news', 'gas');
+
+const STASHES = [
+  { id: 'home_tank', loc: 'home', n: '頂樓水塔', from: 0, until: 600, items: { water: 2 }, hint: '頂樓水塔可以裝 2 箱水' },
+  { id: 'tool_diesel', loc: 'tool', n: '後巷的柴油桶', from: 0, until: 180, items: { diesel: 1 }, hint: '工具店後巷 11:00 前有一桶沒人領的柴油' },
+  { id: 'conv_box', loc: 'conv', n: '店後的紙箱', from: 0, until: 300, items: { sausage: 10, noodle: 6 }, hint: '便利店後面 13:00 前有一箱過期沒退的貨' },
+  { id: 'mart_corner', loc: 'mart', n: '倉庫角落的米', from: 152, until: 210, items: { rice: 2 }, hint: '搶購潮時（10:32–11:30）超市倉庫角落有 2 袋米' },
+  { id: 'pharm_desk', loc: 'pharm', n: '櫃台下的急救包', from: 0, until: 360, items: { medkit: 2 }, hint: '藥局櫃台下 14:00 前藏著 2 個急救包' },
+  { id: 'farm_stall', loc: 'farm', n: '攤位底下的種子', from: 0, until: 600, items: { tomato: 2, straw: 1, fert: 1 }, hint: '農貿市場攤位底下有種子和肥料' },
+  { id: 'cars_trunk', loc: 'cars', n: '報廢車的後車廂', from: 0, until: 540, items: { metal: 3, board: 2 }, hint: '車行報廢車的後車廂有鐵片和木板' },
+  { id: 'reno_model', loc: 'reno', n: '樣品屋的材料', from: 0, until: 480, items: { plastic: 4, glass: 2 }, hint: '裝修公司樣品屋 16:00 前有剩下的材料' },
+  { id: 'gas_store', loc: 'gas', n: '加油站倉庫', from: 0, until: 570, items: { diesel: 1, coffee: 4 }, hint: '加油站倉庫有一桶柴油和咖啡' },
+  { id: 'news_back', loc: 'news', n: '報攤後面的紙箱', from: 0, until: 480, items: { choco: 5, cell: 2 }, hint: '報攤後面有巧克力和乾電池' }
+];
+const INTEL = [
+  { id: 'hordes', n: '屍潮時程', p: 60, d: '前 6 波屍潮的日子和強度', apply: () => { J.hordesSeen = Math.max(J.hordesSeen || 0, 6); } },
+  { id: 'weather', n: '天氣預報', p: 40, d: '寒潮和陰雨的日期', apply: () => { J.tips.coldKnown = true; J.tips.rainKnown = true; } },
+  { id: 'events', n: '今天的動向', p: 50, d: '準備期所有定時事件', apply: () => { for (const e of EVENTS) if (!e.silentJournal) J.events[e.id] = true; } },
+  { id: 'stash', n: '藏匿點傳聞', p: 80, d: '3 個你還不知道的藏匿點', apply: () => { J.stashes = J.stashes || {}; STASHES.filter(s => !J.stashes[s.id]).slice(0, 3).forEach(s => { J.stashes[s.id] = true; }); } },
+  { id: 'drone', n: '無人機的下落', p: 30, d: '哪裡找得到無人機', apply: () => { J.tips.droneKnown = true; } },
+  { id: 'truth', n: '科技公司的傳聞', p: 100, d: '真相碎片可能藏在哪', apply: () => { J.tips.truthLoc = true; } }
+];
+
+function stashAt(loc) { return STASHES.find(s => s.loc === loc); }
+function takeStash(s) {
+  const room = capacity() - carried();
+  const w = Object.entries(s.items).reduce((a, [k, q]) => a + ITEMS[k].w * q, 0);
+  if (w > room + 1e-9) { log('找到' + s.n + '，但背包裝不下（需要 ' + kg(w) + '），先回家卸貨再來。', true); return false; }
+  for (const [k, q] of Object.entries(s.items)) add(S.carry, k, q);
+  S.taken = S.taken || {}; S.taken[s.id] = true;
+  log('拿到' + s.n + '：' + Object.entries(s.items).map(([k, q]) => ITEMS[k].n + '×' + q).join('、') + '。', true);
+  return true;
+}
+Object.assign(ACT, {
+  look() {
+    if (!S || S.phase !== 'play') return;
+    const s = stashAt(S.loc);
+    advance(10);
+    J.stashes = J.stashes || {};
+    if (!s || (S.taken && S.taken[s.id])) log('四處看了看，沒發現什麼。');
+    else if (S.t < s.from) { log('好像有什麼……但現在還不是時候（' + clock(s.from) + ' 之後再來）。'); J.stashes[s.id] = true; }
+    else if (S.t >= s.until) { log('有被翻過的痕跡，來晚了。日誌記下：' + s.hint + '。'); J.stashes[s.id] = true; }
+    else { J.stashes[s.id] = true; takeStash(s); }
+    saveJournal(); checkOutbreak(); render();
+  },
+  stash(id) {
+    const s = STASHES.find(x => x.id === id);
+    if (!s || S.phase !== 'play' || S.loc !== s.loc || (S.taken && S.taken[id]) || S.t < s.from || S.t >= s.until) return;
+    advance(5);
+    takeStash(s); checkOutbreak(); render();
+  },
+  intel(id) {
+    const it = INTEL.find(x => x.id === id);
+    J.intel = J.intel || {};
+    if (!it || S.loc !== 'news' || !isOpen('news', S.t) || J.intel[id] || S.money < it.p) return;
+    S.money -= it.p; J.intel[id] = true; it.apply(); saveJournal();
+    log('跟報攤老闆買了「' + it.n + '」，記進日誌了。');
+    advance(5); checkOutbreak(); render();
+  },
+  npc(v) {
+    S.q = S.q || {};
+    const q = S.q;
+    if (v === 'oldman' && S.loc === 'mart' && !q.oldman) { q.oldman = true; S.money += 100; log('超市的阿伯：「年輕人，這個拿去，多買點罐頭。」他塞給你 $100。', true); advance(2); }
+    else if (v === 'clerk' && S.loc === 'conv' && !q.clerk) {
+      if (capacity() - carried() < 5) { log('背包放不下包裹（5kg）。'); render(); return; }
+      q.clerk = 'carry'; add(S.carry, 'pkg', 1); log('便利店店員：「幫我把這箱藥送去藥局好嗎？我走不開。」你接下包裹。'); advance(2);
+    }
+    else if (v === 'deliver' && S.loc === 'pharm' && q.clerk === 'carry' && S.carry.pkg) {
+      add(S.carry, 'pkg', -1); q.clerk = 'done'; S.pharmDisc = true; add(S.carry, 'medkit', 2);
+      log('藥師收下包裹：「是小陳託的？這兩個急救包送你，今天買藥算你八折。」', true); advance(2);
+    }
+    else if (v === 'dealer' && S.loc === 'cars' && !q.dealer) { q.dealer = 'ask'; log('車行老闆：「幫我從工具店帶 2 片鐵片來修車，車錢算你便宜 $150。」'); advance(2); }
+    else if (v === 'dealerGive' && S.loc === 'cars' && q.dealer === 'ask' && (S.carry.metal || 0) >= 2) {
+      add(S.carry, 'metal', -2); q.dealer = 'done';
+      if (S.car) { S.money += 150; log('老闆：「謝啦！車錢退你 $150。」', true); } else log('老闆：「謝啦！車子算你 $350。」', true);
+      advance(2);
+    }
+    else if (v === 'zoe' && S.loc === 'home' && !q.zoe) { q.zoe = true; log('你敲了隔壁的門。一個女生探出頭：「我叫 Zoe……你也覺得今天水的味道怪怪的嗎？」', true); advance(5); }
+    else if (v === 'zoeWater' && S.loc === 'home' && q.zoe && (S.zoePrep || 0) < 3 && (S.home.water || 0) >= 1) {
+      add(S.home, 'water', -1); S.zoePrep = (S.zoePrep || 0) + 1;
+      log('你分了一箱水給 Zoe。她愣了一下：「你……知道會發生什麼事？」（' + S.zoePrep + '/3）'); advance(3);
+    }
+    else return;
+    checkOutbreak(); render();
+  }
+});
+// 車價、藥局折扣
+function carPrice() { return 500 - (S.q && S.q.dealer === 'done' ? 150 : 0); }
+const _priceBase = price;
+price = function (store, k) { const p = _priceBase(store, k); return store === 'pharm' && S.pharmDisc ? Math.round(p * 0.8) : p; };
+
+function prepExtras() {
+  const id = S.loc;
+  J.stashes = J.stashes || {}; S.q = S.q || {};
+  const q = S.q;
+  let h = '';
+  // NPC
+  const npc = [];
+  if (id === 'mart' && !q.oldman) npc.push(['超市的阿伯', '看起來想跟你說話', '聊聊', 'oldman', true]);
+  if (id === 'conv' && !q.clerk) npc.push(['店員小陳', '一臉著急，手上抱著一個箱子', '問問看', 'clerk', true]);
+  if (id === 'pharm' && q.clerk === 'carry') npc.push(['藥師', '把小陳的包裹交給她', '交給她', 'deliver', !!S.carry.pkg]);
+  if (id === 'cars' && !q.dealer) npc.push(['車行老闆', '在修一台車，好像缺材料', '問問看', 'dealer', true]);
+  if (id === 'cars' && q.dealer === 'ask') npc.push(['車行老闆', '要 2 片鐵片（你身上有 ' + (S.carry.metal || 0) + '）', '交給他', 'dealerGive', (S.carry.metal || 0) >= 2]);
+  if (id === 'home' && !q.zoe) npc.push(['隔壁鄰居', '你從來沒跟她說過話', '敲門', 'zoe', true]);
+  if (id === 'home' && q.zoe && (S.zoePrep || 0) < 3) npc.push(['Zoe', '分她一箱瓶裝水（家裡有 ' + (S.home.water || 0) + ' 箱）· 爆發後她會記得你 · ' + (S.zoePrep || 0) + '/3', '分她', 'zoeWater', (S.home.water || 0) >= 1]);
+  if (npc.length) h += '<div class="cat">人</div><div class="sheet">' + npc.map(([n, d, b, v, ok]) => '<div class="item"><div><div class="nm">' + n + '</div><div class="meta">' + d + '</div></div><button class="btn" data-a="npc" data-v="' + v + '"' + (ok && S.phase === 'play' ? '' : ' disabled') + '>' + b + '</button></div>').join('') + '</div>';
+  // 藏匿點
+  const s = stashAt(id);
+  if (s) {
+    const taken = S.taken && S.taken[s.id];
+    if (J.stashes[s.id]) {
+      const open = S.t >= s.from && S.t < s.until;
+      h += '<div class="cat">日誌記得的藏匿點</div><div class="sheet"><div class="item"><div><div class="nm">' + s.n + (taken ? '<span class="tag green">拿過了</span>' : '') + '</div><div class="meta">' + s.hint + ' · 5 分鐘</div></div>' +
+        '<button class="btn" data-a="stash" data-v="' + s.id + '"' + (!taken && open ? '' : ' disabled') + '>' + (taken ? '已拿' : open ? '拿' : S.t < s.from ? clock(s.from) + ' 後' : '來晚了') + '</button></div></div>';
+    } else h += '<div class="row-btns"><button class="btn ghost" data-a="look">四處看看（10 分鐘）</button></div>';
+  } else h += '<div class="row-btns"><button class="btn ghost" data-a="look">四處看看（10 分鐘）</button></div>';
+  return h;
+}
+function viewNews() {
+  J.intel = J.intel || {};
+  const open = isOpen('news', S.t);
+  let h = '<p class="sub" style="margin:0 0 10px;color:var(--muted)">' + esc(STORES.news.desc) + '</p>';
+  if (!open) return h + '<p class="empty">報攤收了。</p>' + prepExtras();
+  h += '<div class="cat">情報</div><div class="sheet">' + INTEL.map(it => '<div class="item"><div><div class="nm">' + it.n + (J.intel[it.id] ? '<span class="tag green">日誌已記</span>' : '') + '</div><div class="meta">' + it.d + ' · 5 分鐘</div></div>' +
+    '<button class="btn" data-a="intel" data-v="' + it.id + '"' + (J.intel[it.id] || S.money < it.p ? ' disabled' : '') + '>' + (J.intel[it.id] ? '已買' : money(it.p)) + '</button></div>').join('') + '</div>';
+  return h + prepExtras();
+}
+const _viewHereBase = viewHere;
+viewHere = function () {
+  if (S.loc === 'news') return viewNews();
+  const base = _viewHereBase();
+  // 把人和藏匿點放在店家說明下面
+  const cut = base.indexOf('</p>') + 4;
+  return base.slice(0, cut) + prepExtras() + base.slice(cut);
+};
+function viewIntelJournal() {
+  J.intel = J.intel || {}; J.stashes = J.stashes || {};
+  const lines = [];
+  if (J.tips && J.tips.droneKnown) lines.push('無人機在學校的教師辦公室。');
+  if (J.tips && J.tips.truthLoc) lines.push('真相碎片：學校實驗室（探索等級 2）、科技公司機房、醫院上鎖的房間（探索等級 4）。');
+  const st = STASHES.filter(s => J.stashes[s.id]);
+  let h = '';
+  if (lines.length) h += '<div class="cat">情報</div><ul class="list note">' + lines.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>';
+  h += '<div class="cat">藏匿點（' + st.length + '/' + STASHES.length + '）</div>' + (st.length ? '<ul class="list">' + st.map(s => '<li><b>' + STORES[s.loc].n + '</b>：' + esc(s.hint) + '</li>').join('') + '</ul>' : '<p class="empty">在每個地點「四處看看」，或到報攤買傳聞。</p>');
+  return h;
+}
+const _viewJournalBase = viewJournal;
+viewJournal = function (outside) { return viewIntelJournal() + _viewJournalBase(outside); };
+
+// ---- 62-base2.js ----
+/* ================= 格子倉庫與可點擊的據點 ================= */
+const STACK = { food: 10, water: 20, power: 4, mat: 10, med: 10, farm: 20 };
+const STACK_ONE = { rice: 5, diesel: 2, matpack: 5, pkg: 1 };
+const stackOf = k => STACK_ONE[k] || STACK[ITEMS[k].cat] || 10;
+function storedUnits() {
+  const sv = S.sv, u = {};
+  for (const [k, q] of Object.entries(sv.st)) if (k !== 'wu' && ITEMS[k] && ITEMS[k].cat !== 'equip' && q > 0) u[k] = (u[k] || 0) + q;
+  for (const f of sv.fresh) u[f.k] = (u[f.k] || 0) + f.q;
+  return u;
+}
+// 倉庫改成「格」：每格放一疊（食物 10、材料 10、柴油 2、米 5……）
+storeCap = function () { return 40 + roomN('storage') * 30 + (S.sv.st.shelf || 0) * 20; };
+storeWeight = function () { return Object.entries(storedUnits()).reduce((a, [k, q]) => a + Math.ceil(q / stackOf(k)), 0); };
+function fitUnits(k, q) {
+  if (k === 'wu' || !ITEMS[k] || ITEMS[k].cat === 'equip') return q;
+  const cur = storedUnits()[k] || 0, st = stackOf(k);
+  const partial = cur ? Math.ceil(cur / st) * st - cur : 0;
+  return Math.max(0, Math.min(q, partial + Math.max(0, storeCap() - storeWeight()) * st));
+}
+RECIPES.shelf = { n: '置物架', need: { board: 4, metal: 1 }, h: 2, out: { shelf: 1 }, base: true, d: '倉庫 +20 格' };
+
+// 房間位置：一樓 0–2、二樓 3–5、地下室 6–8
+const FLOOR_OF = ['1F', '1F', '1F', '2F', '2F', '2F', 'B1', 'B1', 'B1'];
+function normRooms() {
+  const sv = S.sv;
+  if (!sv.rooms || sv.rooms.length !== 9) { const old = (sv.rooms || []).filter(Boolean); sv.rooms = Array(9).fill(null); old.forEach((r, i) => { sv.rooms[i] = r; }); }
+}
+const slotOpen = i => S.sv.floors.includes(FLOOR_OF[i]);
+function freeSlotIndex() {
+  normRooms();
+  if (UI.roomSel != null && slotOpen(UI.roomSel) && !S.sv.rooms[UI.roomSel]) return UI.roomSel;
+  return S.sv.rooms.findIndex((r, i) => !r && slotOpen(i));
+}
+roomSlots = function () { return S.sv.floors.length * 3; };
+SACT.buildRoom = function (k) {
+  const sv = S.sv, r = ROOMS[k];
+  normRooms();
+  const slot = freeSlotIndex();
+  if (!r || slot < 0 || !Object.entries(r.need).every(([m, n]) => (sv.st[m] || 0) >= n) || !canAct(r.h, staCost(15))) return;
+  for (const [m, n] of Object.entries(r.need)) { sv.st[m] -= n; if (!sv.st[m]) delete sv.st[m]; }
+  sv.rooms[slot] = k; sv.sta -= staCost(15);
+  UI.roomSel = slot;
+  slog('在' + ({ '1F': '一樓', '2F': '二樓', 'B1': '地下室' })[FLOOR_OF[slot]] + '蓋好了' + r.n + '：' + r.d + '。');
+  passHours(r.h); render();
+};
+Object.assign(SACT, {
+  roomTap(v) { normRooms(); UI.roomSel = Number(v); UI.tab = 'base'; render(); window.scrollTo(0, 0); },
+  roomClose() { UI.roomSel = null; render(); },
+  demolish(v) {
+    const sv = S.sv, i = Number(v); normRooms();
+    const k = sv.rooms[i];
+    if (!k || !canAct(1)) return;
+    for (const [m, n] of Object.entries(ROOMS[k].need)) { const back = Math.floor(n / 2); if (back) sv.st[m] = (sv.st[m] || 0) + back; }
+    sv.rooms[i] = null;
+    slog('拆掉了' + ROOMS[k].n + '，回收一半材料。');
+    passHours(1); render();
+  },
+  gridSel(k) { UI.gridSel = UI.gridSel === k ? null : k; render(); }
+});
+function viewRoomPanel() {
+  if (UI.roomSel == null || !S.sv) return '';
+  normRooms();
+  const sv = S.sv, i = UI.roomSel, k = sv.rooms[i];
+  const fl = ({ '1F': '一樓', '2F': '二樓', 'B1': '地下室' })[FLOOR_OF[i]];
+  let h = '<div class="roompanel"><div class="slot-h"><b class="hand" style="font-size:18px">' + fl + ' 第 ' + (i % 3 + 1) + ' 間</b><button class="btn ghost" data-a="roomClose" style="margin-left:auto">關閉</button></div>';
+  if (!slotOpen(i)) h += '<p class="meta">這層還沒擴建。</p>';
+  else if (k) {
+    const go = { workshop: ['到工作台', 'act'], storage: ['看倉庫', 'store'], greenhouse: ['看作物', 'base'], bedroom: ['去睡覺', 'act'], powerroom: ['看電力', 'base'] }[k];
+    h += '<p><b>' + ROOMS[k].n + '</b>：' + ROOMS[k].d + '</p><div class="row-btns" style="margin:4px 0">' +
+      (go ? '<button class="btn" data-a="tab" data-v="' + go[1] + '">' + go[0] + '</button>' : '') +
+      '<button class="btn ghost" data-a="demolish" data-v="' + i + '"' + (canAct(1) ? '' : ' disabled') + '>拆除（回收一半材料，1 小時）</button></div>';
+  } else {
+    const st = sv.st;
+    h += '<p class="meta">空房間。要蓋什麼？</p><div class="sheet">' + Object.entries(ROOMS).map(([rk, r]) => {
+      const ok = Object.entries(r.need).every(([m, n]) => (st[m] || 0) >= n) && canAct(r.h, staCost(15));
+      return actRow(r.n, r.d + ' · ' + Object.entries(r.need).map(([m, n]) => ITEMS[m].n + ' ' + (st[m] || 0) + '/' + n).join('、') + ' · ' + r.h + ' 小時', '蓋', 'buildRoom', rk, ok);
+    }).join('') + '</div>';
+  }
+  return h + '</div>';
+}
+function viewGrid() {
+  const u = storedUnits(), cap = storeCap(), cells = [];
+  for (const c of CAT_ORDER) for (const [k, q] of Object.entries(u)) {
+    if (ITEMS[k].cat !== c) continue;
+    let left = q; const s = stackOf(k);
+    while (left > 0) { cells.push({ k, q: Math.min(s, left) }); left -= s; }
+  }
+  const used = cells.length;
+  let h = '<div class="cat">倉庫 ' + used + ' / ' + cap + ' 格</div><p class="meta">儲藏室 +30 格、置物架 +20 格（工作台做）。滿了的話，外出帶回來的東西會放不下。點格子看說明。</p><div class="grid">';
+  const colors = { food: '#f4d9a0', water: '#bcd6ea', power: '#e8b9a6', mat: '#d6d0c2', med: '#f0b8b8', farm: '#c6dfb5' };
+  for (let i = 0; i < Math.max(cap, used); i++) {
+    const c = cells[i];
+    if (c) h += '<button class="cell' + (UI.gridSel === c.k ? ' sel' : '') + (i >= cap ? ' over' : '') + '" data-a="gridSel" data-v="' + c.k + '" style="background:' + (colors[ITEMS[c.k].cat] || '#ddd') + '"><span>' + esc(ITEMS[c.k].n.replace(/（.*）/, '').slice(0, 2)) + '</span><b>' + c.q + '</b></button>';
+    else h += '<span class="cell empty"></span>';
+  }
+  h += '</div>';
+  if (UI.gridSel && ITEMS[UI.gridSel]) h += '<p class="meta"><b>' + ITEMS[UI.gridSel].n + '</b> ×' + (u[UI.gridSel] || 0) + '：' + ITEMS[UI.gridSel].note + '（每格 ' + stackOf(UI.gridSel) + ' 個）</p>';
+  return h;
+}
+
 // ---- 70-codex.js ----
 /* ================= 生存圖鑑與成就 ================= */
 const ACHS = [
@@ -2052,6 +2340,85 @@ ACHS.push(
   ['norewind100', '一條命', '不回溯撐過 100 天', () => S.sv && S.mods && S.mods.noRewind && S.sv.day >= 101],
   ['noout100', '足不出戶', '不外出撐過 100 天', () => S.sv && S.mods && S.mods.noOut && S.sv.day >= 101],
   ['daily1', '每日一戰', '完成一次每日挑戰', () => J.daily && Object.keys(J.daily).length > 0]
+);
+
+// ---- 71-content.js ----
+/* ================= 內容擴充：新外出地點、道具使用、新場景圖、成就 ================= */
+Object.assign(LOCS, {
+  residential: { n: '住宅區', lv: 1, trip: 1, cont: ['一樓住戶', '樓梯間', '頂樓加蓋', '地下停車場', '管理室', '垃圾間'],
+                 loot: [['can', 1, 2, 25], ['noodle', 1, 3, 20], ['wu', 1, 3, 20], ['plastic', 1, 2, 10], ['board', 1, 2, 10], ['choco', 1, 2, 10], ['cell', 1, 1, 5]] },
+  subway:      { n: '地鐵站', lv: 2, trip: 1, cont: ['售票口', '月台', '便利商店', '機房', '軌道旁', '辦公室'],
+                 loot: [['wu', 2, 4, 25], ['plastic', 1, 3, 20], ['metal', 1, 2, 20], ['cell', 1, 2, 15], ['glass', 1, 2, 10], ['coffee', 1, 2, 10]] },
+  police:      { n: '警察局', lv: 3, trip: 2, noise: true, cont: ['值班台', '證物室', '更衣室', '拘留室', '車庫', '裝備室'],
+                 loot: [['metal', 1, 3, 25], ['medkit', 1, 2, 20], ['molotov', 1, 2, 15], ['gasmask', 1, 1, 10], ['diesel', 1, 1, 15], ['cell', 1, 2, 15]] }
+});
+
+// 道具使用
+const USABLE = { coffee: ['喝', '體力 +25'], vitamin: ['吃', '心態 +10'], cell: ['裝上', '電 +1 度'] };
+Object.assign(SACT, {
+  useItem(k) {
+    const sv = S.sv;
+    if (!USABLE[k] || !(sv.st[k] > 0)) return;
+    sv.st[k]--; if (!sv.st[k]) delete sv.st[k];
+    if (k === 'coffee') sv.sta = clamp(sv.sta + 25);
+    if (k === 'vitamin') sv.mor = clamp(sv.mor + 10);
+    if (k === 'cell') sv.power = Math.min(powerCap(), sv.power + 1);
+    slog('用了' + ITEMS[k].n + '：' + USABLE[k][1] + '。'); render();
+  }
+});
+function viewUsable() {
+  const st = S.sv.st, ks = Object.keys(USABLE).filter(k => st[k] > 0);
+  if (!ks.length) return '';
+  return '<div class="cat">道具（不花時間）</div><div class="sheet">' + ks.map(k => actRow(ITEMS[k].n + ' ×' + st[k], USABLE[k][1], USABLE[k][0], 'useItem', k, true)).join('') + '</div>';
+}
+const _expMulBase = expMul;
+expMul = function () { return _expMulBase() * (S.sv.st.gasmask > 0 ? 0.85 : 1); };
+
+// 新地點的場景圖
+const _sceneBase = sceneSVG;
+sceneSVG = function (kind) {
+  let b = '';
+  if (kind === 'news') b = rc(140, 50, 80, 68) + '<path d="M130 50 L230 50 L222 36 L138 36 Z" fill="' + TAPE + '" stroke="' + INK + '" stroke-width="1.6"/>' + [0, 1, 2].map(i => rc(150 + i * 22, 62, 16, 22, PAPER, INK, 1.2)).join('') + tx(180, 108, '報攤', 14) + ln(250, 118, 250, 70, 1.4) + rc(238, 54, 24, 16, PAPER, INK, 1.2);
+  else if (kind === 'gas') b = rc(70, 30, 220, 14, TAPE) + ln(90, 44, 90, 118, 2) + ln(270, 44, 270, 118, 2) + [140, 200].map(x => rc(x, 74, 22, 44, PAPER) + rc(x + 5, 80, 12, 10, 'none', INK, 1)).join('') + tx(180, 24, '加油站', 15) + rc(300, 70, 46, 48, PAPER);
+  else if (kind === 'residential') b = rc(60, 30, 90, 88) + rc(200, 14, 100, 104) + windows(72, 42, 3, 4, 18, 12, 8, true) + windows(214, 26, 4, 5, 16, 12, 8, true) + zombie(170, 118, 1) + zombie(330, 118, 0.9);
+  else if (kind === 'subway') b = '<path d="M80 118 V80 Q180 30 280 80 V118" fill="none" stroke="' + INK + '" stroke-width="1.6"/>' + rc(150, 84, 60, 34, '#2b2f36') + tx(180, 70, '地鐵站 M', 14) + ln(100, 104, 140, 104, 1.2) + zombie(240, 118, 0.9);
+  else if (kind === 'police') b = rc(80, 34, 200, 84) + sign(130, 14, 100, '警察局') + windows(96, 50, 6, 2, 20, 16, 10, true) + '<circle cx="300" cy="40" r="8" fill="#3b6fb6"/><circle cx="318" cy="40" r="8" fill="' + RED + '"/>' + zombie(40, 118, 1);
+  else return _sceneBase(kind);
+  return '<div class="scene"><svg viewBox="0 -12 360 134" role="img" aria-label="' + kind + '">' + b + ln(0, 118, 360, 118, 1.6) + '</svg></div>';
+};
+
+// 更多成就
+ACHS.push(
+  ['stash1', '眼尖', '找到第一個藏匿點', () => J.stashes && Object.keys(J.stashes).length >= 1],
+  ['stashAll', '尋寶專家', '知道全部 ' + STASHES.length + ' 個藏匿點', () => J.stashes && STASHES.every(s => J.stashes[s.id])],
+  ['intel1', '消息靈通', '在報攤買一次情報', () => J.intel && Object.keys(J.intel).length >= 1],
+  ['intelAll', '萬事通', '買齊報攤所有情報', () => J.intel && INTEL.every(i => J.intel[i.id])],
+  ['oldman', '阿伯的紅包', '收下超市阿伯的錢', () => S.q && S.q.oldman],
+  ['clerk', '跑腿小弟', '幫便利店店員送完包裹', () => S.q && S.q.clerk === 'done'],
+  ['dealer', '殺價高手', '幫車行老闆找到鐵片', () => S.q && S.q.dealer === 'done'],
+  ['zoeprep', '敦親睦鄰', '準備期分 Zoe 三箱水', () => (S.zoePrep || 0) >= 3],
+  ['visitAll', '城市漫遊', '一輪準備期走遍 ' + STORE_ORDER.length + ' 個地點', () => S.seenStores && STORE_ORDER.every(k => S.seenStores[k])],
+  ['outAll', '踏遍廢墟', '一輪內搜過所有外出地點', () => S.sv && S.sv.locs && Object.keys(LOCS).every(k => S.sv.locs[k] && S.sv.locs[k].done.length)],
+  ['htFast', '閃電戰', '擋下快速屍群', () => S.sv && S.sv.htSurv && S.sv.htSurv.fast],
+  ['htHeavy', '鋼鐵洪流', '擋下重裝屍群', () => S.sv && S.sv.htSurv && S.sv.htSurv.heavy],
+  ['htNight', '夜驚', '擋下夜行屍群', () => S.sv && S.sv.htSurv && S.sv.htSurv.night],
+  ['allies2', '小隊', 'Zoe 和倉庫經理都加入', () => S.sv && S.sv.allies && S.sv.allies.zoe !== undefined && S.sv.allies.mgr !== undefined],
+  ['diary60', '筆耕', '一輪寫滿 60 篇日記', () => S.sv && S.sv.diary && S.sv.diary.length >= 60],
+  ['shelf2', '收納控', '做 2 個置物架', () => S.sv && (S.sv.st.shelf || 0) >= 2],
+  ['gridFull', '囤積症', '倉庫用掉九成以上', () => S.sv && storeWeight() >= storeCap() * 0.9],
+  ['hotpot', '火鍋派對', '煮出一鍋火鍋', () => J.seen && J.seen.hotpot],
+  ['molotov5', '火力展示', '同時有 5 瓶燃燒瓶', () => S.sv && (S.sv.st.molotov || 0) >= 5],
+  ['sp200', '存款', '生存點數存到 200', () => S.sv && S.sv.sp >= 200],
+  ['def1000', '銅牆鐵壁', '防線耐久達到 1000', () => S.sv && S.sv.def >= 1000],
+  ['power40', '電力充沛', '存電達到 40 度', () => S.sv && S.sv.power >= 40],
+  ['easy100', '新手上路', '簡單難度撐過 100 天', () => S.sv && S.diff === 'easy' && S.sv.day >= 101],
+  ['normal100', '老手', '普通難度撐過 100 天', () => S.sv && S.diff === 'normal' && S.sv.day >= 101],
+  ['d200', '傳說', '無盡模式撐到第 200 天', () => S.sv && S.sv.day >= 200],
+  ['rich3000', '大富翁', '準備期現金超過 $3,000', () => S.phase === 'play' && S.money >= 3000],
+  ['dog', '收養', '收養流浪狗', () => S.sv && S.sv.dog && S.sv.dog.state === 'pet'],
+  ['robot1', '第一台機器人', '做出任一種機器人', () => S.sv && ROBOTS.some(k => S.sv.st[k] > 0)],
+  ['badge', '警徽', '搜過警察局', () => S.sv && S.sv.locs && S.sv.locs.police && S.sv.locs.police.done.length],
+  ['underground', '地下世界', '搜過地鐵站', () => S.sv && S.sv.locs && S.sv.locs.subway && S.sv.locs.subway.done.length]
 );
 
 // ---- 80-art.js ----
@@ -2144,8 +2511,13 @@ function houseSVG() {
     s += rc(110, y, 140, fh, f === 'B1' ? '#e3ddcd' : 'none');
     s += tx(122, y + 20, f === '1F' ? '1F' : f, 10, MUTE, 'start');
     const idx = { '1F': 0, '2F': 1, 'B1': 2 }[f];
-    const rooms = sv.rooms.slice(idx * 3, idx * 3 + 3);
-    rooms.forEach((r, j) => { s += tx(152 + j * 28, y + 21, ROOMS[r].n.slice(0, 2), 10.5); });
+    if (typeof normRooms === 'function') normRooms();
+    for (let j = 0; j < 3; j++) {
+      const ri = idx * 3 + j, r = sv.rooms[ri], x0 = 138 + j * 32, sel = UI.roomSel === ri;
+      s += '<g data-a="roomTap" data-v="' + ri + '" style="cursor:pointer">' +
+        '<rect x="' + x0 + '" y="' + (y + 5) + '" width="29" height="' + (fh - 10) + '" rx="3" fill="' + (sel ? TAPE : r ? '#fffdf6' : 'transparent') + '" stroke="' + (r ? INK : MUTE) + '" stroke-width="1" stroke-dasharray="' + (r ? '0' : '3 3') + '"/>' +
+        (r ? tx(x0 + 14.5, y + 21, ROOMS[r].n.slice(0, 2), 10.5) : tx(x0 + 14.5, y + 22, '＋', 12, MUTE)) + '</g>';
+    }
   });
   // 大門（顏色代表耐久）
   const ratio = sv.def / sv.defMax;
@@ -2185,6 +2557,122 @@ function sfx(type) {
   } catch (e) {}
 }
 Object.assign(ACT, { sound() { J.sound = J.sound === false; saveJournal(); render(); } });
+
+// ---- 81-anim.js ----
+/* ================= 動畫（移動、出門、換日）與程式合成的背景音樂 ================= */
+const reduceMotion = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+function animOverlay() {
+  const a = UI.anim;
+  if (!a || reduceMotion()) return '';
+  const el = Date.now() - a.ts, life = a.kind === 'day' ? 2200 : 1500;
+  if (el > life) { UI.anim = null; return ''; }
+  const delay = 'animation-delay:-' + el + 'ms';
+  if (a.kind === 'travel' || a.kind === 'out') {
+    const label = a.kind === 'travel' ? (S.car ? '開車' : '走路') + '前往 ' + STORES[a.to].n + ' · ' + a.min + ' 分鐘' : '出門前往 ' + LOCS[a.to].n;
+    const from = a.kind === 'travel' ? STORES[a.from].n : '家';
+    const to = a.kind === 'travel' ? STORES[a.to].n : LOCS[a.to].n;
+    return '<div class="anim travel" style="' + delay + '"><svg viewBox="0 0 300 70" aria-hidden="true">' +
+      '<line x1="30" y1="40" x2="270" y2="40" stroke="#1d2733" stroke-width="2" stroke-dasharray="5 6"/>' +
+      '<circle cx="30" cy="40" r="6" fill="#1d2733"/><circle cx="270" cy="40" r="6" fill="#b8322a"/>' +
+      '<g class="walker" style="' + delay + '"><circle cx="0" cy="26" r="5" fill="#1d2733"/><path d="M0 31 L0 44 M0 44 L-5 54 M0 44 L5 54 M0 35 L-6 41 M0 35 L6 41" stroke="#1d2733" stroke-width="2.2" stroke-linecap="round"/></g>' +
+      '<text x="30" y="66" font-size="12" text-anchor="middle" fill="#5f6873">' + esc(from) + '</text><text x="270" y="66" font-size="12" text-anchor="middle" fill="#5f6873">' + esc(to) + '</text></svg>' +
+      '<p>' + esc(label) + '</p></div>';
+  }
+  if (a.kind === 'day') {
+    return '<div class="anim day" style="' + delay + '"><div class="hand big">第 ' + a.day + ' 天</div>' + (a.line ? '<p class="hand">' + esc(a.line) + '</p>' : '') + '</div>';
+  }
+  return '';
+}
+const _renderWithSave = render;
+render = function () { _renderWithSave(); const o = animOverlay(); if (o) $app.insertAdjacentHTML('beforeend', o); };
+
+const _goAnim = ACT.go;
+ACT.go = function (dest) {
+  const from = S && S.loc, t0 = S && S.t;
+  _goAnim(dest);
+  if (S && S.phase === 'play' && S.loc === dest && from !== dest) { UI.anim = { kind: 'travel', from, to: dest, min: S.t - t0, ts: Date.now() }; render(); }
+};
+const _goOutAnim = SACT.goOut;
+SACT.goOut = function (loc) {
+  _goOutAnim(loc);
+  if (S && S.sv && S.sv.out && S.sv.out.loc === loc) { UI.anim = { kind: 'out', to: loc, ts: Date.now() }; render(); }
+};
+for (const k of ['sleep', 'watch']) {
+  const base = SACT[k];
+  SACT[k] = function () {
+    const d0 = S.sv && S.sv.day;
+    base();
+    if (S && S.phase === 'survive' && S.sv.day > d0) {
+      const last = S.sv.diary && S.sv.diary[S.sv.diary.length - 1];
+      UI.anim = { kind: 'day', day: S.sv.day, line: last ? last.t : '', ts: Date.now() };
+      render();
+    }
+  };
+}
+
+/* ---------- 背景音樂：準備期緊張的脈動、白天安靜的和聲、屍潮夜低沉的嗡鳴 ---------- */
+const MUS = { timer: null, next: 0, bar: 0, master: null };
+const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+function musicMood() {
+  if (!S) return 'calm';
+  if (S.phase === 'play') return 'tense';
+  if (S.phase === 'survive') return hordeOn(S.sv.day) ? 'dark' : 'calm';
+  return 'calm';
+}
+function note(f, t, len, wave, vol, attack) {
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = wave; o.frequency.setValueAtTime(f, t);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(vol, t + (attack || 0.02));
+  g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  o.connect(g).connect(MUS.master); o.start(t); o.stop(t + len + 0.05);
+}
+const CALM = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]];
+const PENTA = [69, 72, 74, 76, 79, 81];
+function scheduleBar(t, mood) {
+  if (mood === 'calm') {
+    const ch = CALM[MUS.bar % 4];
+    ch.forEach(m => note(hz(m), t, 4.2, 'sine', 0.22, 1.2));
+    note(hz(ch[0] - 12), t, 4.2, 'triangle', 0.18, 0.8);
+    if (MUS.bar % 2 === 0) note(hz(PENTA[Math.floor(Math.random() * PENTA.length)]), t + 1 + Math.random() * 2, 1.6, 'sine', 0.08, 0.05);
+    return 4;
+  }
+  if (mood === 'tense') {
+    for (let i = 0; i < 4; i++) note(hz(33 + (MUS.bar % 4 === 3 && i > 1 ? 1 : 0)), t + i * 0.5, 0.35, 'triangle', 0.35, 0.01);
+    for (let i = 0; i < 8; i++) note(2400, t + i * 0.25, 0.04, 'square', i % 2 ? 0.015 : 0.03, 0.002);
+    if (MUS.bar % 2 === 0) note(hz(64 + (MUS.bar % 4)), t + 1.5, 0.45, 'sine', 0.06, 0.02);
+    return 2;
+  }
+  // dark
+  note(hz(29), t, 4.3, 'sawtooth', 0.12, 1.5);
+  note(hz(41), t, 4.3, 'sine', 0.2, 1.5);
+  if (MUS.bar % 2 === 1) { note(hz(64), t + 2, 1.8, 'sine', 0.05, 0.4); note(hz(65), t + 2.1, 1.8, 'sine', 0.04, 0.4); }
+  return 4;
+}
+function musicTick() {
+  if (J.music !== true || !AC) { musicStop(); return; }
+  const now = AC.currentTime;
+  if (MUS.next < now) MUS.next = now + 0.05;
+  while (MUS.next < now + 0.6) { MUS.next += scheduleBar(MUS.next, musicMood()); MUS.bar++; }
+}
+function musicStart() {
+  try {
+    if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+    if (!MUS.master) {
+      MUS.master = AC.createGain(); MUS.master.gain.value = 0.18;
+      const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600;
+      MUS.master.connect(lp).connect(AC.destination);
+    }
+    if (!MUS.timer) { MUS.next = 0; MUS.timer = setInterval(musicTick, 200); musicTick(); }
+  } catch (e) {}
+}
+function musicStop() { if (MUS.timer) { clearInterval(MUS.timer); MUS.timer = null; } }
+const _sfxBase = sfx;
+sfx = function (type) { _sfxBase(type); if (J.music === true && !MUS.timer) musicStart(); };
+Object.assign(ACT, {
+  music() { J.music = J.music !== true; saveJournal(); if (J.music) musicStart(); else musicStop(); render(); }
+});
 
 // ---- 90-save.js ----
 /* ================= 存檔續玩 ================= */

@@ -140,8 +140,8 @@ const ACT = {
   },
   buyCar() {
     if (S.mods && S.mods.noCar) { log('挑戰條件：這輪不能買車。'); render(); return; }
-    if (S.car || S.money < 500 || S.loc !== 'cars' || !isOpen('cars', S.t)) return;
-    S.car = true; S.money -= 500;
+    if (S.car || S.money < carPrice() || S.loc !== 'cars' || !isOpen('cars', S.t)) return;
+    S.car = true; S.money -= carPrice();
     log('買下舊小車。移動時間大約減半，後車廂多 80kg。', true);
     advance(10); checkOutbreak(); render();
   },
