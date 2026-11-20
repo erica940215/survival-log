@@ -126,9 +126,16 @@ function charFrame(now) {
   const rt = rtState(), walking = rt.path && rt.path.length;
   if (CF_LAST.x != null && Math.abs(rt.pos.x - CF_LAST.x) > 0.001) rt.face = rt.pos.x > CF_LAST.x ? 1 : -1;
   CF_LAST.x = rt.pos.x;
-  const k = walking ? (Math.floor(now / 200) % 2 ? 'char_walk1' : 'char_walk2') : ((rt.task && rt.task.h) || (rt.workUntil && now < rt.workUntil)) ? 'char_work' : 'char_idle';
+  const ta = rt.task && rt.task.h ? rt.task.a : null, busy = rt.workUntil && now < rt.workUntil;
+  const pick = a => ['eat', 'eatFull', 'drink', 'drinkFull', 'cook', 'cookx'].includes(a) && hasSpr('char_eat') ? 'char_eat' : ['rest', 'sleep', 'watch'].includes(a) && hasSpr('char_sleep') ? 'char_sleep' : 'char_work';
+  let k = walking ? (Math.floor(now / 200) % 2 ? 'char_walk1' : 'char_walk2') : ta ? pick(ta) : busy ? pick(rt.workA) : 'char_idle';
+  if (!walking && S.sv.hour >= LAST_HOUR && hasSpr('char_sleep')) k = 'char_sleep';
   const flip = rt.face === 1;
-  if (k !== img.dataset.k) { img.setAttribute('href', SPR[k]); img.dataset.k = k; }
+  if (k !== img.dataset.k) {
+    const tmp = document.createElementNS('http://www.w3.org/2000/svg', 'g'); tmp.innerHTML = sprImg(k, 60);
+    const ni = tmp.firstChild; for (const at of ['x', 'y', 'width', 'height']) img.setAttribute(at, ni.getAttribute(at));
+    img.setAttribute('href', SPR[k]); img.dataset.k = k;
+  }
   if (flip !== (img.dataset.flip === '1')) { if (flip) img.setAttribute('transform', 'scale(-1 1)'); else img.removeAttribute('transform'); img.dataset.flip = flip ? '1' : '0'; }
 }
 

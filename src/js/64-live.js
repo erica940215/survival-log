@@ -69,6 +69,7 @@ isoSVG = function () {
     const p = sv.place[o.id]; if (!p || p.f !== f || !grow.includes(o.k)) continue;
     const D = ISO[o.k], w = p.r ? D.d : D.w, dd = p.r ? D.w : D.d;
     const n = o.k === 'potrack' ? 2 : 4;
+    if (camTop() && typeof SPR === 'object' && SPR['obj_' + o.k]) { pi += n; continue; }
     for (let i = 0; i < n && pi < plants.length; i++, pi++) {
       const pl = plants[pi], g = Math.min(1, (pl.age + 1) / 8);
       const c = P(p.x + (i % 2 + 0.5) * w / 2, p.y + (Math.floor(i / 2) % 2 + 0.5) * dd / 2, D.h);

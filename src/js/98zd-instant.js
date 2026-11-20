@@ -24,7 +24,7 @@ function doNow(where, a, v, label) {
   rt.task = null; rt.queue = []; rt.path = []; rt.frac = 0;
   UI.rtSel = null;
   const h0 = sv.hour, d0 = sv.day, log0 = sv.log[0];
-  rt.workUntil = performance.now() + 900;
+  rt.workA = a; rt.workUntil = performance.now() + (['eat', 'eatFull', 'drink', 'drinkFull'].includes(a) ? 1600 : a === 'rest' ? 2200 : 900);
   fn(v);
   if (S.phase !== 'survive') return;
   const failed = S.sv.log[0] === log0 && S.sv.hour === h0 && S.sv.day === d0;

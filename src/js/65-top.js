@@ -48,7 +48,8 @@ function topSVG() {
     const tl = P(p.x + 0.06, p.y + 0.06, h), br = P(p.x + w - 0.06, p.y + d - 0.06, h), fb = P(p.x + w - 0.06, p.y + d - 0.06, 0);
     let g = '<g data-a="isoObj" data-v="' + o.id + '" style="cursor:pointer' + (I.moving ? ';pointer-events:none;opacity:' + (sel ? 0.35 : 1) : '') + '">';
     g += '<ellipse cx="' + (tl[0] + br[0]) / 2 + '" cy="' + (fb[1] - 2) + '" rx="' + (br[0] - tl[0]) / 2 + '" ry="6" fill="rgba(0,0,0,0.18)"/>';
-    const topImg = typeof SPR === 'object' && SPR['obj_' + o.k];
+    const ripe = o.k === 'lightbox' && (sv.plants || []).some(pl => pl.slot === 'light' && pl.age >= growDays());
+    const topImg = typeof SPR === 'object' && ((ripe && SPR.obj_lightbox_ripe) || SPR['obj_' + o.k]);
     if (topImg) {
       // 自訂家具圖：放進物件範圍（頂面＋正面），直立放的長物件轉 90 度
       const bx = tl[0], by = tl[1] - 6, bw = br[0] - tl[0], bh = fb[1] - tl[1] + 6, cx = bx + bw / 2, cy = by + bh / 2;
