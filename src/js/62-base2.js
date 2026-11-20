@@ -90,7 +90,7 @@ function viewGrid() {
   const colors = { food: '#f4d9a0', water: '#bcd6ea', power: '#e8b9a6', mat: '#d6d0c2', med: '#f0b8b8', farm: '#c6dfb5' };
   for (let i = 0; i < Math.max(cap, used); i++) {
     const c = cells[i];
-    if (c) h += '<button class="cell' + (UI.gridSel === c.k ? ' sel' : '') + (i >= cap ? ' over' : '') + '" data-a="gridSel" data-v="' + c.k + '" style="background:' + (colors[ITEMS[c.k].cat] || '#ddd') + '"><span>' + esc(ITEMS[c.k].n.replace(/（.*）/, '').slice(0, 2)) + '</span><b>' + c.q + '</b></button>';
+    if (c) h += '<button class="cell' + (UI.gridSel === c.k ? ' sel' : '') + (i >= cap ? ' over' : '') + '" data-a="gridSel" data-v="' + c.k + '" style="background:' + (colors[ITEMS[c.k].cat] || '#ddd') + '" title="' + esc(ITEMS[c.k].n) + '">' + itemIc(c.k, 'cell-ic') + '<span>' + esc(ITEMS[c.k].n.replace(/（.*）/, '').slice(0, 2)) + '</span><b>' + c.q + '</b></button>';
     else h += '<span class="cell empty"></span>';
   }
   h += '</div>';

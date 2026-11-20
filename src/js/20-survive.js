@@ -419,7 +419,7 @@ function viewBase() {
   let any = false;
   for (const [k, d] of devs) {
     if (!(st[k] > 0)) continue; any = true;
-    h += '<div class="item"><div><div class="nm">' + ITEMS[k].n + (sv.dev[k] ? '<span class="tag green">開</span>' : '<span class="tag">關</span>') + '</div><div class="meta">' + d + '</div></div>' +
+    h += '<div class="item"><div><div class="nm">' + itemIc(k) + ITEMS[k].n + (sv.dev[k] ? '<span class="tag green">開</span>' : '<span class="tag">關</span>') + '</div><div class="meta">' + d + '</div></div>' +
       '<button class="btn ghost" data-a="toggle" data-v="' + k + '">' + (sv.dev[k] ? '關掉' : '打開') + '</button></div>';
   }
   if (!any) h += '<p class="empty">沒有用電設備。</p>';
@@ -439,7 +439,7 @@ function viewStore() {
   const all = Object.keys(sv.st).filter(k => k !== 'wu' && ITEMS[k] && sv.st[k] > 0);
   let h = '<div class="cat">新鮮食物</div>';
   h = viewGrid() + h;
-  h += sv.fresh.length ? '<div class="sheet">' + sv.fresh.slice().sort((a, b) => a.life - b.life).map(f => '<div class="item"><div><div class="nm">' + ITEMS[f.k].n + '</div><div class="meta">' + Math.ceil(f.life) + ' 天後壞（冰櫃有電時壞得慢）</div></div><div class="price">×' + f.q + '</div></div>').join('') + '</div>' : '<p class="empty">沒有。</p>';
+  h += sv.fresh.length ? '<div class="sheet">' + sv.fresh.slice().sort((a, b) => a.life - b.life).map(f => '<div class="item"><div><div class="nm">' + itemIc(f.k) + ITEMS[f.k].n + '</div><div class="meta">' + Math.ceil(f.life) + ' 天後壞（冰櫃有電時壞得慢）</div></div><div class="price">×' + f.q + '</div></div>').join('') + '</div>' : '<p class="empty">沒有。</p>';
   h += '<div class="cat">庫存</div>';
   h += all.length ? '<div class="sheet">' + CAT_ORDER.flatMap(c => all.filter(k => ITEMS[k].cat === c)).map(k => '<div class="item"><div><div class="nm">' + ITEMS[k].n + '</div><div class="meta">' + ITEMS[k].note + '</div></div><div class="price">×' + sv.st[k] + '</div></div>').join('') + '</div>' : '<p class="empty">空的。</p>';
   h += viewDiary(sv.diary, true);

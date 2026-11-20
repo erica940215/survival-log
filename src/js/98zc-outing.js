@@ -70,7 +70,7 @@ function otFinish() {
   SACT.search(t.i);
   const o = S.sv.out;
   if (o) {
-    const got = Object.entries(o.bag).filter(([k, q]) => q > (before[k] || 0)).map(([k, q]) => (k === 'bp' ? '圖紙' : ITEMS[k].n) + '+' + (q - (before[k] || 0)));
+    const got = Object.entries(o.bag).filter(([k, q]) => q > (before[k] || 0)).map(([k, q]) => (ITEM_EMO[k] || '') + (k === 'bp' ? '圖紙' : ITEMS[k].n.replace(/（.*）/, '')) + '+' + (q - (before[k] || 0)));
     const sp = otSpot(null, o.conts.findIndex(c => String(c.i) === t.i));
     o.rt.fx.push({ x: sp.x, y: sp.y, txt: got.length ? got.slice(0, 2).join(' ') : '空空的', col: got.length ? '#ecd27a' : '#9aa7b4', t0: performance.now() });
     if (o.enc && o.enc.t === 'z') { for (let k = 0; k < o.enc.n; k++) o.rt.z.push({ id: ++o.rt.zid, x: Math.min(8.5, rt.pos.x + 0.8 + k * 0.4), y: Math.min(7.5, rt.pos.y + 0.3), dir: -1, hp: 2, st: 'chase', sp: 0.5, enc: true }); }

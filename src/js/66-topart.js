@@ -176,3 +176,11 @@ function sprImg(k, h, flip, ex) {
   const w = k.endsWith('_dead') ? h * 1.6 : k.endsWith('_sleep') ? h * 2.2 : /^(dog|rat)/.test(k) ? h * 2.6 : h;
   return '<image href="' + SPR[k] + '" x="' + (-w / 2).toFixed(1) + '" y="' + (-h).toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '" preserveAspectRatio="xMidYMax meet"' + (flip ? ' transform="scale(-1 1)"' : '') + (ex || '') + '/>';
 }
+
+/* ---------- 物品圖示：有圖（SPR.item_<k>）用圖，沒有先用表情符號 ---------- */
+const ITEM_EMO = { rice: '🍚', biscuit: '🍪', sausage: '🌭', noodle: '🍜', can: '🥫', veg: '🥬', choco: '🍫', water: '💧', barrel: '🛢️', rain: '🌧️', diesel: '⛽', board: '🪵', metal: '🔩', glass: '🪟', plastic: '🧴', matpack: '📦', medkit: '⛑️', pills: '💊', tomato: '🌱', straw: '🌱', mush: '🍄', pot: '🪴', fert: '🧪', rice_c: '🍙', tomato_p: '🍅', straw_p: '🍓', mushroom: '🍄', soup: '🍲', hotpot: '🍲', juice: '🧃', alcohol: '🍶', molotov: '🔥', wu: '💧', noise: '📢', rape: '🌱', rape_p: '🌾', pkg: '📦', coffee: '☕', vitamin: '💊', cell: '🔋', friedchk: '🍗', bubble: '🧋', bat: '🏏', crowbar: '🔧', bow: '🏹', soap: '🧼', antib: '💉', splint: '🦴', bp: '📜' };
+function itemIc(k, cls) {
+  const src = typeof SPR === 'object' && SPR['item_' + k];
+  if (src) return '<img class="ic' + (cls ? ' ' + cls : '') + '" src="' + src + '" alt="">';
+  return '<span class="ic' + (cls ? ' ' + cls : '') + '" aria-hidden="true">' + (ITEM_EMO[k] || '🛠️') + '</span>';
+}

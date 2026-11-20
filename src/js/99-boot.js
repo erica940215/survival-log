@@ -35,4 +35,4 @@ if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude
 else start((window.claude && window.claude.hot && window.claude.hot.data) || {});
 
 // 給測試用
-window.__slog = { get S() { return S; }, ACT, get SACT() { return SACT; }, hordeType, HORDES, hordeOn: d => hordeOn(d), render: () => render(), get UI() { return UI; }, get UIS() { return UIS; } };
+window.__slog = { get S() { return S; }, ACT, get SACT() { return SACT; }, hordeType, HORDES, hordeOn: d => hordeOn(d), ITEMS, render: () => render(), get UI() { return UI; }, get UIS() { return UIS; } };

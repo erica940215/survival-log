@@ -278,6 +278,52 @@ An abandoned modern tech office building, glass facade with cracks, dead server 
 
 ---
 
+## 七、物品圖示（比例 2:1，一張 8 個）
+
+倉庫、櫃子視窗、外出撿到東西、早晨報告都會用到。現在先用表情符號代替，你的圖到了就換掉。
+
+一張圖放 8 個，**照順序排成上下兩排、每排 4 個**（左到右、上到下），我會照順序切開。
+
+先貼這段「圖示風格」（不用貼前面的「共同風格」）：
+
+```
+Game inventory icon sheet, 8 separate item icons arranged in 2 rows of 4, evenly spaced with lots of empty white space between them, cozy post-apocalyptic survival game, hand-drawn flat illustration, clean dark brown outlines, muted warm palette, soft cel shading, slightly worn and used look, each item seen from a slight 3/4 angle, plain pure white background, no grid lines, no frames, no labels, no text, no numbers. In this exact order, left to right, top row then bottom row:
+```
+
+再接下面其中一組：
+
+**45. 食物 A**
+```
+1) a sack of rice, 2) a pack of hard ration biscuits, 3) a red plastic sausage stick, 4) a cup of instant noodles, 5) a tin can of food, 6) a bunch of fresh leafy vegetables, 7) a chocolate bar half unwrapped, 8) a rice ball onigiri
+```
+
+**46. 食物 B**
+```
+1) a ripe red tomato, 2) a few red strawberries, 3) a cluster of brown mushrooms, 4) a bowl of vegetable soup, 5) a small hot pot with steam, 6) a juice box with straw, 7) a paper bag of Taiwanese fried chicken bites, 8) a cup of bubble milk tea with straw
+```
+
+**47. 水與能源**
+```
+1) a pack of bottled water, 2) a single water bottle, 3) a blue water storage barrel, 4) a red diesel jerry can, 5) a pack of AA batteries, 6) a can of coffee, 7) a bottle of vitamin pills, 8) a glass bottle of strong liquor
+```
+
+**48. 醫療與雜物**
+```
+1) a first aid kit box with a red cross, 2) a blister pack of painkiller pills, 3) a small antibiotic vial with a syringe, 4) a wooden splint with bandage, 5) a bar of soap, 6) a molotov cocktail bottle with a cloth wick, 7) a homemade noise maker with an alarm clock and tin cans, 8) a taped cardboard parcel
+```
+
+**49. 材料與武器**
+```
+1) a stack of wooden planks, 2) a few scrap metal sheets, 3) a pane of glass, 4) a pile of plastic scraps and bottles, 5) a bundle of mixed scrap materials tied with rope, 6) a wooden baseball bat, 7) a red crowbar, 8) a homemade wooden bow
+```
+
+**50. 種植**
+```
+1) a seed packet with a tomato picture, 2) a seed packet with a strawberry picture, 3) a mushroom grow bag, 4) an empty terracotta flower pot, 5) a bag of fertilizer, 6) a seed packet with a yellow rapeseed flower picture, 7) a small bundle of harvested rapeseed stalks, 8) a rain water collector bucket with a funnel
+```
+
+---
+
 ## 交給我的時候
 
 - 直接在對話裡傳圖，說是第幾號就好。例如「11 床」。

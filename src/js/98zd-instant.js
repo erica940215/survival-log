@@ -25,6 +25,7 @@ function doNow(where, a, v, label) {
   UI.rtSel = null;
   const h0 = sv.hour, d0 = sv.day, log0 = sv.log[0];
   rt.workA = a; rt.workUntil = performance.now() + (['eat', 'eatFull', 'drink', 'drinkFull'].includes(a) ? 1600 : a === 'rest' ? 2200 : 900);
+  if (a === 'sleep' || a === 'watch') { fn(v); return; }
   fn(v);
   if (S.phase !== 'survive') return;
   const failed = S.sv.log[0] === log0 && S.sv.hour === h0 && S.sv.day === d0;
@@ -73,9 +74,9 @@ function objModal() {
     const foods = Object.keys(FOOD).filter(f => sv_has(f) > 0);
     const meds = ['medkit', 'pills'].filter(m => sv.st[m] > 0);
     const water = sv.st.wu || 0, tap = sv.day <= 5;
-    body += '<div class="mgrid">' + foods.map(f => '<button class="mcell" data-a="mEat" data-v="' + f + '"><b>' + ITEMS[f].n + '</b><span>×' + sv_has(f) + ' · 飽足 +' + FOOD[f].sat + '</span></button>').join('') +
-      '<button class="mcell" data-a="mDrink"' + (water >= 1 || tap ? '' : ' disabled') + '><b>' + (tap ? '自來水' : '飲用水') + '</b><span>' + (tap ? '還沒停水' : '×' + water) + ' · 水分 +30</span></button>' +
-      meds.map(m => '<button class="mcell" data-a="mHeal" data-v="' + m + '"><b>' + ITEMS[m].n + '</b><span>×' + sv.st[m] + ' · 生命 +' + (m === 'medkit' ? 35 : 10) + '</span></button>').join('') + '</div>';
+    body += '<div class="mgrid">' + foods.map(f => '<button class="mcell" data-a="mEat" data-v="' + f + '"><b>' + itemIc(f) + ITEMS[f].n + '</b><span>×' + sv_has(f) + ' · 飽足 +' + FOOD[f].sat + '</span></button>').join('') +
+      '<button class="mcell" data-a="mDrink"' + (water >= 1 || tap ? '' : ' disabled') + '><b>' + itemIc('wu') + (tap ? '自來水' : '飲用水') + '</b><span>' + (tap ? '還沒停水' : '×' + water) + ' · 水分 +30</span></button>' +
+      meds.map(m => '<button class="mcell" data-a="mHeal" data-v="' + m + '"><b>' + itemIc(m) + ITEMS[m].n + '</b><span>×' + sv.st[m] + ' · 生命 +' + (m === 'medkit' ? 35 : 10) + '</span></button>').join('') + '</div>';
     if (!foods.length && !meds.length) body += '<p class="meta">沒有可以吃的東西了。</p>';
     const mats = ['board', 'metal', 'glass', 'plastic', 'diesel', 'molotov'].filter(m => sv.st[m] > 0);
     if (mats.length) body += '<p class="meta" style="margin-top:6px">材料：' + mats.map(m => ITEMS[m].n + ' ' + sv.st[m]).join('、') + '</p>';
