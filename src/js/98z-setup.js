@@ -26,6 +26,7 @@ animOverlay = function () { if (UI.anim && UI.anim.kind === 'day' && (!S || S.ph
 
 /* ================= 素材替換：場景插圖、背景音樂（有列在這裡才會用檔案） ================= */
 const SCENE_ASSETS = {};   // 例：{ mart: 'assets/scenes/mart.png', school: 'assets/scenes/school.png' }
+if (typeof SPR === 'object') for (const k of Object.keys(SPR)) if (k.startsWith('scene_')) SCENE_ASSETS[k.slice(6)] = SPR[k];
 const MUSIC_ASSETS = {};   // 例：{ tense: 'assets/music/tense.mp3', calm: 'assets/music/calm.mp3', dark: 'assets/music/dark.mp3' }
 const _sceneAsset = sceneSVG;
 sceneSVG = function (kind) {

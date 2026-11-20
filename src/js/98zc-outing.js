@@ -233,12 +233,16 @@ const _viewOutOT = viewOut;
 viewOut = function () {
   let h = _viewOutOT();
   if (!rtOn() || !S.sv.out) return h;
-  const i = h.indexOf('<div class="scene">'), j = h.indexOf('</svg></div>', i);
-  if (i >= 0 && j > i) h = h.slice(0, i) + h.slice(j + 12);
+  const i = h.indexOf('<div class="scene">');
+  if (i >= 0) {
+    const isImg = h.slice(i, i + 40).includes('<img'), end = isImg ? '</div>' : '</svg></div>', j = h.indexOf(end, i);
+    if (j > i) h = h.slice(0, i) + h.slice(j + end.length);
+  }
   h = h.replace(/data-a="search"/g, 'data-a="otGo"');
   const rt = otState();
   const task = rt.task ? '<div class="rt-task"><div><b>' + esc(rt.task.n) + '</b><span>' + (rt.path.length ? '（走過去中）' : rt.task.i === 'EXIT' ? '' : '（翻找中）') + '</span></div><button class="btn ghost" data-a="otCancel">取消</button></div>' : '<p class="meta" style="margin:8px 0">點房間，角色會走過去翻找（每處 1 小時）。走廊上的殭屍靠太近會發現你，可以點牠打（要走近一點）。點左邊綠色出口回家。</p>';
-  return otScene() + task + h;
+  const banner = typeof SCENE_ASSETS === 'object' && SCENE_ASSETS[S.sv.out.loc] ? '<div class="ot-banner" style="background-image:url(' + SCENE_ASSETS[S.sv.out.loc] + ')"><b>' + LOCS[S.sv.out.loc].n + '</b></div>' : '';
+  return banner + otScene() + task + h;
 };
 // 外出時也不顯示上方狀態列
 const _renderOT = render;

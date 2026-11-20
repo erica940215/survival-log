@@ -261,7 +261,7 @@ function viewOutside() {
     const left = L.cont.length - sv.locs[k].done.filter(x => /^\d$/.test(x)).length;
     const locked = lv < L.lv;
     const noNoise = L.noise && !(sv.st.noise > 0);
-    h += actRow(L.n, locked ? '探索等級 ' + L.lv + ' 才能去' : '單程 ' + L.trip + ' 小時 · 還有 ' + left + ' 處沒搜 · 體力 -' + staCost(10) + (L.noise ? ' · 要用 1 個噪音器（有 ' + (sv.st.noise || 0) + '）' : '') + (sv.st.radar > 0 ? ' · 雷達' + (sv.power >= 1 ? '可用' : '沒電') : ''), '出門', 'goOut', k, !locked && !noNoise && canAct(L.trip + 1, staCost(10)));
+    h += actRow((typeof SCENE_ASSETS === 'object' && SCENE_ASSETS[k] ? '<img class="loc-thumb" src="' + SCENE_ASSETS[k] + '" alt="">' : '') + L.n, locked ? '探索等級 ' + L.lv + ' 才能去' : '單程 ' + L.trip + ' 小時 · 還有 ' + left + ' 處沒搜 · 體力 -' + staCost(10) + (L.noise ? ' · 要用 1 個噪音器（有 ' + (sv.st.noise || 0) + '）' : '') + (sv.st.radar > 0 ? ' · 雷達' + (sv.power >= 1 ? '可用' : '沒電') : ''), '出門', 'goOut', k, !locked && !noNoise && canAct(L.trip + 1, staCost(10)));
   }
   h += '</div>';
   if (hordeOn(sv.day)) h += '<p class="empty">今晚有屍潮，記得留時間回家準備。</p>';

@@ -291,3 +291,6 @@ svg.sg-on { animation: sgPulse 2.4s ease-in-out infinite; }
 @keyframes mUp { from { transform: translateY(24px); opacity: 0; } }
 :root[data-dark="1"] .rt-mbox, :root[data-dark="1"] .mcell { background: #23282f; color: #e8e4da; border-color: #556; }
 .rt-goal { opacity: 0.92; }
+.loc-thumb { display: block; width: 100%; max-width: 260px; aspect-ratio: 16 / 6; object-fit: cover; border-radius: 6px; border: 1.5px solid var(--ink, #1d2733); margin-bottom: 4px; }
+.ot-banner { height: 84px; border-radius: 8px; background-size: cover; background-position: center 40%; border: 1.5px solid var(--ink, #1d2733); margin-bottom: 8px; position: relative; }
+.ot-banner b { position: absolute; left: 10px; bottom: 6px; color: #fff; text-shadow: 0 1px 3px #000, 0 0 8px #000; font-size: 1.05em; }
