@@ -3,7 +3,7 @@
 const RT_SPEEDS = [0, 1, 3, 8];
 const RT_MIN_PER_SEC = 2;
 const rtOn = () => UIS.rt !== false;
-const rtActive = () => rtOn() && S && S.phase === 'survive' && S.sv && !S.sv.out && UI.tab === 'act';
+function rtActive() { return rtOn() && S && S.phase === 'survive' && S.sv && !S.sv.out && UI.tab === 'act'; }
 function rtState() {
   const sv = S.sv;
   if (!sv.rt) sv.rt = { frac: 0, task: null, queue: [], path: [] };

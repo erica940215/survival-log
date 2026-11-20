@@ -16,7 +16,7 @@ function otArtFor(n, idx) {
   return OT_CONT_ART[idx] || 'shelf';
 }
 const OT_FLOOR = { smarket: ['#efe3c8', '#e6d6b4'], school: ['#dfe9d6', '#d2dfc6'], hardware: ['#e3d6c4', '#d6c6ae'], hospital: ['#e4eef3', '#d5e3ea'], tech: ['#dfe2e8', '#d0d4dc'] };
-const otOn = () => rtOn() && S && S.phase === 'survive' && S.sv && S.sv.out && UI.tab === 'act';
+function otOn() { return rtOn() && S && S.phase === 'survive' && S.sv && S.sv.out && UI.tab === 'act'; }
 const otP = (x, y) => [OT.ML + x * OT.T, OT.MT + y * OT.T];
 
 function otState() {

@@ -304,6 +304,52 @@ svg.sg-on { animation: sgPulse 2.4s ease-in-out infinite; }
 .loc-thumb { display: block; width: 100%; max-width: 260px; aspect-ratio: 16 / 6; object-fit: cover; border-radius: 6px; border: 1.5px solid var(--ink, #1d2733); margin-bottom: 4px; }
 .ot-banner { height: 84px; border-radius: 8px; background-size: cover; background-position: center 40%; border: 1.5px solid var(--ink, #1d2733); margin-bottom: 8px; position: relative; }
 .ot-banner b { position: absolute; left: 10px; bottom: 6px; color: #fff; text-shadow: 0 1px 3px #000, 0 0 8px #000; font-size: 1.05em; }
+
+/* ===== 橫屏版面 ===== */
+.ls-hint { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 0; padding: 8px 10px; border: 1.5px dashed var(--ink, #1d2733); border-radius: 8px; font-size: 13px; background: rgba(236,210,122,0.18); }
+.ls-hint button { border: 0; background: transparent; font-size: 16px; color: inherit; cursor: pointer; }
+body.ls { overflow: hidden; background: #14171c; }
+body.ls #app { height: 100dvh; overflow: hidden; }
+.ls-stage { position: fixed; inset: 0; display: grid; grid-template-columns: minmax(150px, 22vw) 1fr 92px; background: #14171c; color: #f3f0e6; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+.ls-left { overflow: auto; padding: 8px 8px 8px 10px; display: flex; flex-direction: column; gap: 8px; }
+.ls-left .rt-stats { grid-template-columns: 1fr; gap: 6px; padding: 0; }
+.ls-left .rt-st { grid-template-columns: 32px 1fr 26px; color: #f3f0e6; }
+.ls-left .ot-banner { height: 56px; margin: 0; }
+.ls-tick { margin: 0 !important; max-height: 34vh; overflow: hidden; }
+.ls-tick p { color: #b9bcc2 !important; font-size: 11.5px !important; line-height: 1.35; }
+.ls-tick p:first-child { color: #f3f0e6 !important; }
+.ls-tick p.alert { color: #ff8a7a !important; }
+.ls-tick p:nth-child(n+4) { display: none; }
+.ls-center { position: relative; min-width: 0; height: 100dvh; display: flex; align-items: center; justify-content: center; }
+.ls-center .rt-wrap { margin: 0; width: 100%; height: 100%; border-radius: 0; display: flex; align-items: center; justify-content: center; }
+.ls-center .rt-wrap .iso { padding: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.ls-center .rt-wrap .iso svg { width: auto; height: 100%; max-width: 100%; }
+.ls-center .rt-q { font-size: 10.5px; max-width: 34%; padding: 4px 6px; }
+.ls-center .rt-c { transform: scale(0.8); transform-origin: top right; }
+.ls-center .rt-sp { bottom: 6px; }
+.ls-center .rt-sp button { min-width: 36px; padding: 4px 6px; }
+.ls-pause { text-align: center; color: #b9bcc2; line-height: 2; }
+.ls-float { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); width: min(420px, 92%); z-index: 5; }
+.ls-float .sg-box { background: rgba(246,241,228,0.96) !important; color: #1d2733; margin: 0 0 6px; }
+.ls-right { display: flex; flex-direction: column; gap: 6px; padding: 8px 8px 8px 0; justify-content: center; }
+.ls-btn { flex: 1 1 0; max-height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 1.5px solid #3a4250; border-radius: 10px; background: #232933; color: #f3f0e6; font-size: 20px; cursor: pointer; font-family: inherit; }
+.ls-btn span { font-size: 11.5px; font-weight: 700; }
+.ls-btn.red { background: #8f2a22; border-color: #b8322a; }
+.ls-btn.go { background: #2f6b3f; border-color: #3f8a52; }
+.ls-btn.menu { background: #ecd27a; color: #1d2733; border-color: #c9a94a; }
+.ls-btn:disabled { opacity: 0.4; }
+.ls-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 64vw); z-index: 50; background: var(--paper, #f6f1e4); color: var(--ink, #1d2733); overflow: auto; transform: translateX(105%); transition: transform .22s ease-out; box-shadow: -8px 0 24px rgba(0,0,0,0.4); }
+.ls-drawer.open { transform: translateX(0); }
+.ls-drawer .status { position: sticky; top: 46px; }
+.ls-drawer main.wrap { padding-bottom: 20px; }
+.ls-drawer nav.tabs { position: sticky; bottom: 0; left: auto; right: auto; width: 100%; }
+.ls-dh { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--paper, #f6f1e4); border-bottom: 1.5px solid var(--ink, #1d2733); }
+.ls-dh b { font-size: 1.1em; }
+.ls-dh .btn { margin-left: auto; }
+.ls-scrim { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,0.35); }
+body.ls .rt-modal { z-index: 70; align-items: center; }
+body.ls .rt-mbox { max-height: 92dvh; }
+:root[data-dark="1"] .ls-drawer, :root[data-dark="1"] .ls-dh { background: #1e2228; }
 </style>
 </head>
 <body>
@@ -4507,7 +4553,7 @@ viewHere = function () {
 const RT_SPEEDS = [0, 1, 3, 8];
 const RT_MIN_PER_SEC = 2;
 const rtOn = () => UIS.rt !== false;
-const rtActive = () => rtOn() && S && S.phase === 'survive' && S.sv && !S.sv.out && UI.tab === 'act';
+function rtActive() { return rtOn() && S && S.phase === 'survive' && S.sv && !S.sv.out && UI.tab === 'act'; }
 function rtState() {
   const sv = S.sv;
   if (!sv.rt) sv.rt = { frac: 0, task: null, queue: [], path: [] };
@@ -5275,7 +5321,7 @@ function otArtFor(n, idx) {
   return OT_CONT_ART[idx] || 'shelf';
 }
 const OT_FLOOR = { smarket: ['#efe3c8', '#e6d6b4'], school: ['#dfe9d6', '#d2dfc6'], hardware: ['#e3d6c4', '#d6c6ae'], hospital: ['#e4eef3', '#d5e3ea'], tech: ['#dfe2e8', '#d0d4dc'] };
-const otOn = () => rtOn() && S && S.phase === 'survive' && S.sv && S.sv.out && UI.tab === 'act';
+function otOn() { return rtOn() && S && S.phase === 'survive' && S.sv && S.sv.out && UI.tab === 'act'; }
 const otP = (x, y) => [OT.ML + x * OT.T, OT.MT + y * OT.T];
 
 function otState() {
@@ -5870,6 +5916,85 @@ rtPanel = function () {
   if (I.moving && I.sel) { const o = isoObjects().find(q => q.id === I.sel); h += '<div class="sg-box" style="border-color:#c9a94a;background:rgba(236,210,122,0.12)"><div class="sg-h"><b style="color:inherit">搬家：' + (o ? ISO[o.k].n : '') + '</b></div><p class="meta">點亮起來的空地放下。長按其他家具可以換一件搬。</p><div class="row-btns"><button class="btn ghost" data-a="moveRot">轉向</button><button class="btn ghost" data-a="moveCancel">不搬了</button></div></div>'; }
   return h + _rtPanelLife();
 };
+
+// ---- 98zf-landscape.js ----
+/* ================= 橫屏版面 =================
+   手機橫放時（生存階段）：中間房間占滿高度，左邊狀態、右邊大按鈕，
+   原本下面的東西收進「☰ 選單」抽屜（開著時間暫停）。
+   直拿時照舊，並在上方提示「橫放更好玩」（可關掉）。
+   設定：UIS.ls = 'auto'（預設）| 'off' */
+if (!UIS.ls) UIS.ls = 'auto';
+const LS_MQ = window.matchMedia ? window.matchMedia('(orientation: landscape) and (max-height: 620px)') : null;
+const isLandscape = () => !!(LS_MQ && LS_MQ.matches);
+const lsOn = () => UIS.ls !== 'off' && isLandscape() && S && S.phase === 'survive';
+
+Object.assign(SACT, {
+  lsMenu(v) {
+    UI.lsMenu = v === 'close' ? false : v === 'open' ? true : !UI.lsMenu;
+    if (!UI.lsMenu) { if (UI.tab !== 'act') UI.tab = 'act'; UI.rtOut = false; }
+    render();
+  },
+  lsOut() { UI.tab = 'act'; UI.rtOut = true; UI.lsMenu = true; render(); },
+  lsHintHide() { UI.lsHintHide = true; render(); },
+  lsMode(v) { UIS.ls = v === 'off' ? 'off' : 'auto'; saveUI(); render(); }
+});
+
+function lsRight() {
+  const sv = S.sv, sg = typeof siegeOf === 'function' && siegeOf();
+  const B = (a, v, t, cls, dis) => '<button class="ls-btn' + (cls ? ' ' + cls : '') + '" data-a="' + a + '"' + (v ? ' data-v="' + v + '"' : '') + (dis ? ' disabled' : '') + '>' + t + '</button>';
+  let h = '';
+  if (sv.out) h += B('otExit', '', '🏠<span>回家</span>', 'go');
+  else if (sg && !sg.done) h += B('sgMolo', '', '🔥<span>燃燒瓶 ' + (sv.st.molotov || 0) + '</span>', 'red', !(sv.st.molotov > 0)) + B('sgSkip', '', '🌙<span>守到天亮</span>');
+  else h += B('rtQuick', 'eatFull', '🍚<span>吃</span>') + B('rtQuick', 'drinkFull', '💧<span>喝</span>') + B('lsOut', '', '🎒<span>外出</span>') + B('rtQuick', 'sleep', '🛏️<span>睡覺</span>', 'red');
+  h += B('lsMenu', 'open', '☰<span>選單</span>', 'menu');
+  return h;
+}
+
+const _renderLS = render;
+render = function () {
+  _renderLS();
+  const app = $app, on = lsOn();
+  document.body.classList.toggle('ls', on);
+  if (!on) {
+    // 直拿：提示橫放
+    if (S && S.phase === 'survive' && UIS.ls !== 'off' && !UI.lsHintHide && !isLandscape() && window.innerWidth < 700) {
+      const main = app.querySelector('main.wrap');
+      if (main) main.insertAdjacentHTML('afterbegin', '<div class="ls-hint"><span>📱↻ 把手機橫放，房間更大、操作更像原作</span><button data-a="lsHintHide" aria-label="關閉">✕</button></div>');
+    }
+    return;
+  }
+  const main = app.querySelector('main.wrap'), header = app.querySelector('header.status'), nav = app.querySelector('nav.tabs');
+  // 舞台
+  const stage = document.createElement('div'); stage.className = 'ls-stage';
+  stage.innerHTML = '<div class="ls-left"></div><div class="ls-center"></div><div class="ls-right">' + lsRight() + '</div>';
+  const left = stage.querySelector('.ls-left'), center = stage.querySelector('.ls-center');
+  const wrap = main && main.querySelector('.rt-wrap');
+  if (wrap) center.appendChild(wrap); else center.innerHTML = '<div class="ls-pause">選單開著，時間暫停中<br><button class="btn" data-a="lsMenu" data-v="close">回到房間</button></div>';
+  const banner = main && main.querySelector('.ot-banner'); if (banner) left.appendChild(banner);
+  const tick = main && main.querySelector('.ticker'); if (tick) { tick.classList.add('ls-tick'); left.appendChild(tick); }
+  const stats = main && main.querySelector('.rt-stats'); if (stats) left.appendChild(stats);
+  else if (S.sv) left.insertAdjacentHTML('beforeend', '<div class="rt-stats">' + [['生命', S.sv.hp], ['飽腹', S.sv.sat], ['水分', S.sv.hyd], ['精力', S.sv.sta], ['心態', S.sv.mor]].map(([n, v]) => '<div class="rt-st"><span>' + n + '</span><div class="bar"><i style="width:' + clamp(v) + '%"></i></div><b class="num">' + Math.round(v) + '</b></div>').join('') + '</div>');
+  // 屍潮、敲門、搬家等提示卡浮在房間下方
+  if (main && !UI.lsMenu) { const cards = main.querySelectorAll('.sg-box'); if (cards.length) { const fl = document.createElement('div'); fl.className = 'ls-float'; cards.forEach(c => fl.appendChild(c)); center.appendChild(fl); } }
+  // 抽屜：原本整頁內容
+  const drawer = document.createElement('div'); drawer.className = 'ls-drawer' + (UI.lsMenu ? ' open' : '');
+  drawer.innerHTML = '<div class="ls-dh"><b>選單</b><span class="meta">開著時時間暫停</span><button class="btn ghost" data-a="lsMenu" data-v="close">關閉 ✕</button></div>';
+  for (const el of [header, main, nav]) if (el) drawer.appendChild(el);
+  drawer.insertAdjacentHTML('beforeend', '<div class="setrow" style="margin:10px 12px 70px"><span>版面</span><button class="pill' + (UIS.ls !== 'off' ? ' on' : '') + '" data-a="lsMode" data-v="auto">橫放自動切換</button><button class="pill' + (UIS.ls === 'off' ? ' on' : '') + '" data-a="lsMode" data-v="off">一律直式</button></div>');
+  app.insertBefore(stage, app.firstChild);
+  app.appendChild(drawer);
+  if (UI.lsMenu) app.insertAdjacentHTML('beforeend', '<div class="ls-scrim" data-a="lsMenu" data-v="close"></div>');
+};
+// 選單開著時暫停時間
+const _rtActiveLS = rtActive;
+rtActive = function () { return _rtActiveLS() && !(lsOn() && UI.lsMenu); };
+const _otOnLS = otOn;
+otOn = function () { return _otOnLS() && !(lsOn() && UI.lsMenu); };
+// 轉向就重畫
+let LS_LAST = null;
+function lsCheck() { const k = lsOn() + ':' + isLandscape(); if (k !== LS_LAST) { LS_LAST = k; if (S) render(); } }
+if (LS_MQ && LS_MQ.addEventListener) LS_MQ.addEventListener('change', lsCheck);
+window.addEventListener('resize', () => setTimeout(lsCheck, 80));
 
 // ---- 99-boot.js ----
 /* ================= 事件綁定 ================= */
