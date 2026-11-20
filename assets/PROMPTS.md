@@ -342,6 +342,28 @@ Game inventory icon sheet, 8 separate item icons arranged in 2 rows of 4, evenly
 1) a plate of spicy stir-fried sausage slices with chili and green onion, 2) a glass jar of strawberry jam, 3) a clay pot of Taiwanese three-cup mushrooms with basil, 4) a bubbling red spicy mala hot pot, 5) a big family feast tray with rice, corn, tomato, cabbage dishes
 ```
 
+**55. 橘貓（比例 1:1，三張分開生成，貼「共同風格」）**
+```
+1) A chubby orange tabby cat standing side view facing right, tail up, full body.
+2) Same cat as reference, walking side view facing right, one paw lifted.
+3) Same cat as reference, curled up sleeping in a ball, seen from above.
+```
+
+**56. 鄰居頭像（比例 2:1，一張 4 個，用「共同風格」但改成頭像）**
+```
+Four separate circular character portraits in a row, left to right, cozy post-apocalyptic survival game, hand-drawn flat illustration, clean dark brown outlines, muted warm palette, plain white background, no text: 1) a kind elderly Taiwanese grandma with gray bun hair and a floral blouse, 2) a young brother and little sister holding hands, shy, 3) a scruffy man in his thirties with stubble, mechanic jacket, unlit cigarette, 4) a gentle middle-aged science teacher with glasses and a cardigan
+```
+
+**57. 頂樓與雜物圖示（貼「圖示風格」）**
+```
+1) a white hen, 2) a brown egg, 3) a tilapia fish, 4) an old portable radio with antenna, 5) a red signal flare, 6) a stack of sandbags, 7) a Taiwanese zongzi rice dumpling wrapped in bamboo leaves, 8) a bowl of tangyuan rice balls in soup
+```
+
+**58. 蛋與魚料理（5 個，貼「圖示風格」）**
+```
+1) a plate of tomato and scrambled egg stir-fry, 2) a plate of egg fried rice with green onion, 3) a few tea eggs with marbled shells, 4) a grilled fish on a plate with green onion, 5) a bowl of fish soup with basil
+```
+
 ---
 
 ## 交給我的時候
