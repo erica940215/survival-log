@@ -88,7 +88,8 @@ function objModal() {
     if (mats.length) body += '<p class="meta" style="margin-top:6px">材料：' + mats.map(m => ITEMS[m].n + ' ' + sv.st[m]).join('、') + '</p>';
   }
   const acts = rtActions(k);
-  body += acts.length ? '<div class="macts">' + acts.map((x, i) => '<button class="btn' + (x.a === 'sleep' ? ' red' : '') + '" data-a="rtDo" data-v="' + i + '"' + (x.ok ? '' : ' disabled') + '>' + esc(x.label) + '<small>' + (x.h ? x.h + ' 小時' : '馬上') + (x.note ? ' · ' + esc(x.note) : '') + '</small></button>').join('') + '</div>' : (body ? '' : '<p class="meta">這個東西沒有可以做的事。</p>');
+  if (k === 'microwave' && typeof kitchenHTML === 'function') body += kitchenHTML();
+  body += acts.length ? '<div class="macts">' + acts.map((x, i) => '<button class="btn' + (x.a === 'sleep' ? ' red' : '') + '" data-a="rtDo" data-v="' + i + '"' + (k === 'microwave' && x.a === 'cookx' ? ' hidden' : '') + (x.ok ? '' : ' disabled') + '>' + esc(x.label) + '<small>' + (x.h ? x.h + ' 小時' : '馬上') + (x.note ? ' · ' + esc(x.note) : '') + '</small></button>').join('') + '</div>' : (body ? '' : '<p class="meta">這個東西沒有可以做的事。</p>');
   return '<div class="rt-modal" data-a="rtSelClose"><div class="rt-mbox" data-a="noop"><div class="rt-mh"><span class="rt-mic">' + (OBJ_IC[k] || '📦') + '</span><div><b>' + (OBJ_ASK[k] && !['storage', 'shelf'].includes(k) && k !== 'DOOR' ? OBJ_ASK[k] : name) + '</b><div class="meta">' + (OBJ_ASK[k] && ['storage', 'shelf'].includes(k) ? name + ' · ' : '') + sub + '</div></div></div>' + body +
     '<div class="row-btns" style="margin-top:10px"><button class="btn ghost" data-a="rtSelClose">' + (k === 'bed' || k === 'bedroom' ? '還不要' : '取消') + '</button></div></div></div>';
 }

@@ -322,6 +322,26 @@ Game inventory icon sheet, 8 separate item icons arranged in 2 rows of 4, evenly
 1) a seed packet with a tomato picture, 2) a seed packet with a strawberry picture, 3) a mushroom grow bag, 4) an empty terracotta flower pot, 5) a bag of fertilizer, 6) a seed packet with a yellow rapeseed flower picture, 7) a small bundle of harvested rapeseed stalks, 8) a rain water collector bucket with a funnel
 ```
 
+**51. 新種子**（7 個，照順序排，最後一格空著）
+```
+1) a small sweet potato seedling with roots in a paper wrap, 2) a seed packet with a cabbage picture, 3) a small bundle of green onion seedlings, 4) a seed packet with a red chili picture, 5) a seed packet with a corn picture, 6) a seed packet with a basil leaf picture, 7) a small cloth bag of green mung beans
+```
+
+**52. 新蔬菜**（7 個）
+```
+1) a purple sweet potato, 2) a round green cabbage, 3) a bunch of green onions, 4) a few red chili peppers, 5) an ear of yellow corn with husk, 6) a sprig of Thai basil, 7) a handful of bean sprouts
+```
+
+**53. 料理 A**
+```
+1) a roasted sweet potato split open with steam, 2) a plate of stir-fried cabbage, 3) a bowl of tomato soup, 4) a plate of fried rice with canned meat and green onion, 5) a glass jar of Taiwanese pickled cabbage with chili, 6) a bowl of creamy corn soup, 7) a bowl of sweet potato rice porridge, 8) a plate of stir-fried noodles with bean sprouts
+```
+
+**54. 料理 B**（5 個）
+```
+1) a plate of spicy stir-fried sausage slices with chili and green onion, 2) a glass jar of strawberry jam, 3) a clay pot of Taiwanese three-cup mushrooms with basil, 4) a bubbling red spicy mala hot pot, 5) a big family feast tray with rice, corn, tomato, cabbage dishes
+```
+
 ---
 
 ## 交給我的時候

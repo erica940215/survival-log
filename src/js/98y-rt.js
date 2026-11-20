@@ -25,7 +25,7 @@ function rtActions(k) {
   if (k === 'bench' || k === 'workshop') for (const r of knownRecipes()) { const R = RECIPES[r]; add('做' + R.n, 'craft', r, craftHours(R.h), canCraft(r) && !(R.defLv && defLv() < R.defLv), Object.entries(R.need).map(([m, n]) => ITEMS[m].n + (st[m] || 0) + '/' + n).join(' ')); }
   if (k === 'bed' || k === 'bedroom') { add('休息（心態 +12）', 'rest', '', 1); add(hz ? '睡覺（今晚屍潮）' : '睡覺到明天 08:00', 'sleep', '', 0); if (hz) add('守夜（屍潮傷害 -40%）', 'watch', '', 0); }
   if (k === 'toilet') add('清理身體和廁所（衛生 +35）', 'wash', '', 1, sv.day <= 5 || st.wu >= 1);
-  if (['lightbox', 'greenhouse', 'potrack'].includes(k)) for (const s of ['tomato', 'straw', 'rape']) if (st[s]) add('種' + ITEMS[s].n, 'plant', s, 1, freeSlots() > 0);
+  if (['lightbox', 'greenhouse', 'potrack'].includes(k)) for (const s of Object.keys(SEED_OUT)) if (st[s]) add('種' + ITEMS[s].n, 'plant', s, 1, freeSlots() > 0);
   if (k === 'freezer') { add('吃到飽', 'eatFull', '', 0, sv.sat < 85); add('喝到滿', 'drinkFull', '', 0, sv.hyd < 85); }
   if (k === 'refinery') add('精煉柴油', 'refine', '', 2);
   if (k === 'brewer') add('釀酒', 'brew', '', 2);
@@ -188,7 +188,7 @@ function rtScene() {
     const p = sv.place[o.id]; if (!p || p.f !== f) continue;
     if (taskObj && taskObj.obj && taskObj.obj.id === o.id && rt.task.h) add += label(o, rt.task.label + '中…', '#ecd27a');
     else if (['freezer', 'lightbox', 'ac', 'bot_farm', 'bot_fix', 'bot_cook'].includes(o.k) && sv.dev[o.k] && powered[o.k] === false) add += label(o, '⚡ 沒電', '#ff7b6e');
-    else if (['lightbox', 'greenhouse', 'potrack'].includes(o.k)) { const pl = (sv.plants || []).find(x => x.age < growDays()); if (pl) add += label(o, (growDays() - pl.age) + ' 天後成熟'); }
+    else if (['lightbox', 'greenhouse', 'potrack'].includes(o.k)) { const pl = (sv.plants || []).find(x => x.age < growDaysOf(x.k)); if (pl) add += label(o, (growDaysOf(pl.k) - pl.age) + ' 天後成熟'); }
   }
   // 進度條
   add += '<g id="rt-bar" style="display:none" pointer-events="none"><rect x="-21" y="-4" width="42" height="8" rx="3" fill="#1d2733"/><rect id="rt-bar-fill" x="-20" y="-3" width="0" height="6" rx="2" fill="#ecd27a"/></g>';
@@ -223,7 +223,7 @@ function rtPanel() {
   if (UI.rtOut) h += '<div class="roompanel"><div class="slot-h"><b>外出搜刮</b><button class="btn ghost" data-a="rtOutClose" style="margin-left:auto">關閉</button></div>' + viewOutside() + '</div>';
   h += '<div class="row-btns"><button class="btn" data-a="rtQuick" data-v="eatFull">吃到飽</button><button class="btn" data-a="rtQuick" data-v="drinkFull">喝到滿</button><button class="btn" data-a="rtQuick" data-v="out">外出</button><button class="btn red" data-a="rtQuick" data-v="sleep">去睡覺</button></div>';
   const pl = sv.plants || [];
-  if (pl.length) h += '<details class="guide"><summary>家中植物（' + pl.length + '）</summary><ul class="list">' + pl.map(p => '<li>' + ITEMS[p.k].n + '：' + (p.age < growDays() ? '還要 ' + (growDays() - p.age) + ' 天' : '成熟，持續收成') + '</li>').join('') + '</ul></details>';
+  if (pl.length) h += '<details class="guide"><summary>家中植物（' + pl.length + '）</summary><ul class="list">' + pl.map(p => '<li>' + ITEMS[p.k].n + '：' + (p.age < growDaysOf(p.k) ? '還要 ' + (growDaysOf(p.k) - p.age) + ' 天' : '成熟，持續收成') + '</li>').join('') + '</ul></details>';
   h += viewSleepWarn();
   h += '<details class="guide"><summary>全部行動（選單）</summary>' + _viewActsRT() + '</details>';
   h += viewCamPick();

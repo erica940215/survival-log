@@ -22,7 +22,7 @@ function doorCracks(x0, ya, yb, r) {
 function cropStage(k, bx, by, bw, bh, ripe) {
   const sv = S.sv, slot = k === 'lightbox' ? 'light' : k === 'potrack' ? 'pot' : 'green';
   const ps = (sv.plants || []).filter(p => k === 'greenhouse' ? true : p.slot === slot); if (!ps.length) return '';
-  const g = Math.max(...ps.map(p => p.age / Math.max(1, growDays())));
+  const g = Math.max(...ps.map(p => p.age / Math.max(1, growDaysOf(p.k))));
   if (k === 'lightbox' && ripe) return '';
   let s = '';
   const n = k === 'potrack' ? 4 : 6, sc = g >= 1 ? 1.5 : g >= 0.5 ? 1.25 : 0;

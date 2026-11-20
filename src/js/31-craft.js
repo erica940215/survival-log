@@ -114,6 +114,7 @@ function viewCraft() {
   if (st.microwave) {
     h += '<div class="cat">廚房（1 小時）</div><div class="sheet">';
     const ok = { rice: (st.rice || 0) > 0, soup: vegPool() >= 1 && st.wu >= 1, hotpot: hotpotPool() >= 2 };
+    if (typeof DISHES === 'object') for (const d of Object.keys(DISHES)) ok[d] = dishOk(d);
     for (const k of Object.keys(COOKS)) {
       const c = COOKS[k];
       h += actRow(c.n, c.d + ' · 耗電 ' + c.power, '煮', 'cookx', k, ok[k] && sv.power >= c.power && canAct(1, staCost(5)));

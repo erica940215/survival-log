@@ -184,3 +184,4 @@ function itemIc(k, cls) {
   if (src) return '<img class="ic' + (cls ? ' ' + cls : '') + '" src="' + src + '" alt="">';
   return '<span class="ic' + (cls ? ' ' + cls : '') + '" aria-hidden="true">' + (ITEM_EMO[k] || '🛠️') + '</span>';
 }
+Object.assign(ITEM_EMO, { yam: '🌱', cabbage: '🌱', scallion: '🌱', chili: '🌱', corn: '🌱', basil: '🌱', sprout: '🫘', yam_p: '🍠', cabbage_p: '🥬', scallion_p: '🧅', chili_p: '🌶️', corn_p: '🌽', basil_p: '🌿', sprout_p: '🌱', yam_roast: '🍠', cabbage_fry: '🥗', tomato_soup: '🍅', fried_rice: '🍛', pickle: '🫙', corn_soup: '🥣', yam_congee: '🥣', sprout_noodle: '🍝', spicy_ham: '🌶️', jam: '🍓', three_cup: '🍄', mala_pot: '🍲', banquet: '🍱' });

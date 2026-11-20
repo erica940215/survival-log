@@ -161,7 +161,7 @@ const SACT = {
       sv.plants.push({ k: SEED_OUT[k], slot, age: 0 });
     }
     sv.sta -= 5;
-    slog('種下' + ITEMS[k].n + '，' + n + ' 株。大約 8 天後開始收成。');
+    slog('種下' + ITEMS[k].n + '，' + n + ' 株。大約 ' + (typeof growDaysOf === 'function' ? growDaysOf(SEED_OUT[k]) : growDays()) + ' 天後開始收成。');
     passHours(1); render();
   },
   rest() {
@@ -292,7 +292,7 @@ function night(watch) {
   const harvest = {};
   for (const p of sv.plants) {
     p.age++;
-    if (p.age < growDays()) continue;
+    if (p.age < growDaysOf(p.k)) continue;
     if (p.slot === 'light' && !sv.powered.lightbox) continue;
     const rate = (p.slot === 'pot' ? 0.5 : 1) * (hasT('green') ? 1.3 : 1) * (robotOn('bot_farm') ? 1.25 : 1) * (allyOn('zoe', 'farm') ? 1.3 : 1) * (typeof isoBonus === 'function' ? isoBonus().crop : 1);
     p.acc = (p.acc || 0) + rate * fert;
@@ -381,7 +381,7 @@ function viewActs() {
   for (const m of ['metal', 'board', 'glass']) if (st[m]) h += actRow('用' + ITEMS[m].n + '加固', '防線 +' + REINFORCE[m] + ' · 剩 ' + st[m] + ' · 體力 -' + staCost(12) + ' · 上限 ' + Math.round(sv.defMax * 1.5), '加固', 'reinforce', m, !sv.sick && canAct(1, staCost(12)) && sv.def < sv.defMax * 1.5);
   if (st.gen) h += actRow('開發電機', '燒 1 桶柴油 → 電 +6 · 剩 ' + (st.diesel || 0) + ' 桶', '發電', 'gen', '', canAct(1) && st.diesel > 0);
   if (st.pedal) h += actRow('踩人力發電機', '電 +1.5 · 體力 -' + staCost(20), '踩', 'pedal', '', canAct(1, staCost(20)));
-  for (const k of ['tomato', 'straw', 'rape']) if (st[k]) h += actRow('種' + ITEMS[k].n, '一包種 2 株 · 盆位 ' + freeSlots() + ' 個空 · 體力 -5', '種', 'plant', k, canAct(1, 5) && freeSlots() > 0);
+  for (const k of Object.keys(SEED_OUT)) if (st[k]) h += actRow('種' + ITEMS[k].n, '一包種 2 株 · 盆位 ' + freeSlots() + ' 個空 · 體力 -5', '種', 'plant', k, canAct(1, 5) && freeSlots() > 0);
   h += actRow('休息、聽收音機', '心態 +12 · 體力 +5', '休息', 'rest', '', canAct(1));
   h += '</div>';
   h += viewOutside();
@@ -428,7 +428,7 @@ function viewBase() {
   h += '<div class="cat">作物</div>';
   const s = slots();
   h += '<p class="empty">盆位：種植箱 ' + s.light + ' 格、溫室 ' + s.green + ' 格、花盆 ' + s.pot + ' 格，已種 ' + sv.plants.length + ' 株。' + ((st.mush || 0) ? '菌包 ' + st.mush + ' 包（第 6–45 天出菇）。' : '') + '</p>';
-  if (sv.plants.length) h += '<div class="sheet">' + sv.plants.map(p => '<div class="item"><div><div class="nm">' + ITEMS[p.k].n + '<span class="tag">' + ({ light: '種植箱', green: '溫室', pot: '花盆' }[p.slot]) + '</span></div><div class="meta">' + (p.age < growDays() ? '還要 ' + (growDays() - p.age) + ' 天成熟' : '已成熟，' + ({ light: '有電每天收 1 個', green: '每天收 1 個', pot: '每 2 天收 1 個' }[p.slot])) + '</div></div><div></div></div>').join('') + '</div>';
+  if (sv.plants.length) h += '<div class="sheet">' + sv.plants.map(p => '<div class="item"><div><div class="nm">' + ITEMS[p.k].n + '<span class="tag">' + ({ light: '種植箱', green: '溫室', pot: '花盆' }[p.slot]) + '</span></div><div class="meta">' + (p.age < growDaysOf(p.k) ? '還要 ' + (growDaysOf(p.k) - p.age) + ' 天成熟' : '已成熟，' + ({ light: '有電每天收 1 個', green: '每天收 1 個', pot: '每 2 天收 1 個' }[p.slot])) + '</div></div><div></div></div>').join('') + '</div>';
   h += viewBuild();
   h += viewTalents();
   return h;
