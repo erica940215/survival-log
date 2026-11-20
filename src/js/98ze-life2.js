@@ -153,7 +153,7 @@ function lifeLayer(now) {
     if (d.f === f) {
       const q = P(d.x, d.y, 0), wag = Math.sin(now / (d.moving ? 90 : 160)) * 4, step = d.moving ? Math.abs(Math.sin(now / 110)) * 1.5 : 0;
       s += '<g transform="translate(' + q[0].toFixed(1) + ' ' + (q[1] - step).toFixed(1) + ') scale(' + (d.face || 1) + ' 1)" data-dog="1" style="cursor:pointer">' +
-        (TOP_ASSETS.dog ? '<image href="' + TOP_ASSETS.dog + '" x="-14" y="-22" width="28" height="24"/>' :
+        (hasSpr('dog_idle') ? '<ellipse cy="1" rx="12" ry="3" fill="rgba(0,0,0,0.2)"/>' + sprImg(d.moving && hasSpr('dog_walk') && Math.floor(now / 160) % 2 ? 'dog_walk' : 'dog_idle', 24) : TOP_ASSETS.dog ? '<image href="' + TOP_ASSETS.dog + '" x="-14" y="-22" width="28" height="24"/>' :
         '<ellipse cy="2" rx="10" ry="3" fill="rgba(0,0,0,0.2)"/><ellipse cx="0" cy="-6" rx="9" ry="5.5" fill="#a0764a" stroke="#1d2733" stroke-width="0.9"/><circle cx="9" cy="-11" r="4.5" fill="#a0764a" stroke="#1d2733" stroke-width="0.9"/><path d="M7 -15 l-1 -4 l3 2z" fill="#7a5a3a"/><circle cx="10.5" cy="-11.5" r="0.9" fill="#111"/><circle cx="13" cy="-10" r="1" fill="#2a1a1a"/>' +
         '<path d="M-9 -7 q -4 ' + (-4 + wag).toFixed(1) + ' -6 ' + (-8 + wag).toFixed(1) + '" stroke="#a0764a" stroke-width="2.4" fill="none" stroke-linecap="round"/><rect x="-6" y="-2" width="2.4" height="4" fill="#7a5a3a"/><rect x="4" y="-2" width="2.4" height="4" fill="#7a5a3a"/>') +
         '<circle cx="0" cy="-8" r="15" fill="transparent"/></g>';

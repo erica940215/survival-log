@@ -44,7 +44,14 @@ function topSVG() {
     const tl = P(p.x + 0.06, p.y + 0.06, h), br = P(p.x + w - 0.06, p.y + d - 0.06, h), fb = P(p.x + w - 0.06, p.y + d - 0.06, 0);
     let g = '<g data-a="isoObj" data-v="' + o.id + '" style="cursor:pointer' + (I.moving ? ';pointer-events:none;opacity:' + (sel ? 0.35 : 1) : '') + '">';
     g += '<ellipse cx="' + (tl[0] + br[0]) / 2 + '" cy="' + (fb[1] - 2) + '" rx="' + (br[0] - tl[0]) / 2 + '" ry="6" fill="rgba(0,0,0,0.18)"/>';
-    if (ISO_ASSETS[o.k]) {
+    const topImg = typeof SPR === 'object' && SPR['obj_' + o.k];
+    if (topImg) {
+      // 自訂家具圖：放進物件範圍（頂面＋正面），直立放的長物件轉 90 度
+      const bx = tl[0], by = tl[1] - 6, bw = br[0] - tl[0], bh = fb[1] - tl[1] + 6, cx = bx + bw / 2, cy = by + bh / 2;
+      const rot = p.r && ISO[o.k].w !== ISO[o.k].d;
+      g += rot ? '<image href="' + topImg + '" x="' + (cx - bh / 2).toFixed(1) + '" y="' + (cy - bw / 2).toFixed(1) + '" width="' + bh.toFixed(1) + '" height="' + bw.toFixed(1) + '" preserveAspectRatio="xMidYMid meet" transform="rotate(90 ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')"/>'
+        : '<image href="' + topImg + '" x="' + bx.toFixed(1) + '" y="' + by.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + bh.toFixed(1) + '" preserveAspectRatio="xMidYMax meet"/>';
+    } else if (ISO_ASSETS[o.k]) {
       const iw = br[0] - tl[0], ih = fb[1] - tl[1] + 10;
       g += '<image href="' + ISO_ASSETS[o.k] + '" x="' + tl[0] + '" y="' + (fb[1] - ih) + '" width="' + iw + '" height="' + ih + '" preserveAspectRatio="xMidYMax meet"/>';
     } else {
