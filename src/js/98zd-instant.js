@@ -19,8 +19,13 @@ function doNow(where, a, v, label) {
   if (a === 'TAB') { UI.rtSel = null; if (v === 'out') { UI.rtOut = true; render(); return; } UI.tab = v; render(); return; }
   const fn = SACT[a]; if (!fn) return;
   // 角色直接站到那樣東西旁邊
-  const g = rtGoalTiles(where);
-  if (g && g.tiles && g.tiles.length) { rt.pos = { f: g.f, x: g.tiles[0][0] + 0.5, y: g.tiles[0][1] + 0.5 }; UI.iso = Object.assign(UI.iso || {}, { floor: g.f }); }
+  const g = rtGoalTiles(where), old = Object.assign({}, rt.pos);
+  if (g && g.tiles && g.tiles.length) {
+    rt.pos = { f: g.f, x: g.tiles[0][0] + 0.5, y: g.tiles[0][1] + 0.5 }; UI.iso = Object.assign(UI.iso || {}, { floor: g.f });
+    if (Math.hypot(old.x - rt.pos.x, old.y - rt.pos.y) > 0.3 || old.f !== rt.pos.f) puff(old, rt.pos);
+    const oc = objCenter(where); if (oc && Math.abs(oc.x - rt.pos.x) > 0.2) rt.face = oc.x > rt.pos.x ? 1 : -1;
+  }
+  const st0 = statSnap();
   rt.task = null; rt.queue = []; rt.path = []; rt.frac = 0;
   UI.rtSel = null;
   const h0 = sv.hour, d0 = sv.day, log0 = sv.log[0];
@@ -32,6 +37,7 @@ function doNow(where, a, v, label) {
   const E = typeof evState === 'function' ? evState() : null;
   if (E && S.sv.day === d0) E.fx = (E.fx || []).concat([{ x: rt.pos.x, y: rt.pos.y, txt: failed ? '做不了' : (TASK_IC[a] || '') + ' ✓', col: failed ? '#9aa7b4' : '#ecd27a', t0: performance.now() }]);
   if (failed) slog('「' + label + '」沒做成（時間、體力或材料不夠）。');
+  else if (S.sv.day === d0) floatStats(st0, rt.pos);
   if (['craft', 'reinforce', 'evRepair'].includes(a)) sfx('fix'); else if (a === 'eatFull' || a === 'eat') sfx('eat'); else if (!failed) sfx('pop');
   render();
 }

@@ -49,7 +49,7 @@ function goalDone(id) {
   const G = GOALS.find(x => x.id === id); if (!G) return;
   g[id] = true; S.sv.mor = clamp(S.sv.mor + 5);
   slog('目標完成：「' + G.n + '」心態 +5。'); sfx('ach');
-  if (typeof evState === 'function') { const E = evState(), rt = rtState(); E.fx = (E.fx || []).concat([{ x: rt.pos.x, y: rt.pos.y - 0.4, txt: '☑ ' + G.n, col: '#7cc191', t0: performance.now() }]); }
+  if (typeof evState === 'function') { const E = evState(), rt = rtState(); E.fx = (E.fx || []).concat([{ x: rt.pos.x - 0.6, y: rt.pos.y - 1.1, txt: '☑ ' + G.n, col: '#7cc191', t0: performance.now() }]); }
 }
 function goalCheck() { const sv = S.sv, g = goalState(); for (const G of GOALS) if (!g[G.id] && G.chk && G.chk(sv)) goalDone(G.id); }
 for (const k of ['eat', 'eatFull', 'gen', 'pedal', 'reinforce', 'plant', 'evRepair']) {
@@ -111,7 +111,7 @@ function lifeTick(now) {
   if (hasDog()) {
     const d = dogState();
     if (d.f !== rt.pos.f) { d.f = rt.pos.f; d.x = rt.pos.x + 0.6; d.y = rt.pos.y; }
-    const tx = rt.pos.x + 0.7, ty = rt.pos.y + 0.35, dx = tx - d.x, dy = ty - d.y, dist = Math.hypot(dx, dy);
+    const tg = dogTarget(d, rt, now), tx = tg.x, ty = tg.y, dx = tx - d.x, dy = ty - d.y, dist = Math.hypot(dx, dy);
     if (dist > 0.35) { const st = Math.min(dist - 0.3, 0.016 * 2.4 * Math.max(1, Math.min(sp || 1, 3)) * (dist > 2 ? 2 : 1)); d.x += dx / dist * st; d.y += dy / dist * st; d.moving = true; } else d.moving = false;
     d.face = dx >= 0 ? 1 : -1;
   }
@@ -164,6 +164,7 @@ function lifeLayer(now) {
         '<ellipse cy="2" rx="10" ry="3" fill="rgba(0,0,0,0.2)"/><ellipse cx="0" cy="-6" rx="9" ry="5.5" fill="#a0764a" stroke="#1d2733" stroke-width="0.9"/><circle cx="9" cy="-11" r="4.5" fill="#a0764a" stroke="#1d2733" stroke-width="0.9"/><path d="M7 -15 l-1 -4 l3 2z" fill="#7a5a3a"/><circle cx="10.5" cy="-11.5" r="0.9" fill="#111"/><circle cx="13" cy="-10" r="1" fill="#2a1a1a"/>' +
         '<path d="M-9 -7 q -4 ' + (-4 + wag).toFixed(1) + ' -6 ' + (-8 + wag).toFixed(1) + '" stroke="#a0764a" stroke-width="2.4" fill="none" stroke-linecap="round"/><rect x="-6" y="-2" width="2.4" height="4" fill="#7a5a3a"/><rect x="4" y="-2" width="2.4" height="4" fill="#7a5a3a"/>') +
         '<circle cx="0" cy="-8" r="15" fill="transparent"/></g>';
+      if (d.sleep && !d.moving) s += '<text x="' + (q[0] + 10).toFixed(1) + '" y="' + (q[1] - 22 - Math.sin(now / 500) * 3).toFixed(1) + '" font-size="10" font-weight="700" fill="#cfd6e0" pointer-events="none">z</text>';
       if (d.heart && now - d.heart < 1200) { const k = (now - d.heart) / 1200; s += '<text x="' + q[0].toFixed(1) + '" y="' + (q[1] - 24 - k * 16).toFixed(1) + '" text-anchor="middle" font-size="13" opacity="' + (1 - k).toFixed(2) + '" pointer-events="none">❤️</text>'; }
     }
   }

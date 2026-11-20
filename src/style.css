@@ -399,3 +399,23 @@ body.ls .mcell { padding: 5px 8px; } body.ls .macts { gap: 5px; } body.ls .macts
 .mc-log li.al { color: #ff9a8c; }
 .mc-go { width: 100%; padding: 9px; background: #ecd27a !important; color: #1d2733 !important; border-color: #ecd27a !important; font-size: 15px; }
 @keyframes mcIn { to { opacity: 1; } }
+
+/* 細節打磨 */
+.btn, .ls-btn, .pill, .mcell, .rt-sp button, .tabs button, .cell { transition: transform .08s ease; }
+.btn:not(:disabled):active, .ls-btn:not(:disabled):active, .pill:active, .mcell:not(:disabled):active, .rt-sp button:active, .tabs button:active, .cell:active { transform: scale(0.95); }
+html, body { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.rt-wrap, .ls-stage, .iso, .btn, .ls-btn, .pill, .mcell, .tabs, .cell, .rt-modal, .mc-wrap { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.rt-st .bar.full > i { animation: lowPulse 1s ease-in-out infinite; }
+.rt-st .bar.full { border-color: #d9564a; }
+@keyframes lowPulse { 50% { opacity: 0.45; } }
+#save-dot { position: fixed; right: 10px; bottom: 74px; z-index: 95; background: rgba(16,19,24,0.85); color: #ecd27a; font-size: 12px; padding: 4px 9px; border-radius: 999px; opacity: 0; pointer-events: none; }
+#save-dot.on { animation: saveDot 1.8s ease forwards; }
+body.ls #save-dot { bottom: 10px; right: 104px; }
+@keyframes saveDot { 15%, 70% { opacity: 1; } 100% { opacity: 0; } }
+.ls-coach { position: fixed; inset: 0; z-index: 80; background: rgba(5,7,10,0.62); color: #f3f0e6; font-size: 13px; line-height: 1.55; }
+.ls-coach .cc { position: absolute; background: rgba(16,19,24,0.94); border: 1.5px dashed #ecd27a; border-radius: 10px; padding: 8px 12px; max-width: 230px; }
+.ls-coach .cc b { display: block; color: #ecd27a; font-size: 14px; }
+.ls-coach .cc-l { left: 12px; top: 40%; }
+.ls-coach .cc-c { left: 50%; top: 32%; transform: translateX(-50%); text-align: center; }
+.ls-coach .cc-r { right: 104px; top: 30%; }
+.ls-coach .cc-ok { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); background: #ecd27a !important; color: #1d2733 !important; border-color: #ecd27a !important; padding: 7px 26px; }

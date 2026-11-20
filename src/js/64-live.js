@@ -107,7 +107,7 @@ isoSVG = function () {
     const from = fresh && w.from ? P(w.from.x, w.from.y, 0) : to;
     const sleeping = hr >= LAST_HOUR;
     s += '<g id="iso-char" data-to="' + to[0].toFixed(1) + ',' + to[1].toFixed(1) + '" data-from="' + from[0].toFixed(1) + ',' + from[1].toFixed(1) + '" style="transform:translate(' + (fresh ? from : to)[0].toFixed(1) + 'px,' + (fresh ? from : to)[1].toFixed(1) + 'px)" pointer-events="none">' +
-      '<ellipse cx="0" cy="0" rx="7" ry="3" fill="rgba(0,0,0,0.18)"/>' +
+      '<ellipse cx="0" cy="0" rx="' + (hasSpr('char_idle') ? 15 : 7) + '" ry="' + (hasSpr('char_idle') ? 4.5 : 3) + '" fill="rgba(0,0,0,' + (hasSpr('char_idle') ? 0.28 : 0.18) + ')"/>' +
       (hasSpr('char_idle') ? sprImg('char_idle', 60, false, ' id="char-img"') :
       '<g transform="scale(1.4)"><g class="' + (anim ? 'lv-bob' : '') + '"><rect x="-4.5" y="-17" width="9" height="12" rx="3" fill="#3b5b8a" stroke="#1d2733" stroke-width="1"/><circle cx="0" cy="-22" r="5" fill="#f1d3b3" stroke="#1d2733" stroke-width="1"/><path d="M-5 -24 q5 -6 10 0" fill="#2b2b2b"/>' +
       '<rect x="-4" y="-6" width="3" height="6" fill="#2a3442"/><rect x="1" y="-6" width="3" height="6" fill="#2a3442"/></g></g>') +
@@ -122,7 +122,7 @@ isoSVG = function () {
   else if (hr >= 17) tint = 'rgba(230,120,40,0.14)';
   if (ty) tint = 'rgba(40,50,70,0.25)';
   if (tint) s += '<rect x="0" y="0" width="' + width + '" height="' + height + '" fill="' + tint + '" pointer-events="none"/>';
-  if ((hr >= 20 || hr < 6) && f !== 'B1') { const c = P(2.5, 2, 0); s += '<ellipse cx="' + c[0] + '" cy="' + c[1] + '" rx="90" ry="45" fill="rgba(255,214,120,0.22)" pointer-events="none"/>'; }
+  if ((hr >= 20 || hr < 6) && f !== 'B1' && !camTop()) { const c = P(2.5, 2, 0); s += '<ellipse cx="' + c[0] + '" cy="' + c[1] + '" rx="90" ry="45" fill="rgba(255,214,120,0.22)" pointer-events="none"/>'; }
   return html.replace('</svg></div>', s + '</svg></div>');
 };
 

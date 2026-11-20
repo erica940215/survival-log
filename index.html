@@ -409,6 +409,26 @@ body.ls .mcell { padding: 5px 8px; } body.ls .macts { gap: 5px; } body.ls .macts
 .mc-log li.al { color: #ff9a8c; }
 .mc-go { width: 100%; padding: 9px; background: #ecd27a !important; color: #1d2733 !important; border-color: #ecd27a !important; font-size: 15px; }
 @keyframes mcIn { to { opacity: 1; } }
+
+/* 細節打磨 */
+.btn, .ls-btn, .pill, .mcell, .rt-sp button, .tabs button, .cell { transition: transform .08s ease; }
+.btn:not(:disabled):active, .ls-btn:not(:disabled):active, .pill:active, .mcell:not(:disabled):active, .rt-sp button:active, .tabs button:active, .cell:active { transform: scale(0.95); }
+html, body { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.rt-wrap, .ls-stage, .iso, .btn, .ls-btn, .pill, .mcell, .tabs, .cell, .rt-modal, .mc-wrap { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.rt-st .bar.full > i { animation: lowPulse 1s ease-in-out infinite; }
+.rt-st .bar.full { border-color: #d9564a; }
+@keyframes lowPulse { 50% { opacity: 0.45; } }
+#save-dot { position: fixed; right: 10px; bottom: 74px; z-index: 95; background: rgba(16,19,24,0.85); color: #ecd27a; font-size: 12px; padding: 4px 9px; border-radius: 999px; opacity: 0; pointer-events: none; }
+#save-dot.on { animation: saveDot 1.8s ease forwards; }
+body.ls #save-dot { bottom: 10px; right: 104px; }
+@keyframes saveDot { 15%, 70% { opacity: 1; } 100% { opacity: 0; } }
+.ls-coach { position: fixed; inset: 0; z-index: 80; background: rgba(5,7,10,0.62); color: #f3f0e6; font-size: 13px; line-height: 1.55; }
+.ls-coach .cc { position: absolute; background: rgba(16,19,24,0.94); border: 1.5px dashed #ecd27a; border-radius: 10px; padding: 8px 12px; max-width: 230px; }
+.ls-coach .cc b { display: block; color: #ecd27a; font-size: 14px; }
+.ls-coach .cc-l { left: 12px; top: 40%; }
+.ls-coach .cc-c { left: 50%; top: 32%; transform: translateX(-50%); text-align: center; }
+.ls-coach .cc-r { right: 104px; top: 30%; }
+.ls-coach .cc-ok { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); background: #ecd27a !important; color: #1d2733 !important; border-color: #ecd27a !important; padding: 7px 26px; }
 </style>
 </head>
 <body>
@@ -2889,7 +2909,7 @@ isoSVG = function () {
     const from = fresh && w.from ? P(w.from.x, w.from.y, 0) : to;
     const sleeping = hr >= LAST_HOUR;
     s += '<g id="iso-char" data-to="' + to[0].toFixed(1) + ',' + to[1].toFixed(1) + '" data-from="' + from[0].toFixed(1) + ',' + from[1].toFixed(1) + '" style="transform:translate(' + (fresh ? from : to)[0].toFixed(1) + 'px,' + (fresh ? from : to)[1].toFixed(1) + 'px)" pointer-events="none">' +
-      '<ellipse cx="0" cy="0" rx="7" ry="3" fill="rgba(0,0,0,0.18)"/>' +
+      '<ellipse cx="0" cy="0" rx="' + (hasSpr('char_idle') ? 15 : 7) + '" ry="' + (hasSpr('char_idle') ? 4.5 : 3) + '" fill="rgba(0,0,0,' + (hasSpr('char_idle') ? 0.28 : 0.18) + ')"/>' +
       (hasSpr('char_idle') ? sprImg('char_idle', 60, false, ' id="char-img"') :
       '<g transform="scale(1.4)"><g class="' + (anim ? 'lv-bob' : '') + '"><rect x="-4.5" y="-17" width="9" height="12" rx="3" fill="#3b5b8a" stroke="#1d2733" stroke-width="1"/><circle cx="0" cy="-22" r="5" fill="#f1d3b3" stroke="#1d2733" stroke-width="1"/><path d="M-5 -24 q5 -6 10 0" fill="#2b2b2b"/>' +
       '<rect x="-4" y="-6" width="3" height="6" fill="#2a3442"/><rect x="1" y="-6" width="3" height="6" fill="#2a3442"/></g></g>') +
@@ -2904,7 +2924,7 @@ isoSVG = function () {
   else if (hr >= 17) tint = 'rgba(230,120,40,0.14)';
   if (ty) tint = 'rgba(40,50,70,0.25)';
   if (tint) s += '<rect x="0" y="0" width="' + width + '" height="' + height + '" fill="' + tint + '" pointer-events="none"/>';
-  if ((hr >= 20 || hr < 6) && f !== 'B1') { const c = P(2.5, 2, 0); s += '<ellipse cx="' + c[0] + '" cy="' + c[1] + '" rx="90" ry="45" fill="rgba(255,214,120,0.22)" pointer-events="none"/>'; }
+  if ((hr >= 20 || hr < 6) && f !== 'B1' && !camTop()) { const c = P(2.5, 2, 0); s += '<ellipse cx="' + c[0] + '" cy="' + c[1] + '" rx="90" ry="45" fill="rgba(255,214,120,0.22)" pointer-events="none"/>'; }
   return html.replace('</svg></div>', s + '</svg></div>');
 };
 
@@ -2978,16 +2998,16 @@ function topSVG() {
   for (const x of ISO_WIN[f].y0) { const a = P(x + 0.18, 0), b = P(x + 0.82, 0); if (hasT('window')) { s += '<rect x="' + a[0] + '" y="' + (y0 - TWALL + 12) + '" width="' + (b[0] - a[0]) + '" height="' + (TWALL - 34) + '" fill="#bcd6ea"/><image href="' + SPR.window + '" x="' + (a[0] - 3) + '" y="' + (y0 - TWALL + 8) + '" width="' + (b[0] - a[0] + 6) + '" height="' + (TWALL - 26) + '" preserveAspectRatio="none" pointer-events="none"/>'; continue; } s += '<rect x="' + a[0] + '" y="' + (y0 - TWALL + 12) + '" width="' + (b[0] - a[0]) + '" height="' + (TWALL - 34) + '" fill="#bcd6ea" stroke="' + INK + '" stroke-width="1.2"/><line x1="' + (a[0] + b[0]) / 2 + '" y1="' + (y0 - TWALL + 12) + '" x2="' + (a[0] + b[0]) / 2 + '" y2="' + (y0 - 22) + '" stroke="' + INK + '" stroke-width="1"/>'; }
   for (const y of ISO_WIN[f].x0) { const a = P(0, y + 0.2), b = P(0, y + 0.8); s += '<polygon points="' + [[x0 - 3, a[1] - 4], [x0 - 15, a[1] - 11], [x0 - 15, b[1] - 8], [x0 - 3, b[1]]].map(p => p.join(',')).join(' ') + '" fill="#bcd6ea" stroke="' + INK + '" stroke-width="1"/>'; }
   if (f === ISO_DOOR.f) { const a = P(0, ISO_DOOR.at + 0.1), b = P(0, ISO_DOOR.at + 0.9); const ratio = sv.def / sv.defMax; s += '<polygon data-a="rtObj" data-v="DOOR" style="cursor:pointer" points="' + [[x0 - 1, a[1]], [x0 - 16, a[1] - 9], [x0 - 16, b[1] - 6], [x0 - 1, b[1]]].map(p => p.join(',')).join(' ') + '" fill="' + (ratio > 0.7 ? '#2f6b3f' : ratio > 0.35 ? '#a8661a' : RED) + '" stroke="' + INK + '" stroke-width="1.2"/>'; }
-  if (f === ISO_DOOR.f && hasT('door')) { const a = P(0, ISO_DOOR.at + 0.1), b = P(0, ISO_DOOR.at + 0.9), r = sv.def / sv.defMax; s += '<image href="' + SPR.door + '" x="' + (x0 - 17) + '" y="' + (a[1] - 9) + '" width="17" height="' + (b[1] - a[1] + 9) + '" preserveAspectRatio="none" pointer-events="none"/>' + (r < 0.7 ? '<polygon points="' + [[x0 - 1, a[1]], [x0 - 16, a[1] - 9], [x0 - 16, b[1] - 6], [x0 - 1, b[1]]].map(p => p.join(',')).join(' ') + '" fill="' + (r > 0.35 ? '#a8661a' : RED) + '" opacity="0.45" pointer-events="none"/>' : ''); }
+  if (f === ISO_DOOR.f && hasT('door')) { const a = P(0, ISO_DOOR.at + 0.1), b = P(0, ISO_DOOR.at + 0.9), r = sv.def / sv.defMax; s += '<image href="' + SPR.door + '" x="' + (x0 - 17) + '" y="' + (a[1] - 9) + '" width="17" height="' + (b[1] - a[1] + 9) + '" preserveAspectRatio="none" pointer-events="none"/>' + (r < 0.7 ? '<polygon points="' + [[x0 - 1, a[1]], [x0 - 16, a[1] - 9], [x0 - 16, b[1] - 6], [x0 - 1, b[1]]].map(p => p.join(',')).join(' ') + '" fill="' + (r > 0.35 ? '#a8661a' : RED) + '" opacity="' + (r > 0.35 ? 0.2 : 0.3) + '" pointer-events="none"/>' + doorCracks(x0, a[1], b[1], r) : ''); }
   // 地板
   const occ = occupied(f, I.moving ? I.sel : null);
   for (let y = 0; y < F.h; y++) for (let x = 0; x < F.w; x++) {
     const a = P(x, y), fill = dark ? ((x + y) % 2 ? '#3d4249' : '#43484f') : hasT('tex_floor') ? 'url(#tp-floor)' : ((x + y) % 2 ? '#e9dcc0' : '#f1e6cd');
     s += '<rect data-a="isoTile" data-v="' + f + ',' + x + ',' + y + '" x="' + a[0] + '" y="' + a[1] + '" width="' + TOPW + '" height="' + TD + '" fill="' + (I.moving && !occ.has(x + ',' + y) ? 'rgba(236,210,122,0.6)' : fill) + '" stroke="' + (dark ? '#2a2e33' : hasT('tex_floor') ? 'none' : '#d6c6a6') + '" stroke-width="1"/>';
-    if (isWindow(f, x, y) && !dark) s += '<rect x="' + (a[0] + 8) + '" y="' + (a[1] + 6) + '" width="' + (TOPW - 16) + '" height="' + (TD - 14) + '" rx="10" fill="rgba(255,236,160,0.45)" pointer-events="none"/>';
+    if (isWindow(f, x, y) && !dark) { const wl = winLight(sv.hour); if (wl) s += '<path d="M' + (a[0] + 10) + ' ' + (a[1] + 2) + ' h' + (TOPW - 20) + ' l8 ' + (TD - 6) + ' h-' + (TOPW - 4) + 'z" fill="' + wl + '" pointer-events="none" style="mix-blend-mode:screen"/>'; }
   }
   // 地毯（一樓客廳）
-  if (f === '1F') { const a = P(2.1, 2.2), b = P(3.9, 3.8); s += '<ellipse cx="' + (a[0] + b[0]) / 2 + '" cy="' + (a[1] + b[1]) / 2 + '" rx="' + (b[0] - a[0]) / 2 + '" ry="' + (b[1] - a[1]) / 2 + '" fill="#9b6b5a" opacity="0.35" pointer-events="none"/>'; }
+  if (f === '1F' && !hasT('tex_floor')) { const a = P(2.1, 2.2), b = P(3.9, 3.8); s += '<ellipse cx="' + (a[0] + b[0]) / 2 + '" cy="' + (a[1] + b[1]) / 2 + '" rx="' + (b[0] - a[0]) / 2 + '" ry="' + (b[1] - a[1]) / 2 + '" fill="#9b6b5a" opacity="0.35" pointer-events="none"/>'; }
   // 物件（由後往前）
   const here = objs.map(o => ({ o, p: sv.place[o.id] })).filter(it => it.p && it.p.f === f);
   const dims = it => { const D = ISO[it.o.k]; return { D, w: it.p.r ? D.d : D.w, d: it.p.r ? D.w : D.d }; };
@@ -3006,6 +3026,7 @@ function topSVG() {
       const rot = p.r && ISO[o.k].w !== ISO[o.k].d;
       g += rot ? '<image href="' + topImg + '" x="' + (cx - bh / 2).toFixed(1) + '" y="' + (cy - bw / 2).toFixed(1) + '" width="' + bh.toFixed(1) + '" height="' + bw.toFixed(1) + '" preserveAspectRatio="xMidYMid meet" transform="rotate(90 ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')"/>'
         : '<image href="' + topImg + '" x="' + bx.toFixed(1) + '" y="' + by.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + bh.toFixed(1) + '" preserveAspectRatio="xMidYMax meet"/>';
+      if (['lightbox', 'potrack', 'greenhouse'].includes(o.k)) g += cropStage(o.k, bx, by, bw, bh, ripe);
     } else if (ISO_ASSETS[o.k]) {
       const iw = br[0] - tl[0], ih = fb[1] - tl[1] + 10;
       g += '<image href="' + ISO_ASSETS[o.k] + '" x="' + tl[0] + '" y="' + (fb[1] - ih) + '" width="' + iw + '" height="' + ih + '" preserveAspectRatio="xMidYMax meet"/>';
@@ -5648,8 +5669,13 @@ function doNow(where, a, v, label) {
   if (a === 'TAB') { UI.rtSel = null; if (v === 'out') { UI.rtOut = true; render(); return; } UI.tab = v; render(); return; }
   const fn = SACT[a]; if (!fn) return;
   // 角色直接站到那樣東西旁邊
-  const g = rtGoalTiles(where);
-  if (g && g.tiles && g.tiles.length) { rt.pos = { f: g.f, x: g.tiles[0][0] + 0.5, y: g.tiles[0][1] + 0.5 }; UI.iso = Object.assign(UI.iso || {}, { floor: g.f }); }
+  const g = rtGoalTiles(where), old = Object.assign({}, rt.pos);
+  if (g && g.tiles && g.tiles.length) {
+    rt.pos = { f: g.f, x: g.tiles[0][0] + 0.5, y: g.tiles[0][1] + 0.5 }; UI.iso = Object.assign(UI.iso || {}, { floor: g.f });
+    if (Math.hypot(old.x - rt.pos.x, old.y - rt.pos.y) > 0.3 || old.f !== rt.pos.f) puff(old, rt.pos);
+    const oc = objCenter(where); if (oc && Math.abs(oc.x - rt.pos.x) > 0.2) rt.face = oc.x > rt.pos.x ? 1 : -1;
+  }
+  const st0 = statSnap();
   rt.task = null; rt.queue = []; rt.path = []; rt.frac = 0;
   UI.rtSel = null;
   const h0 = sv.hour, d0 = sv.day, log0 = sv.log[0];
@@ -5661,6 +5687,7 @@ function doNow(where, a, v, label) {
   const E = typeof evState === 'function' ? evState() : null;
   if (E && S.sv.day === d0) E.fx = (E.fx || []).concat([{ x: rt.pos.x, y: rt.pos.y, txt: failed ? '做不了' : (TASK_IC[a] || '') + ' ✓', col: failed ? '#9aa7b4' : '#ecd27a', t0: performance.now() }]);
   if (failed) slog('「' + label + '」沒做成（時間、體力或材料不夠）。');
+  else if (S.sv.day === d0) floatStats(st0, rt.pos);
   if (['craft', 'reinforce', 'evRepair'].includes(a)) sfx('fix'); else if (a === 'eatFull' || a === 'eat') sfx('eat'); else if (!failed) sfx('pop');
   render();
 }
@@ -5800,7 +5827,7 @@ function goalDone(id) {
   const G = GOALS.find(x => x.id === id); if (!G) return;
   g[id] = true; S.sv.mor = clamp(S.sv.mor + 5);
   slog('目標完成：「' + G.n + '」心態 +5。'); sfx('ach');
-  if (typeof evState === 'function') { const E = evState(), rt = rtState(); E.fx = (E.fx || []).concat([{ x: rt.pos.x, y: rt.pos.y - 0.4, txt: '☑ ' + G.n, col: '#7cc191', t0: performance.now() }]); }
+  if (typeof evState === 'function') { const E = evState(), rt = rtState(); E.fx = (E.fx || []).concat([{ x: rt.pos.x - 0.6, y: rt.pos.y - 1.1, txt: '☑ ' + G.n, col: '#7cc191', t0: performance.now() }]); }
 }
 function goalCheck() { const sv = S.sv, g = goalState(); for (const G of GOALS) if (!g[G.id] && G.chk && G.chk(sv)) goalDone(G.id); }
 for (const k of ['eat', 'eatFull', 'gen', 'pedal', 'reinforce', 'plant', 'evRepair']) {
@@ -5862,7 +5889,7 @@ function lifeTick(now) {
   if (hasDog()) {
     const d = dogState();
     if (d.f !== rt.pos.f) { d.f = rt.pos.f; d.x = rt.pos.x + 0.6; d.y = rt.pos.y; }
-    const tx = rt.pos.x + 0.7, ty = rt.pos.y + 0.35, dx = tx - d.x, dy = ty - d.y, dist = Math.hypot(dx, dy);
+    const tg = dogTarget(d, rt, now), tx = tg.x, ty = tg.y, dx = tx - d.x, dy = ty - d.y, dist = Math.hypot(dx, dy);
     if (dist > 0.35) { const st = Math.min(dist - 0.3, 0.016 * 2.4 * Math.max(1, Math.min(sp || 1, 3)) * (dist > 2 ? 2 : 1)); d.x += dx / dist * st; d.y += dy / dist * st; d.moving = true; } else d.moving = false;
     d.face = dx >= 0 ? 1 : -1;
   }
@@ -5915,6 +5942,7 @@ function lifeLayer(now) {
         '<ellipse cy="2" rx="10" ry="3" fill="rgba(0,0,0,0.2)"/><ellipse cx="0" cy="-6" rx="9" ry="5.5" fill="#a0764a" stroke="#1d2733" stroke-width="0.9"/><circle cx="9" cy="-11" r="4.5" fill="#a0764a" stroke="#1d2733" stroke-width="0.9"/><path d="M7 -15 l-1 -4 l3 2z" fill="#7a5a3a"/><circle cx="10.5" cy="-11.5" r="0.9" fill="#111"/><circle cx="13" cy="-10" r="1" fill="#2a1a1a"/>' +
         '<path d="M-9 -7 q -4 ' + (-4 + wag).toFixed(1) + ' -6 ' + (-8 + wag).toFixed(1) + '" stroke="#a0764a" stroke-width="2.4" fill="none" stroke-linecap="round"/><rect x="-6" y="-2" width="2.4" height="4" fill="#7a5a3a"/><rect x="4" y="-2" width="2.4" height="4" fill="#7a5a3a"/>') +
         '<circle cx="0" cy="-8" r="15" fill="transparent"/></g>';
+      if (d.sleep && !d.moving) s += '<text x="' + (q[0] + 10).toFixed(1) + '" y="' + (q[1] - 22 - Math.sin(now / 500) * 3).toFixed(1) + '" font-size="10" font-weight="700" fill="#cfd6e0" pointer-events="none">z</text>';
       if (d.heart && now - d.heart < 1200) { const k = (now - d.heart) / 1200; s += '<text x="' + q[0].toFixed(1) + '" y="' + (q[1] - 24 - k * 16).toFixed(1) + '" text-anchor="middle" font-size="13" opacity="' + (1 - k).toFixed(2) + '" pointer-events="none">❤️</text>'; }
     }
   }
@@ -6131,6 +6159,136 @@ render = function () {
   _renderMorning();
   if (UI.morning && S && S.phase === 'survive') $app.insertAdjacentHTML('beforeend', morningCard());
   else if (UI.morning && (!S || S.phase !== 'survive')) UI.morning = null;
+};
+
+// ---- 98zh-polish.js ----
+/* ================= 細節打磨 =================
+   窗光隨時間、門的裂痕、作物中期、瞬移煙塵、數字飄出、低數值提醒、
+   夜裡窗外黑影、狗的作息、按鈕手感、防誤觸、橫屏第一次說明、存檔小提示。 */
+
+/* ---------- 窗光：白天暖白、傍晚橘、晚上沒有 ---------- */
+function winLight(h) {
+  if (h < 6 || h >= 19) return null;
+  if (h < 8) return 'rgba(255,200,150,0.22)';
+  if (h < 16) return 'rgba(255,244,210,0.32)';
+  if (h < 18) return 'rgba(255,170,90,0.32)';
+  return 'rgba(190,140,220,0.18)';
+}
+/* ---------- 門的裂痕 ---------- */
+function doorCracks(x0, ya, yb, r) {
+  const L = (pts, w) => '<polyline points="' + pts.map(p => p.map(v => v.toFixed(1)).join(',')).join(' ') + '" fill="none" stroke="#1d2733" stroke-width="' + (w || 1) + '" stroke-linecap="round" opacity="0.85" pointer-events="none"/>';
+  const m = (ya + yb) / 2;
+  let s = L([[x0 - 4, m - 10], [x0 - 9, m - 4], [x0 - 6, m + 2], [x0 - 12, m + 9]], 1.1);
+  if (r < 0.35) s += L([[x0 - 3, ya + 6], [x0 - 8, ya + 12], [x0 - 5, ya + 18]], 1) + L([[x0 - 10, yb - 14], [x0 - 14, yb - 8], [x0 - 9, yb - 3]], 1.2) + '<circle cx="' + (x0 - 7) + '" cy="' + (m + 14) + '" r="1.6" fill="#1d2733" opacity="0.8" pointer-events="none"/>';
+  return s;
+}
+/* ---------- 作物中期：長到一半多些葉子；花盆架、溫室成熟掛紅果 ---------- */
+function cropStage(k, bx, by, bw, bh, ripe) {
+  const sv = S.sv, slot = k === 'lightbox' ? 'light' : k === 'potrack' ? 'pot' : 'green';
+  const ps = (sv.plants || []).filter(p => k === 'greenhouse' ? true : p.slot === slot); if (!ps.length) return '';
+  const g = Math.max(...ps.map(p => p.age / Math.max(1, growDays())));
+  if (k === 'lightbox' && ripe) return '';
+  let s = '';
+  const n = k === 'potrack' ? 4 : 6, sc = g >= 1 ? 1.5 : g >= 0.5 ? 1.25 : 0;
+  if (!sc) return '';
+  for (let i = 0; i < n; i++) {
+    const cx = bx + bw * (k === 'potrack' ? (i % 2 ? 0.66 : 0.34) : 0.18 + (i % 3) * 0.32), cy = by + bh * (k === 'potrack' ? (i < 2 ? 0.3 : 0.62) : 0.32 + Math.floor(i / 3) * 0.26);
+    s += topSprout(cx, cy, sc, '#3f8a3f');
+    if (g >= 1 && k !== 'lightbox') s += '<circle cx="' + (cx + 3) + '" cy="' + (cy - 3) + '" r="2.6" fill="#d6322a" stroke="#1d2733" stroke-width="0.6"/>';
+  }
+  return '<g pointer-events="none">' + s + '</g>';
+}
+/* ---------- 瞬移煙塵、物件中心 ---------- */
+function puff(a, b) { const rt = rtState(), t0 = performance.now(); rt.puffs = (rt.puffs || []).concat([{ x: a.x, y: a.y, f: a.f, t0, out: true }, { x: b.x, y: b.y, f: b.f, t0 }]); }
+function objCenter(where) {
+  if (!where || where === 'DOOR') return where === 'DOOR' ? { x: 0, y: ISO_DOOR.at + 0.5 } : null;
+  const sv = S.sv, id = String(where).split('|').map(k => isoObjects().find(o => o.id === k || o.k === k)).find(Boolean);
+  const p = id && sv.place[id.id]; if (!p) return null;
+  const D = ISO[id.k], w = p.r ? D.d : D.w, d = p.r ? D.w : D.d; return { x: p.x + w / 2, y: p.y + d / 2 };
+}
+/* ---------- 數字飄出 ---------- */
+function statSnap() { const sv = S.sv; return { 飽腹: sv.sat, 水分: sv.hyd, 生命: sv.hp, 心態: sv.mor, 精力: sv.sta, 衛生: sv.hyg == null ? 0 : sv.hyg, 電: sv.power, 防線: sv.def }; }
+function floatStats(a, pos) {
+  const b = statSnap(), E = evState(), t0 = performance.now(); let i = 0;
+  for (const k of Object.keys(a)) {
+    const d = b[k] - a[k]; if (Math.abs(d) < 0.5 || (k === '精力' && Math.abs(d) < 3)) continue;
+    E.fx = (E.fx || []).concat([{ x: pos.x + 0.55, y: pos.y - 0.32 * (i++) - 0.1, txt: k + ' ' + (d > 0 ? '+' : '') + (Math.abs(d) < 10 && d % 1 ? d.toFixed(1) : Math.round(d)), col: d > 0 ? '#8fd6a3' : '#ff9a8c', t0: t0 + i * 90 }]);
+    if (i >= 3) break;
+  }
+}
+/* ---------- 疊在生活層上：煙塵、低血量泛紅、夜裡窗外黑影 ---------- */
+const _lifeLayerP = lifeLayer;
+lifeLayer = function (now) {
+  now = now || performance.now();
+  let s = _lifeLayerP(now);
+  const sv = S.sv, rt = rtState(), f = (UI.iso && UI.iso.floor) || '1F', P = isoProj(f), Z = sceneSize(f);
+  rt.puffs = (rt.puffs || []).filter(p => now - p.t0 < 520);
+  for (const p of rt.puffs) {
+    if (p.f !== f) continue;
+    const k = (now - p.t0) / 520, q = P(p.x, p.y, 0);
+    for (let i = 0; i < 5; i++) { const a = i * 1.26 + (p.out ? 0.4 : 0); s += '<circle cx="' + (q[0] + Math.cos(a) * 14 * k).toFixed(1) + '" cy="' + (q[1] - 6 + Math.sin(a) * 6 * k).toFixed(1) + '" r="' + (5 + 5 * k).toFixed(1) + '" fill="#e8e0d0" opacity="' + (0.55 * (1 - k)).toFixed(2) + '" pointer-events="none"/>'; }
+  }
+  // 夜裡窗外偶爾有黑影走過
+  if ((sv.hour >= 19 || sv.hour < 5) && f !== 'B1') {
+    const ws = ISO_WIN[f].y0, cyc = 11000, ph = (now % cyc) / cyc, wi = Math.floor(now / cyc) % Math.max(1, ws.length);
+    if (ws.length && ph < 0.45) {
+      const x = ws[wi], a = P(x + 0.18, 0), b = P(x + 0.82, 0), top = a[1] - TWALL + 12, h = TWALL - 34, k = ph / 0.45;
+      const sx = a[0] - 14 + (b[0] - a[0] + 28) * k;
+      s += '<clipPath id="wclip"><rect x="' + a[0] + '" y="' + top + '" width="' + (b[0] - a[0]) + '" height="' + h + '"/></clipPath><g clip-path="url(#wclip)" pointer-events="none" opacity="0.55"><circle cx="' + sx.toFixed(1) + '" cy="' + (top + 10 + Math.sin(now / 160) * 1.2).toFixed(1) + '" r="6" fill="#0b0d10"/><rect x="' + (sx - 7).toFixed(1) + '" y="' + (top + 15) + '" width="14" height="' + h + '" rx="5" fill="#0b0d10"/><path d="M' + (sx + 5).toFixed(1) + ' ' + (top + 20) + ' l10 -3" stroke="#0b0d10" stroke-width="4" stroke-linecap="round"/></g>';
+    }
+  }
+  // 生命很低：畫面四周泛紅脈動
+  if (sv.hp < 30) { const pulse = 0.25 + Math.sin(now / 280) * 0.12 + (30 - sv.hp) / 100; s += '<defs><radialGradient id="hp-vig" cx="50%" cy="50%" r="72%"><stop offset="55%" stop-color="#8a0f0f" stop-opacity="0"/><stop offset="100%" stop-color="#8a0f0f" stop-opacity="' + pulse.toFixed(2) + '"/></radialGradient></defs><rect x="0" y="0" width="' + Z.w + '" height="' + Z.h + '" fill="url(#hp-vig)" pointer-events="none"/>'; }
+  return s;
+};
+/* ---------- 狗的作息：晚上睡床邊，白天偶爾自己晃 ---------- */
+function dogTarget(d, rt, now) {
+  const sv = S.sv, night = sv.hour >= 22 || sv.hour < 6 || (rt.workA === 'sleep' && rt.workUntil > now);
+  d.sleep = false;
+  if (night) {
+    const b = objCenter('bed|bedroom');
+    if (b) { d.sleep = true; return { x: Math.max(0.6, b.x - 1.4), y: Math.min(ISO_FLOORS[rt.pos.f].h - 0.5, b.y + 0.9) }; }
+  }
+  const idle = !(rt.path && rt.path.length) && !rt.task;
+  if (idle && (!d.wanderUntil || now > d.wanderUntil + 9000) && Math.random() < 0.004) {
+    const ok = [...rtWalkable(rt.pos.f)]; const t = ok[Math.floor(Math.random() * ok.length)];
+    if (t) { const [x, y] = t.split(',').map(Number); d.wander = { x: x + 0.5, y: y + 0.5 }; d.wanderUntil = now + 5000; }
+  }
+  if (idle && d.wander && now < d.wanderUntil) return d.wander;
+  d.wander = null;
+  return { x: rt.pos.x + 0.7, y: rt.pos.y + 0.35 };
+}
+/* ---------- 按鈕手感：Android 輕震 ---------- */
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('button, [data-a]');
+  if (b && navigator.vibrate && UIS.vib !== false) try { navigator.vibrate(8); } catch (er) {}
+}, true);
+/* ---------- 存檔小提示 ---------- */
+let SAVE_FLASH = 0, SAVE_DAY = null;
+const _persistP = persistRun;
+persistRun = function () {
+  _persistP();
+  if (!S || S.phase !== 'survive' || !S.sv) return;
+  const now = Date.now();
+  if (S.sv.day !== SAVE_DAY || now - SAVE_FLASH > 60000) {
+    const first = SAVE_DAY === null; SAVE_DAY = S.sv.day; SAVE_FLASH = now; if (first) return;
+    let el = document.getElementById('save-dot');
+    if (!el) { el = document.createElement('div'); el.id = 'save-dot'; el.textContent = '💾 已存檔'; document.body.appendChild(el); }
+    el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+  }
+};
+/* ---------- 橫屏第一次：說明 ---------- */
+Object.assign(SACT, { lsCoachOk() { UIS.lsCoach = true; saveUI(); render(); } });
+const _renderCoach = render;
+render = function () {
+  _renderCoach();
+  if (document.body.classList.contains('ls') && !UIS.lsCoach && !UI.morning && !UI.lsMenu) {
+    $app.insertAdjacentHTML('beforeend', '<div class="ls-coach" data-a="lsCoachOk">' +
+      '<div class="cc cc-l"><b>狀態</b>生命、飽腹、水分…<br>低於 20 會閃紅</div>' +
+      '<div class="cc cc-c"><b>房間</b>點家具跳出選項<br>長按家具可以搬家<br>點地板走過去</div>' +
+      '<div class="cc cc-r"><b>常用動作</b>吃、喝、外出、睡覺<br><b>☰ 選單</b>據點、倉庫、日誌、設定<br>（打開時時間暫停）</div>' +
+      '<button class="btn cc-ok" data-a="lsCoachOk">知道了</button></div>');
+  }
 };
 
 // ---- 99-boot.js ----

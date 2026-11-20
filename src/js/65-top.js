@@ -28,16 +28,16 @@ function topSVG() {
   for (const x of ISO_WIN[f].y0) { const a = P(x + 0.18, 0), b = P(x + 0.82, 0); if (hasT('window')) { s += '<rect x="' + a[0] + '" y="' + (y0 - TWALL + 12) + '" width="' + (b[0] - a[0]) + '" height="' + (TWALL - 34) + '" fill="#bcd6ea"/><image href="' + SPR.window + '" x="' + (a[0] - 3) + '" y="' + (y0 - TWALL + 8) + '" width="' + (b[0] - a[0] + 6) + '" height="' + (TWALL - 26) + '" preserveAspectRatio="none" pointer-events="none"/>'; continue; } s += '<rect x="' + a[0] + '" y="' + (y0 - TWALL + 12) + '" width="' + (b[0] - a[0]) + '" height="' + (TWALL - 34) + '" fill="#bcd6ea" stroke="' + INK + '" stroke-width="1.2"/><line x1="' + (a[0] + b[0]) / 2 + '" y1="' + (y0 - TWALL + 12) + '" x2="' + (a[0] + b[0]) / 2 + '" y2="' + (y0 - 22) + '" stroke="' + INK + '" stroke-width="1"/>'; }
   for (const y of ISO_WIN[f].x0) { const a = P(0, y + 0.2), b = P(0, y + 0.8); s += '<polygon points="' + [[x0 - 3, a[1] - 4], [x0 - 15, a[1] - 11], [x0 - 15, b[1] - 8], [x0 - 3, b[1]]].map(p => p.join(',')).join(' ') + '" fill="#bcd6ea" stroke="' + INK + '" stroke-width="1"/>'; }
   if (f === ISO_DOOR.f) { const a = P(0, ISO_DOOR.at + 0.1), b = P(0, ISO_DOOR.at + 0.9); const ratio = sv.def / sv.defMax; s += '<polygon data-a="rtObj" data-v="DOOR" style="cursor:pointer" points="' + [[x0 - 1, a[1]], [x0 - 16, a[1] - 9], [x0 - 16, b[1] - 6], [x0 - 1, b[1]]].map(p => p.join(',')).join(' ') + '" fill="' + (ratio > 0.7 ? '#2f6b3f' : ratio > 0.35 ? '#a8661a' : RED) + '" stroke="' + INK + '" stroke-width="1.2"/>'; }
-  if (f === ISO_DOOR.f && hasT('door')) { const a = P(0, ISO_DOOR.at + 0.1), b = P(0, ISO_DOOR.at + 0.9), r = sv.def / sv.defMax; s += '<image href="' + SPR.door + '" x="' + (x0 - 17) + '" y="' + (a[1] - 9) + '" width="17" height="' + (b[1] - a[1] + 9) + '" preserveAspectRatio="none" pointer-events="none"/>' + (r < 0.7 ? '<polygon points="' + [[x0 - 1, a[1]], [x0 - 16, a[1] - 9], [x0 - 16, b[1] - 6], [x0 - 1, b[1]]].map(p => p.join(',')).join(' ') + '" fill="' + (r > 0.35 ? '#a8661a' : RED) + '" opacity="0.45" pointer-events="none"/>' : ''); }
+  if (f === ISO_DOOR.f && hasT('door')) { const a = P(0, ISO_DOOR.at + 0.1), b = P(0, ISO_DOOR.at + 0.9), r = sv.def / sv.defMax; s += '<image href="' + SPR.door + '" x="' + (x0 - 17) + '" y="' + (a[1] - 9) + '" width="17" height="' + (b[1] - a[1] + 9) + '" preserveAspectRatio="none" pointer-events="none"/>' + (r < 0.7 ? '<polygon points="' + [[x0 - 1, a[1]], [x0 - 16, a[1] - 9], [x0 - 16, b[1] - 6], [x0 - 1, b[1]]].map(p => p.join(',')).join(' ') + '" fill="' + (r > 0.35 ? '#a8661a' : RED) + '" opacity="' + (r > 0.35 ? 0.2 : 0.3) + '" pointer-events="none"/>' + doorCracks(x0, a[1], b[1], r) : ''); }
   // 地板
   const occ = occupied(f, I.moving ? I.sel : null);
   for (let y = 0; y < F.h; y++) for (let x = 0; x < F.w; x++) {
     const a = P(x, y), fill = dark ? ((x + y) % 2 ? '#3d4249' : '#43484f') : hasT('tex_floor') ? 'url(#tp-floor)' : ((x + y) % 2 ? '#e9dcc0' : '#f1e6cd');
     s += '<rect data-a="isoTile" data-v="' + f + ',' + x + ',' + y + '" x="' + a[0] + '" y="' + a[1] + '" width="' + TOPW + '" height="' + TD + '" fill="' + (I.moving && !occ.has(x + ',' + y) ? 'rgba(236,210,122,0.6)' : fill) + '" stroke="' + (dark ? '#2a2e33' : hasT('tex_floor') ? 'none' : '#d6c6a6') + '" stroke-width="1"/>';
-    if (isWindow(f, x, y) && !dark) s += '<rect x="' + (a[0] + 8) + '" y="' + (a[1] + 6) + '" width="' + (TOPW - 16) + '" height="' + (TD - 14) + '" rx="10" fill="rgba(255,236,160,0.45)" pointer-events="none"/>';
+    if (isWindow(f, x, y) && !dark) { const wl = winLight(sv.hour); if (wl) s += '<path d="M' + (a[0] + 10) + ' ' + (a[1] + 2) + ' h' + (TOPW - 20) + ' l8 ' + (TD - 6) + ' h-' + (TOPW - 4) + 'z" fill="' + wl + '" pointer-events="none" style="mix-blend-mode:screen"/>'; }
   }
   // 地毯（一樓客廳）
-  if (f === '1F') { const a = P(2.1, 2.2), b = P(3.9, 3.8); s += '<ellipse cx="' + (a[0] + b[0]) / 2 + '" cy="' + (a[1] + b[1]) / 2 + '" rx="' + (b[0] - a[0]) / 2 + '" ry="' + (b[1] - a[1]) / 2 + '" fill="#9b6b5a" opacity="0.35" pointer-events="none"/>'; }
+  if (f === '1F' && !hasT('tex_floor')) { const a = P(2.1, 2.2), b = P(3.9, 3.8); s += '<ellipse cx="' + (a[0] + b[0]) / 2 + '" cy="' + (a[1] + b[1]) / 2 + '" rx="' + (b[0] - a[0]) / 2 + '" ry="' + (b[1] - a[1]) / 2 + '" fill="#9b6b5a" opacity="0.35" pointer-events="none"/>'; }
   // 物件（由後往前）
   const here = objs.map(o => ({ o, p: sv.place[o.id] })).filter(it => it.p && it.p.f === f);
   const dims = it => { const D = ISO[it.o.k]; return { D, w: it.p.r ? D.d : D.w, d: it.p.r ? D.w : D.d }; };
@@ -56,6 +56,7 @@ function topSVG() {
       const rot = p.r && ISO[o.k].w !== ISO[o.k].d;
       g += rot ? '<image href="' + topImg + '" x="' + (cx - bh / 2).toFixed(1) + '" y="' + (cy - bw / 2).toFixed(1) + '" width="' + bh.toFixed(1) + '" height="' + bw.toFixed(1) + '" preserveAspectRatio="xMidYMid meet" transform="rotate(90 ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')"/>'
         : '<image href="' + topImg + '" x="' + bx.toFixed(1) + '" y="' + by.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + bh.toFixed(1) + '" preserveAspectRatio="xMidYMax meet"/>';
+      if (['lightbox', 'potrack', 'greenhouse'].includes(o.k)) g += cropStage(o.k, bx, by, bw, bh, ripe);
     } else if (ISO_ASSETS[o.k]) {
       const iw = br[0] - tl[0], ih = fb[1] - tl[1] + 10;
       g += '<image href="' + ISO_ASSETS[o.k] + '" x="' + tl[0] + '" y="' + (fb[1] - ih) + '" width="' + iw + '" height="' + ih + '" preserveAspectRatio="xMidYMax meet"/>';
