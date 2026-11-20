@@ -372,4 +372,3 @@ body.ls .rt-mbox { font-size: 13px; padding: 10px 12px; width: min(520px, 70vw);
 body.ls .rt-mh { margin-bottom: 6px; } body.ls .rt-mh b { font-size: 15px; } body.ls .rt-mic { font-size: 24px; }
 body.ls .mgrid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 5px; }
 body.ls .mcell { padding: 5px 8px; } body.ls .macts { gap: 5px; } body.ls .macts .btn { padding: 5px 10px; }
-.ls-drawer main.wrap > .row-btns:first-of-type:has(> [data-a="rtQuick"]) { display: none; }

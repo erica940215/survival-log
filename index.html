@@ -382,7 +382,6 @@ body.ls .rt-mbox { font-size: 13px; padding: 10px 12px; width: min(520px, 70vw);
 body.ls .rt-mh { margin-bottom: 6px; } body.ls .rt-mh b { font-size: 15px; } body.ls .rt-mic { font-size: 24px; }
 body.ls .mgrid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 5px; }
 body.ls .mcell { padding: 5px 8px; } body.ls .macts { gap: 5px; } body.ls .macts .btn { padding: 5px 10px; }
-.ls-drawer main.wrap > .row-btns:first-of-type:has(> [data-a="rtQuick"]) { display: none; }
 </style>
 </head>
 <body>
@@ -6013,6 +6012,7 @@ render = function () {
   const drawer = document.createElement('div'); drawer.className = 'ls-drawer' + (UI.lsMenu ? ' open' : '');
   drawer.innerHTML = '<div class="ls-dh"><b>選單</b><span class="meta">開著時時間暫停</span><button class="btn ghost" data-a="lsMenu" data-v="close">關閉 ✕</button></div>';
   for (const el of [header, main, nav]) if (el) drawer.appendChild(el);
+  if (main) main.querySelectorAll(':scope > .row-btns').forEach(r => { if (r.querySelector('[data-a="rtQuick"]')) r.remove(); });
   drawer.insertAdjacentHTML('beforeend', '<div class="setrow" style="margin:10px 12px 70px"><span>版面</span><button class="pill' + (UIS.ls !== 'off' ? ' on' : '') + '" data-a="lsMode" data-v="auto">橫放自動切換</button><button class="pill' + (UIS.ls === 'off' ? ' on' : '') + '" data-a="lsMode" data-v="off">一律直式</button></div>');
   app.insertBefore(stage, app.firstChild);
   app.appendChild(drawer);

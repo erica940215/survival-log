@@ -60,6 +60,7 @@ render = function () {
   const drawer = document.createElement('div'); drawer.className = 'ls-drawer' + (UI.lsMenu ? ' open' : '');
   drawer.innerHTML = '<div class="ls-dh"><b>選單</b><span class="meta">開著時時間暫停</span><button class="btn ghost" data-a="lsMenu" data-v="close">關閉 ✕</button></div>';
   for (const el of [header, main, nav]) if (el) drawer.appendChild(el);
+  if (main) main.querySelectorAll(':scope > .row-btns').forEach(r => { if (r.querySelector('[data-a="rtQuick"]')) r.remove(); });
   drawer.insertAdjacentHTML('beforeend', '<div class="setrow" style="margin:10px 12px 70px"><span>版面</span><button class="pill' + (UIS.ls !== 'off' ? ' on' : '') + '" data-a="lsMode" data-v="auto">橫放自動切換</button><button class="pill' + (UIS.ls === 'off' ? ' on' : '') + '" data-a="lsMode" data-v="off">一律直式</button></div>');
   app.insertBefore(stage, app.firstChild);
   app.appendChild(drawer);
