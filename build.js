@@ -1,5 +1,6 @@
 // 把 src/ 的檔案合成單一 index.html：node build.js
 const fs = require('fs'), path = require('path');
+require('./tools/sprites.js');
 const dir = path.join(__dirname, 'src');
 const tpl = fs.readFileSync(path.join(dir, 'template.html'), 'utf8');
 const css = fs.readFileSync(path.join(dir, 'style.css'), 'utf8');

@@ -116,8 +116,21 @@ function lifeTick(now) {
     d.face = dx >= 0 ? 1 : -1;
   }
   const g = document.getElementById('lf-layer'); if (g) g.innerHTML = lifeLayer(now);
+  charFrame(now);
 }
 requestAnimationFrame(lifeTick);
+// 角色動作圖：走路兩張輪流、做事、站著；往右走時翻面
+let CF_LAST = { x: null };
+function charFrame(now) {
+  const img = document.getElementById('char-img'); if (!img) return;
+  const rt = rtState(), walking = rt.path && rt.path.length;
+  if (CF_LAST.x != null && Math.abs(rt.pos.x - CF_LAST.x) > 0.001) rt.face = rt.pos.x > CF_LAST.x ? 1 : -1;
+  CF_LAST.x = rt.pos.x;
+  const k = walking ? (Math.floor(now / 200) % 2 ? 'char_walk1' : 'char_walk2') : ((rt.task && rt.task.h) || (rt.workUntil && now < rt.workUntil)) ? 'char_work' : 'char_idle';
+  const flip = rt.face === 1;
+  if (k !== img.dataset.k) { img.setAttribute('href', SPR[k]); img.dataset.k = k; }
+  if (flip !== (img.dataset.flip === '1')) { if (flip) img.setAttribute('transform', 'scale(-1 1)'); else img.removeAttribute('transform'); img.dataset.flip = flip ? '1' : '0'; }
+}
 
 function lifeLayer(now) {
   const sv = S.sv, rt = rtState(), f = (UI.iso && UI.iso.floor) || '1F', P = isoProj(f), Z = sceneSize(f);

@@ -167,3 +167,11 @@ function topFront(k, x, y, W, H) {
     default: return '';
   }
 }
+
+/* ---------- 自訂角色／殭屍圖（assets/top/，經 tools/sprites.js 內嵌成 SPR） ---------- */
+const hasSpr = k => typeof SPR === 'object' && !!SPR[k];
+// 腳底在 (0,0)，往上長 h；flip=往右看（原圖面向左）
+function sprImg(k, h, flip, ex) {
+  const w = k.endsWith('_dead') ? h * 1.6 : h;
+  return '<image href="' + SPR[k] + '" x="' + (-w / 2).toFixed(1) + '" y="' + (-h).toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '" preserveAspectRatio="xMidYMax meet"' + (flip ? ' transform="scale(-1 1)"' : '') + (ex || '') + '/>';
+}

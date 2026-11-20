@@ -1,6 +1,6 @@
 /* ================= 俯視視角：由上往下看的房間（預設） ================= */
 const camTop = () => UIS.cam !== 'iso';
-const TOPW = 56, TD = 46, TZ = 0.72, TWALL = 74, TML = 64, TMT = 16;
+const TOPW = 56, TD = 46, TZ = 0.72, TWALL = 74, TML = 80, TMT = 16;
 function topProj(f) { const ox = TML, oy = TMT + TWALL; return (x, y, z) => [ox + x * TOPW, oy + y * TD - (z || 0) * TZ]; }
 function sceneSize(f) {
   const F = ISO_FLOORS[f];

@@ -105,15 +105,16 @@ function zombieSVG(z, P, now) {
   const op = dead ? Math.max(0, 1 - (now - z.deadAt) / 900) : rise ? Math.min(1, z.t / 0.8) : 1;
   const bob = Math.sin(now / 180 + z.id) * 1.2;
   const flash = z.hurtAt && now - z.hurtAt < 140;
-  return '<g transform="translate(' + (q[0] + shake).toFixed(1) + ' ' + (q[1] + bob).toFixed(1) + ')' + (dead ? ' rotate(80)' : '') + '" opacity="' + op.toFixed(2) + '">' +
+  return '<g transform="translate(' + (q[0] + shake).toFixed(1) + ' ' + (q[1] + bob).toFixed(1) + ')' + (dead && !hasSpr('zombie_dead') ? ' rotate(80)' : '') + '" opacity="' + op.toFixed(2) + '">' + (dead && hasSpr('zombie_dead') ? sprImg('zombie_dead', 26) : '') +
     '<ellipse cx="0" cy="2" rx="9" ry="3.5" fill="rgba(0,0,0,0.25)"/>' +
+    (hasSpr('zombie_walk') ? (dead ? '' : sprImg(z.st === 'bash' ? 'zombie_bash' : 'zombie_walk', 54, z.kind === 'door' && z.st === 'walk', flash ? ' style="filter:brightness(2.2)"' : '')) :
     '<rect x="-6" y="-16" width="12" height="15" rx="4" fill="' + (flash ? '#fff' : '#5e7258') + '" stroke="#1d2733" stroke-width="1"/>' +
     '<path d="M-5 -13 l 9 -2 M5 -10 l 8 -1" stroke="#7d8f73" stroke-width="3" stroke-linecap="round"/>' +
     '<circle cx="0" cy="-21" r="6" fill="' + (flash ? '#fff' : '#8fa37f') + '" stroke="#1d2733" stroke-width="1"/>' +
     '<circle cx="-2.2" cy="-21.5" r="1.3" fill="#d6322a"/><circle cx="2.2" cy="-21.5" r="1.3" fill="#d6322a"/>' +
-    '<path d="M-2.5 -18 h5" stroke="#3a2a2a" stroke-width="1"/>' +
-    '<rect x="-8" y="-29" width="16" height="3" rx="1.5" fill="#1d2733" opacity="' + (dead ? 0 : 0.85) + '"/><rect x="-7.5" y="-28.5" width="' + (15 * z.hp / (hordeType(S.sv.day) === 'heavy' ? 3 : 2)).toFixed(1) + '" height="2" rx="1" fill="#d6322a" opacity="' + (dead ? 0 : 1) + '"/>' +
-    '<circle cx="0" cy="-14" r="15" fill="transparent" data-z="' + z.id + '" style="cursor:crosshair"/></g>';
+    '<path d="M-2.5 -18 h5" stroke="#3a2a2a" stroke-width="1"/>') +
+    '<rect x="-8" y="' + (hasSpr('zombie_walk') ? -60 : -29) + '" width="16" height="3" rx="1.5" fill="#1d2733" opacity="' + (dead ? 0 : 0.85) + '"/><rect x="-7.5" y="' + (hasSpr('zombie_walk') ? -59.5 : -28.5) + '" width="' + (15 * z.hp / (hordeType(S.sv.day) === 'heavy' ? 3 : 2)).toFixed(1) + '" height="2" rx="1" fill="#d6322a" opacity="' + (dead ? 0 : 1) + '"/>' +
+    '<circle cx="0" cy="' + (hasSpr('zombie_walk') ? -26 : -14) + '" r="' + (hasSpr('zombie_walk') ? 24 : 15) + '" fill="transparent" data-z="' + z.id + '" style="cursor:crosshair"/></g>';
 }
 function siegeLayer(now) {
   const sg = siegeOf(); if (!sg || sg.done) return '';

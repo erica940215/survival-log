@@ -92,6 +92,7 @@ function otTick(now) {
     let step = dt * 2.4 * Math.min(sp, 3);
     while (step > 0 && rt.path.length) {
       const n = rt.path[0], dx = n.x - rt.pos.x, dy = n.y - rt.pos.y, d = Math.hypot(dx, dy);
+      if (Math.abs(dx) > 0.01) rt.face = dx > 0 ? 1 : -1;
       if (d <= step) { rt.pos.x = n.x; rt.pos.y = n.y; rt.path.shift(); step -= d; } else { rt.pos.x += dx / d * step; rt.pos.y += dy / d * step; step = 0; }
     }
     if (!rt.path.length && rt.task && rt.task.i === 'EXIT') { otFinish(); render(); return; }
@@ -114,6 +115,7 @@ function otTick(now) {
     if (z.st === 'dead') continue;
     const dx = rt.pos.x - z.x, dy = rt.pos.y - z.y, d = Math.hypot(dx, dy);
     const sense = night ? 2.2 : 1.5;
+    z.cx = rt.pos.x;
     if (d < sense || z.st === 'chase') { z.st = 'chase'; if (d > 0.45) { z.x += dx / d * z.sp * 1.4 * dt * Math.min(sp, 3); z.y += dy / d * z.sp * 1.4 * dt * Math.min(sp, 3); } }
     else { z.x += z.dir * z.sp * dt * Math.min(sp, 3); if (z.x < 2 || z.x > 8.6) z.dir *= -1; }
     if (d < 0.7 && (!rt.seen[z.id] || now - rt.seen[z.id] > 6000)) {
@@ -173,16 +175,17 @@ function otDyn(now) {
     const q = otP(z.x, z.y), dead = z.st === 'dead';
     if (dead && now - z.deadAt > 900) continue;
     const flash = z.hurtAt && now - z.hurtAt < 140, bob = Math.sin(now / 200 + z.id) * 1.2;
-    s += '<g transform="translate(' + q[0].toFixed(1) + ' ' + (q[1] + bob).toFixed(1) + ')' + (dead ? ' rotate(80)' : '') + '" opacity="' + (dead ? Math.max(0, 1 - (now - z.deadAt) / 900).toFixed(2) : 1) + '">' +
-      '<ellipse cy="2" rx="8" ry="3" fill="rgba(0,0,0,0.25)"/><rect x="-5.5" y="-15" width="11" height="14" rx="4" fill="' + (flash ? '#fff' : '#5e7258') + '" stroke="#1d2733"/><path d="M' + (z.dir > 0 ? '4 -12 l8 -1' : '-4 -12 l-8 -1') + '" stroke="#7d8f73" stroke-width="3" stroke-linecap="round"/>' +
-      '<circle cy="-19" r="5.5" fill="' + (flash ? '#fff' : '#8fa37f') + '" stroke="#1d2733"/><circle cx="-2" cy="-19.5" r="1.2" fill="#d6322a"/><circle cx="2" cy="-19.5" r="1.2" fill="#d6322a"/>' +
-      (z.st === 'chase' && !dead ? '<text y="-30" text-anchor="middle" font-size="11" font-weight="800" fill="#ff5a3a" stroke="#1d2733" stroke-width="2" paint-order="stroke">!</text>' : '') +
-      '<circle cy="-12" r="14" fill="transparent" data-oz="' + z.id + '" style="cursor:crosshair"/></g>';
+    s += '<g transform="translate(' + q[0].toFixed(1) + ' ' + (q[1] + bob).toFixed(1) + ')' + (dead && !hasSpr('zombie_dead') ? ' rotate(80)' : '') + '" opacity="' + (dead ? Math.max(0, 1 - (now - z.deadAt) / 900).toFixed(2) : 1) + '">' +
+      '<ellipse cy="2" rx="8" ry="3" fill="rgba(0,0,0,0.25)"/>' + (hasSpr('zombie_walk') ? (dead ? sprImg('zombie_dead', 22) : sprImg('zombie_walk', 46, (z.st === 'chase' ? z.cx > z.x : z.dir > 0), flash ? ' style="filter:brightness(2.2)"' : '')) : '<rect x="-5.5" y="-15" width="11" height="14" rx="4" fill="' + (flash ? '#fff' : '#5e7258') + '" stroke="#1d2733"/><path d="M' + (z.dir > 0 ? '4 -12 l8 -1' : '-4 -12 l-8 -1') + '" stroke="#7d8f73" stroke-width="3" stroke-linecap="round"/>' +
+      '<circle cy="-19" r="5.5" fill="' + (flash ? '#fff' : '#8fa37f') + '" stroke="#1d2733"/><circle cx="-2" cy="-19.5" r="1.2" fill="#d6322a"/><circle cx="2" cy="-19.5" r="1.2" fill="#d6322a"/>') +
+      (z.st === 'chase' && !dead ? '<text y="' + (hasSpr('zombie_walk') ? -50 : -30) + '" text-anchor="middle" font-size="11" font-weight="800" fill="#ff5a3a" stroke="#1d2733" stroke-width="2" paint-order="stroke">!</text>' : '') +
+      '<circle cy="' + (hasSpr('zombie_walk') ? -22 : -12) + '" r="' + (hasSpr('zombie_walk') ? 20 : 14) + '" fill="transparent" data-oz="' + z.id + '" style="cursor:crosshair"/></g>';
   }
   // 角色
   const q = otP(rt.pos.x, rt.pos.y), walking = rt.path.length > 0;
   s += '<g transform="translate(' + q[0].toFixed(1) + ' ' + q[1].toFixed(1) + ')" pointer-events="none"><ellipse cy="2" rx="8" ry="3" fill="rgba(0,0,0,0.25)"/>' +
-    '<g transform="translate(0 ' + (walking ? Math.abs(Math.sin(now / 120)) * -2 : 0).toFixed(1) + ')"><rect x="-5" y="-16" width="10" height="13" rx="3" fill="#3b5b8a" stroke="#1d2733"/><rect x="-4.5" y="-14" width="9" height="8" rx="2" fill="#8a6a46" opacity="0.8"/><circle cy="-21" r="5.5" fill="#f1d3b3" stroke="#1d2733"/><path d="M-5.5 -23 q5.5 -6 11 0" fill="#2b2b2b"/></g></g>';
+    (hasSpr('char_idle') ? sprImg(walking ? (Math.floor(now / 200) % 2 ? 'char_walk1' : 'char_walk2') : (rt.task && rt.task.i !== 'EXIT') ? 'char_work' : 'char_idle', 50, rt.face === 1) + '</g>' :
+    '<g transform="translate(0 ' + (walking ? Math.abs(Math.sin(now / 120)) * -2 : 0).toFixed(1) + ')"><rect x="-5" y="-16" width="10" height="13" rx="3" fill="#3b5b8a" stroke="#1d2733"/><rect x="-4.5" y="-14" width="9" height="8" rx="2" fill="#8a6a46" opacity="0.8"/><circle cy="-21" r="5.5" fill="#f1d3b3" stroke="#1d2733"/><path d="M-5.5 -23 q5.5 -6 11 0" fill="#2b2b2b"/></g></g>');
   // 進度條
   if (rt.task && !walking && rt.task.i !== 'EXIT') s += '<g transform="translate(' + q[0].toFixed(1) + ' ' + (q[1] - 36).toFixed(1) + ')" pointer-events="none"><rect x="-21" y="-4" width="42" height="8" rx="3" fill="#1d2733"/><rect x="-20" y="-3" width="' + (Math.min(1, rt.task.p) * 40).toFixed(1) + '" height="6" rx="2" fill="#ecd27a"/><text y="-8" text-anchor="middle" font-size="10" font-weight="700" fill="#f3f0e6" stroke="#1d2733" stroke-width="2.4" paint-order="stroke">翻找中…</text></g>';
   // 天黑：手電筒

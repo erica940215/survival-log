@@ -107,8 +107,9 @@ isoSVG = function () {
     const sleeping = hr >= LAST_HOUR;
     s += '<g id="iso-char" data-to="' + to[0].toFixed(1) + ',' + to[1].toFixed(1) + '" data-from="' + from[0].toFixed(1) + ',' + from[1].toFixed(1) + '" style="transform:translate(' + (fresh ? from : to)[0].toFixed(1) + 'px,' + (fresh ? from : to)[1].toFixed(1) + 'px)" pointer-events="none">' +
       '<ellipse cx="0" cy="0" rx="7" ry="3" fill="rgba(0,0,0,0.18)"/>' +
+      (hasSpr('char_idle') ? sprImg('char_idle', 60, false, ' id="char-img"') :
       '<g transform="scale(1.4)"><g class="' + (anim ? 'lv-bob' : '') + '"><rect x="-4.5" y="-17" width="9" height="12" rx="3" fill="#3b5b8a" stroke="#1d2733" stroke-width="1"/><circle cx="0" cy="-22" r="5" fill="#f1d3b3" stroke="#1d2733" stroke-width="1"/><path d="M-5 -24 q5 -6 10 0" fill="#2b2b2b"/>' +
-      '<rect x="-4" y="-6" width="3" height="6" fill="#2a3442"/><rect x="1" y="-6" width="3" height="6" fill="#2a3442"/></g></g>' +
+      '<rect x="-4" y="-6" width="3" height="6" fill="#2a3442"/><rect x="1" y="-6" width="3" height="6" fill="#2a3442"/></g></g>') +
       (sleeping ? '<text class="' + (anim ? 'lv-z' : '') + '" x="8" y="-28" font-size="10" fill="#5f6873">z z</text>' : '') + '</g>';
     if (w && w.label && Date.now() - w.ts < 2600) s += '<text class="' + (anim ? 'lv-float' : '') + '" x="' + to[0].toFixed(1) + '" y="' + (to[1] - 44).toFixed(1) + '" text-anchor="middle" font-size="12" font-weight="700" fill="#1d2733" stroke="#f3f0e6" stroke-width="3" paint-order="stroke">' + esc(w.label) + '</text>';
   }
