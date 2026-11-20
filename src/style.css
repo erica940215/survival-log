@@ -560,3 +560,14 @@ body.ls .verb { background: rgba(255,255,255,0.05); border-color: #353d48; }
 .et.warm { color: #c25a1a; border-color: rgba(194,90,26,0.5); }
 body.ls .ep-cell { background: rgba(255,255,255,0.05); border-color: #353d48; }
 body.ls .et { border-color: #4a5260; } body.ls .et.warn { color: #ff9a8c; } body.ls .et.dish { color: #ecd27a; }
+
+/* 農場 */
+.fm-box { width: min(560px, 100%); }
+.fm-tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 8px; background: rgba(0,0,0,0.05); padding: 3px; border-radius: 10px; }
+.fm-tabs button { border: 0; background: transparent; padding: 6px 2px; border-radius: 7px; font: inherit; font-size: 12.5px; color: inherit; cursor: pointer; white-space: nowrap; }
+.fm-tabs button.on { background: #ecd27a; color: #1d2733; font-weight: 700; }
+.fm-svg { width: 100%; height: auto; display: block; border-radius: 10px; border: 1.5px solid var(--line, #c6c1b2); margin-bottom: 8px; }
+.fm-lv { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; margin: 4px 0; font-size: 13px; }
+.fm-lv .bar { height: 7px; }
+body.ls .fm-tabs { background: rgba(255,255,255,0.05); }
+body.ls .fm-svg { border-color: #353d48; }
