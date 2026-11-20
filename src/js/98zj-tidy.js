@@ -33,7 +33,7 @@ function tidyAct(main) {
   if (quick) { quick.classList.add('quick4'); if (anchor) anchor.after(quick); }
   const wm = main.querySelector(':scope > .wm-chips'); if (wm && (quick || anchor)) (quick || anchor).after(wm);
   // 提醒合併成一張
-  const warns = [...main.querySelectorAll(':scope > .sg-warn, :scope > .warnbox')];
+  const warns = [...main.querySelectorAll(':scope > .sg-warn, :scope > .warnbox')].filter(w => !w.querySelector('[data-a="enc"]') && (w.classList.contains('sg-warn') || w.querySelector('li')));
   if (warns.length) {
     const box = document.createElement('div'); box.className = 'alerts';
     let items = '';
@@ -63,6 +63,14 @@ function tidyAct(main) {
 const _renderTidy = render;
 render = function () {
   _renderTidy();
-  if (!S || S.phase !== 'survive' || UI.tab !== 'act' || !rtOn()) return;
+  if (!S || S.phase !== 'survive' || !rtOn()) return;
+  // 外出遇到殭屍／倖存者：選項做成跳出視窗，不會被收起來或擋住
+  const o = S.sv && S.sv.out;
+  if (o && o.enc) {
+    const box = [...document.querySelectorAll('.warnbox')].find(w => w.querySelector('[data-a="enc"]'));
+    if (box) { const html = box.innerHTML; box.remove(); $app.insertAdjacentHTML('beforeend', '<div class="rt-modal enc-modal"><div class="rt-mbox enc-box"><div class="rt-mh"><span class="rt-mic">' + (o.enc.t === 'z' ? '🧟' : '🧍') + '</span><div><b>' + (o.enc.t === 'z' ? '遇到殭屍了！' : '遇到其他倖存者') + '</b><div class="meta">先決定怎麼做，才能繼續行動</div></div></div>' + html + '</div></div>'); }
+    return;
+  }
+  if (UI.tab !== 'act' || (S.sv && S.sv.out)) return;
   tidyAct(document.querySelector('main.wrap'));
 };

@@ -502,3 +502,8 @@ main.wrap > .chips { margin: 6px 0 2px; font-size: 12.5px; }
 .settings-d .setrow { margin: 6px 0; }
 .ls-drawer .alerts { border-color: rgba(217,86,74,0.6); background: rgba(184,50,42,0.12); }
 .ls-drawer .ticker.tk-one { background: rgba(255,255,255,0.05); }
+.enc-modal { z-index: 75; align-items: center; background: rgba(60,8,8,0.45); }
+.enc-box > b { display: none; }
+.enc-box .row-btns { display: grid; gap: 6px; margin-top: 8px !important; }
+.enc-box .row-btns .btn { width: 100%; padding: 9px; }
+body.ls .enc-box { width: min(440px, 70vw); }

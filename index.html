@@ -512,6 +512,11 @@ main.wrap > .chips { margin: 6px 0 2px; font-size: 12.5px; }
 .settings-d .setrow { margin: 6px 0; }
 .ls-drawer .alerts { border-color: rgba(217,86,74,0.6); background: rgba(184,50,42,0.12); }
 .ls-drawer .ticker.tk-one { background: rgba(255,255,255,0.05); }
+.enc-modal { z-index: 75; align-items: center; background: rgba(60,8,8,0.45); }
+.enc-box > b { display: none; }
+.enc-box .row-btns { display: grid; gap: 6px; margin-top: 8px !important; }
+.enc-box .row-btns .btn { width: 100%; padding: 9px; }
+body.ls .enc-box { width: min(440px, 70vw); }
 </style>
 </head>
 <body>
@@ -7070,7 +7075,7 @@ function tidyAct(main) {
   if (quick) { quick.classList.add('quick4'); if (anchor) anchor.after(quick); }
   const wm = main.querySelector(':scope > .wm-chips'); if (wm && (quick || anchor)) (quick || anchor).after(wm);
   // 提醒合併成一張
-  const warns = [...main.querySelectorAll(':scope > .sg-warn, :scope > .warnbox')];
+  const warns = [...main.querySelectorAll(':scope > .sg-warn, :scope > .warnbox')].filter(w => !w.querySelector('[data-a="enc"]') && (w.classList.contains('sg-warn') || w.querySelector('li')));
   if (warns.length) {
     const box = document.createElement('div'); box.className = 'alerts';
     let items = '';
@@ -7100,7 +7105,15 @@ function tidyAct(main) {
 const _renderTidy = render;
 render = function () {
   _renderTidy();
-  if (!S || S.phase !== 'survive' || UI.tab !== 'act' || !rtOn()) return;
+  if (!S || S.phase !== 'survive' || !rtOn()) return;
+  // 外出遇到殭屍／倖存者：選項做成跳出視窗，不會被收起來或擋住
+  const o = S.sv && S.sv.out;
+  if (o && o.enc) {
+    const box = [...document.querySelectorAll('.warnbox')].find(w => w.querySelector('[data-a="enc"]'));
+    if (box) { const html = box.innerHTML; box.remove(); $app.insertAdjacentHTML('beforeend', '<div class="rt-modal enc-modal"><div class="rt-mbox enc-box"><div class="rt-mh"><span class="rt-mic">' + (o.enc.t === 'z' ? '🧟' : '🧍') + '</span><div><b>' + (o.enc.t === 'z' ? '遇到殭屍了！' : '遇到其他倖存者') + '</b><div class="meta">先決定怎麼做，才能繼續行動</div></div></div>' + html + '</div></div>'); }
+    return;
+  }
+  if (UI.tab !== 'act' || (S.sv && S.sv.out)) return;
   tidyAct(document.querySelector('main.wrap'));
 };
 
