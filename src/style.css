@@ -534,3 +534,29 @@ body.ls .verb { background: rgba(255,255,255,0.05); border-color: #353d48; }
 .sug:not(.ls) .sug-b small { white-space: normal; line-height: 1.25; }
 .sug:not(.ls) .sug-b { padding: 6px; gap: 5px; }
 @media (max-width: 380px) { .sug:not(.ls) .sug-h { display: block; } }
+
+/* 吃什麼 */
+.ep-box { width: min(480px, 100%); }
+.ep-bar { display: grid; grid-template-columns: 34px 1fr 30px; gap: 8px; align-items: center; font-size: 12.5px; margin: 2px 0; }
+.ep-bar .bar { height: 8px; }
+.ep-auto { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 10px 0 6px; }
+.ep-auto .btn { display: flex; flex-direction: column; align-items: center; padding: 7px 6px; }
+.ep-auto small { font-weight: 400; font-size: 10.5px; opacity: 0.75; }
+.ep-toggles { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.ep-toggles .pill { font-size: 12px; }
+.ep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 6px; }
+.ep-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 7px 8px; border: 1.5px solid var(--line, #c6c1b2); border-radius: 10px; background: rgba(255,255,255,0.45); color: inherit; font: inherit; text-align: left; cursor: pointer; position: relative; }
+.ep-cell:active { transform: scale(0.96); }
+.ep-cell:disabled { opacity: 0.5; }
+.ep-ic { font-size: 22px; width: 28px; height: 28px; }
+.ep-t { display: flex; align-items: baseline; gap: 4px; width: 100%; }
+.ep-t b { font-size: 13px; }
+.ep-q { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--muted, #6b7280); }
+.ep-s { font-size: 11px; opacity: 0.8; }
+.ep-tags { display: flex; flex-wrap: wrap; gap: 3px; }
+.et { font-size: 10px; padding: 0 5px; border-radius: 999px; border: 1px solid rgba(0,0,0,0.2); }
+.et.warn { color: #b8322a; border-color: rgba(184,50,42,0.5); font-weight: 700; }
+.et.dish { color: #8a6a1a; border-color: rgba(201,169,74,0.6); }
+.et.warm { color: #c25a1a; border-color: rgba(194,90,26,0.5); }
+body.ls .ep-cell { background: rgba(255,255,255,0.05); border-color: #353d48; }
+body.ls .et { border-color: #4a5260; } body.ls .et.warn { color: #ff9a8c; } body.ls .et.dish { color: #ecd27a; }
