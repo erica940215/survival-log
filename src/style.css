@@ -571,3 +571,7 @@ body.ls .et { border-color: #4a5260; } body.ls .et.warn { color: #ff9a8c; } body
 .fm-lv .bar { height: 7px; }
 body.ls .fm-tabs { background: rgba(255,255,255,0.05); }
 body.ls .fm-svg { border-color: #353d48; }
+.forever-card { display: grid; gap: 6px; margin: 16px auto 0; max-width: 420px; padding: 12px 14px; border: 2px solid #6fb36f; border-radius: 12px; background: rgba(111,179,111,0.12); text-align: center; }
+.forever-card b { font-size: 17px; color: #2f6b3f; } .forever-card span { font-size: 13px; opacity: 0.85; }
+.forever-card .btn { background: #2f6b3f; color: #fff; border-color: #2f6b3f; justify-self: center; }
+.forever-bar { margin: 6px 0; padding: 5px 10px; border-radius: 8px; background: rgba(111,179,111,0.16); color: #2f6b3f; font-size: 12.5px; font-weight: 700; }
