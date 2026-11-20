@@ -120,6 +120,8 @@ Object.assign(SACT, {
 function roofSVG() {
   const R = W().roof, sv = S.sv, night = sv.hour >= 19 || sv.hour < 6;
   let s = '<svg viewBox="0 0 320 170" class="roof-svg"><rect width="320" height="170" fill="' + (night ? '#141a26' : '#9cc7e6') + '"/>';
+  const bgk = night ? 'b_roof_night' : 'b_roof_day';
+  if (typeof SPR === 'object' && SPR[bgk] && R.built) { s += '<image href="' + SPR[bgk] + '" x="0" y="0" width="320" height="170" preserveAspectRatio="xMidYMid slice"/>'; s += roofObjs(R); return s + '</svg>'; }
   if (night) for (let i = 0; i < 28; i++) s += '<circle cx="' + ((i * 97) % 320) + '" cy="' + ((i * 53) % 60 + 4) + '" r="' + (i % 3 ? 0.8 : 1.4) + '" fill="#fff" opacity="0.8"/>';
   else s += '<circle cx="270" cy="26" r="14" fill="#ffe08a"/>';
   s += '<rect x="0" y="70" width="320" height="100" fill="#a9a196"/>';
@@ -132,6 +134,12 @@ function roofSVG() {
   if (R.chair && !(typeof SPR === 'object' && SPR.b_starchair)) s += '<rect x="226" y="146" width="44" height="8" rx="3" fill="#b07a4a"/><rect x="262" y="134" width="8" height="14" fill="#b07a4a"/>';
   if (typeof bImg === 'function') { if (R.coop) s += bImg('coop', 12, 72, 96, 84); if (R.fish) s += bImg('fishtank', 112, 70, 90, 66); if (R.shelter) s += bImg('shelter', 206, 64, 102, 78); if (R.chair) s += bImg('starchair', 222, 112, 60, 50); if (R.coop) for (let i = 0; i < R.hens; i++) s += '<g transform="translate(' + (30 + i * 18) + ' 162)"><ellipse rx="7" ry="5" fill="#fff" stroke="#5a3e2a"/><circle cx="6" cy="-4" r="3" fill="#fff" stroke="#5a3e2a"/><path d="M6 -8 l1 -3 l2 3z" fill="#d6322a"/></g>'; }
   return s + '<defs><pattern id="stripe" width="12" height="10" patternUnits="userSpaceOnUse"><rect width="6" height="10" fill="#fff" opacity="0.6"/></pattern></defs></svg>';
+}
+function roofObjs(R) {
+  let s = '';
+  if (R.coop) s += bImg('coop', 20, 92, 76, 66); if (R.fish) s += bImg('fishtank', 108, 96, 78, 58); if (R.shelter) s += bImg('shelter', 196, 86, 82, 64); if (R.chair) s += bImg('starchair', 262, 112, 54, 48);
+  for (let i = 0; i < (R.hens || 0); i++) s += typeof SPR === 'object' && SPR.hen ? '<image href="' + SPR.hen + '" x="' + (22 + i * 18) + '" y="146" width="22" height="22"/>' : '';
+  return s;
 }
 function roofModal() {
   const R = W().roof, sv = S.sv;
