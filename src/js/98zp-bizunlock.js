@@ -50,3 +50,14 @@ bizNight = function () {
 // 第一次進主畫面時提示有經營中心
 const _sugBizU = suggestRaw;
 suggestRaw = function () { const L = _sugBizU(); if (S.sv && !bzSeen().welcome && S.sv.day >= 1) { L.push({ pri: 40, ic: '🏪', label: '看看經營中心', why: '接訂單、開小店賺瓶蓋', bz: true }); return L.sort((a, b) => b.pri - a.pri).slice(0, 3); } return L; };
+/* 先只在永久模式開放經營中心 */
+const _rtPanelOnlyF = rtPanel;
+rtPanel = function () { const h = _rtPanelOnlyF(); return isForever() ? h : h.replace('<button class="pill" data-a="bzOpen">🏪 經營</button>', ''); };
+const _bzOpenOnlyF = SACT.bzOpen;
+SACT.bzOpen = function () { if (!isForever()) return; return _bzOpenOnlyF(); };
+const _sugOnlyF = suggestRaw;
+suggestRaw = function () { const L = _sugOnlyF(); return isForever() ? L : L.filter(s => !s.bz); };
+const _bizNightOnlyF = bizNight;
+bizNight = function () { return isForever() ? _bizNightOnlyF() : []; };
+const _verbsHide = typeof verbsHTML === 'function' ? verbsHTML : null;
+if (_verbsHide) verbsHTML = function () { const h = _verbsHide(); return isForever() ? h : h.replace(/<button[^>]*data-v="biz"[^>]*>[\s\S]*?<\/button>/, ''); };
