@@ -575,3 +575,12 @@ body.ls .fm-svg { border-color: #353d48; }
 .forever-card b { font-size: 17px; color: #2f6b3f; } .forever-card span { font-size: 13px; opacity: 0.85; }
 .forever-card .btn { background: #2f6b3f; color: #fff; border-color: #2f6b3f; justify-self: center; }
 .forever-bar { margin: 6px 0; padding: 5px 10px; border-radius: 8px; background: rgba(111,179,111,0.16); color: #2f6b3f; font-size: 12.5px; font-weight: 700; }
+/* 經營中心 */
+.bz-top{display:flex;gap:16px;font-size:13px;color:#ecd27a;margin:2px 0 6px}
+.bz-tabs{overflow-x:auto;flex-wrap:nowrap}.bz-tabs button{flex:0 0 auto}
+.et.qg{background:#7a6a2a;color:#ffe9a0}.et.qe{background:#a0761a;color:#fff6c8;box-shadow:0 0 6px #ecd27a}
+.cdx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px;margin:4px 0 10px}
+.cdx{background:rgba(255,255,255,.06);border-radius:8px;padding:4px;text-align:center;font-size:10px;position:relative}
+.cdx .cdx-ic{width:36px;height:36px;display:block;margin:0 auto}.cdx span{display:block}
+.cdx.off{filter:grayscale(1) brightness(.4)}.cdx.gold{background:rgba(236,210,122,.25);box-shadow:0 0 0 1px #ecd27a}
+.cdx i{position:absolute;top:2px;right:4px;color:#ecd27a;font-style:normal}

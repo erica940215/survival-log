@@ -238,13 +238,13 @@ night = function (watch) {
   const greens = ['veg', 'cabbage_p', 'veg_dry', 'yam_p', 'sprout_p', 'peanut_p'];
   if (fm.rabbits) {
     const need = Math.ceil(fm.rabbits / 2); let fed = 0; for (const g of greens) while (fed < need && sv_has(g) > 0) { sv_take(g, 1); fed++; }
-    fm.rabbitFed = fed >= need;
+    fm.rabbitFed = fed >= need || !!fm.feeder;
     if (fm.rabbitFed) { fm.compost += fm.rabbits * 0.3; gainXp('ranch', 0.5); if (fm.rabbits >= 2 && fm.rabbits < 8) { fm.rabbitAcc += 0.2 * (1 + 0.1 * lvOfK('ranch')); if (fm.rabbitAcc >= 1) { fm.rabbitAcc -= 1; fm.rabbits++; ex.push('🐇 兔籠裡多了一隻小兔子！'); } } }
     else ex.push('兔子沒吃飽（要菜葉、地瓜、花生），今天不長大。');
   }
   if (fm.hives) { const flowers = sv.plants.length + fm.herbs.length; if (flowers >= 3) { fm.honeyAcc += fm.hives * 0.34 * (1 + 0.1 * (lvOfK('ranch') - 1)); if (fm.honeyAcc >= 1) { const n = Math.floor(fm.honeyAcc); fm.honeyAcc -= n; sv.st.honey = (sv.st.honey || 0) + n; sv.st.wax = (sv.st.wax || 0) + 1; gainXp('ranch', 1); ex.push('🍯 蜂箱收了 ' + n + ' 罐蜂蜜和 1 塊蜂蠟。'); } } else ex.push('蜜蜂找不到花（菜圃和草藥圃加起來要 3 株以上）。'); }
   // 加工完成
-  const done = fm.batches.filter(b => sv.day >= b.ready && !(b.at === 'dryer' && inRain(sv.day - 1)));
+  const done = fm.batches.filter(b => sv.day >= b.ready && !(b.at === 'dryer' && inRain(sv.day - 1) && !fm.solarDry));
   for (const b of done) { sv.st[b.k] = (sv.st[b.k] || 0) + b.q; gainXp('proc', 1); ex.push('🫙 ' + FARM_BUILD[b.at].n + '：' + ITEMS[b.k].n + ' ×' + b.q + ' 好了。'); }
   fm.batches = fm.batches.filter(b => !done.includes(b));
   if (fm.batches.some(b => b.at === 'dryer') && inRain(sv.day - 1)) { fm.batches.forEach(b => { if (b.at === 'dryer') b.ready++; }); ex.push('下雨，曬架上的東西沒乾。'); }
