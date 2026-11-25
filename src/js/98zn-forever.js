@@ -55,7 +55,7 @@ night = function (watch) {
   if ((sv.st.diesel || 0) < 2) add('diesel', 2);
   if (sv.day % 3 === 0) { const seeds = Object.keys(SEED_OUT).concat(Object.keys(HERBS)); add(seeds[Math.floor(rnd() * seeds.length)], 2); }
   if (sv.day % 7 === 0) { const r = ['hen', 'rabbit', 'bees'][Math.floor(rnd() * 3)]; add(r, 1); }
-  const t = '📦 門口的補給箱：' + box.join('、') + '。';
+  if (!box.length) return; const t = '📦 門口的補給箱：' + box.join('、') + '。';
   if (UI.morning && UI.morning.day === sv.day) UI.morning.extra = (UI.morning.extra || []).concat([t]); else slog(t);
 };
 // 不會進結局

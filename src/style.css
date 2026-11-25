@@ -584,3 +584,12 @@ body.ls .fm-svg { border-color: #353d48; }
 .cdx .cdx-ic{width:36px;height:36px;display:block;margin:0 auto}.cdx span{display:block}
 .cdx.off{filter:grayscale(1) brightness(.4)}.cdx.gold{background:rgba(236,210,122,.25);box-shadow:0 0 0 1px #ecd27a}
 .cdx i{position:absolute;top:2px;right:4px;color:#ecd27a;font-style:normal}
+.bz-tabs button.locked{opacity:.45}
+.bz-help{margin-top:8px;width:100%}
+.bz-intro{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:5;border-radius:inherit}
+.bz-ibox{max-height:90vh;overflow-y:auto;background:#1e2530;border:1px solid #ecd27a;border-radius:14px;padding:14px 16px;max-width:340px;font-size:13px;line-height:1.6}
+.bz-ibox b{color:#ecd27a;font-size:15px}.bz-ibox ol{padding-left:18px;margin:6px 0 10px}.bz-ibox .btn{width:100%}
+.bz-ul{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px}
+.bz-ul span{background:rgba(255,255,255,.05);border-radius:6px;padding:3px 6px;font-size:11px;opacity:.6}
+.bz-ul span.on{opacity:1;box-shadow:0 0 0 1px #ecd27a55}.bz-ul i{display:block;font-style:normal;font-size:10px;color:#9fb4c4}
+.fm-box{position:relative}
