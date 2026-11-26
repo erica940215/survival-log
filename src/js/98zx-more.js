@@ -37,8 +37,8 @@ render = function () {
 const _roofSVGg3 = roofSVG;
 roofSVG = function () {
   let s = _roofSVGg3(); const R = W().roof, fm = F(); let a = '';
-  for (let i = 0; i < (R.hens || 0); i++) a += '<text x="' + (30 + i * 22) + '" y="175" font-size="14">🐔<animateTransform attributeName="transform" type="translate" values="0 0;' + (8 + i * 3) + ' 0;' + (8 + i * 3) + ' 2;0 0" dur="' + (3 + i) + 's" repeatCount="indefinite"/></text>';
-  for (let i = 0; i < Math.min(4, fm.rabbits || 0); i++) a += '<text x="' + (200 + i * 18) + '" y="185" font-size="13">🐇<animateTransform attributeName="transform" type="translate" values="0 0;6 -8;12 0;6 0;0 0" dur="' + (2.2 + i * 0.4) + 's" repeatCount="indefinite"/></text>';
+  for (let i = 0; i < (R.hens || 0); i++) a += '<text x="' + (30 + i * 22) + '" y="155" font-size="14">🐔<animateTransform attributeName="transform" type="translate" values="0 0;' + (8 + i * 3) + ' 0;' + (8 + i * 3) + ' 2;0 0" dur="' + (3 + i) + 's" repeatCount="indefinite"/></text>';
+  for (let i = 0; i < Math.min(4, fm.rabbits || 0); i++) a += '<text x="' + (200 + i * 18) + '" y="162" font-size="13">🐇<animateTransform attributeName="transform" type="translate" values="0 0;6 -8;12 0;6 0;0 0" dur="' + (2.2 + i * 0.4) + 's" repeatCount="indefinite"/></text>';
   if (fm.hive || R.hive) for (let i = 0; i < 3; i++) a += '<text font-size="9">🐝<animateMotion dur="' + (4 + i) + 's" repeatCount="indefinite" path="M' + (250 + i * 6) + ' 80 q30 -30 50 0 q-20 30 -50 0"/></text>';
   return a ? s.replace(/<\/svg>\s*$/, a + '</svg>') : s;
 };

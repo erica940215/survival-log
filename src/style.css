@@ -708,3 +708,9 @@ body.dark .cl-box,:root[data-theme=dark] .cl-box{background:rgba(255,255,255,.05
 .g3-badges div{text-align:center;padding:8px 4px;border-radius:10px;background:rgba(255,255,255,.04);filter:grayscale(1);opacity:.45}
 .g3-badges div.on{filter:none;opacity:1;box-shadow:0 0 0 1.5px #ecd27a}.g3-badges span{font-size:24px;display:block}.g3-badges b{font-size:11px}
 .heir{margin-top:12px;padding:12px}
+/* 第四波 */
+.wx-belt{position:absolute;left:5%;right:5%;bottom:3%;height:16px;background:repeating-linear-gradient(90deg,#555 0 8px,#444 8px 16px);border-radius:4px;opacity:.85;overflow:hidden}
+.wx-belt span{position:absolute;top:-2px;font-size:12px;animation:wxbelt 8s linear infinite}
+@keyframes wxbelt{from{left:-5%}to{left:100%}}
+.wx-deco{position:absolute;bottom:9%;font-size:14px;filter:drop-shadow(0 1px 1px #0008)}
+.nb-hard{font-size:13px;text-align:left}.nb-hard.on{border-color:#d6322a;color:#d6322a}
