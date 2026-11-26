@@ -673,3 +673,5 @@ body.dark .cl-box,:root[data-theme=dark] .cl-box{background:rgba(255,255,255,.05
 .cl-confirm{background:rgba(214,50,42,.1);border-radius:8px;padding:8px;font-size:13px}
 .cl-msg.err{color:#c0392b}
 .cl-pill.err{border-color:#d6322a}
+.pl-form{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.pl-form input{font-size:16px;padding:9px 12px;border-radius:8px;border:1px solid #c9b896;background:#fff;color:#222}
