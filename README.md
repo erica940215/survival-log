@@ -181,3 +181,6 @@ node build.js
 
 ## ☁️ 雲端存檔（98zv-cloud.js）
 Supabase 專案 utopia-game：survival_players（帳號、bcrypt 密碼、登入 token）與 survival_saves（player_id＋slot 1~3，存 SLOG1 存檔碼）。頁面透過 Claude 的 Supabase 連接器（execute_sql）存取；RLS 開啟、anon 無權限。標題畫面可上傳／下載，遊戲中每天早上與每 5 分鐘自動上傳。
+
+## 第三波（98zx-more.js）
+世界生命感（下雨、結霜、颱風晃動、陽光移動、髒亂垃圾蒼蠅、頂樓動物會動）、廚具升級四級＋新菜、火候小遊戲（可關）、新鮮食材加成、溫室溫控、蜜蜂授粉、病蟲害圖鑑、巨大作物、店面升級、熟客好感、套餐、外送、季節菜單、統計圖表、年度結算、傳承、收藏徽章、第二塊農地、每日上線禮物、一鍵種滿／煮 5 份／一鍵出貨、自訂右側按鈕。新項目都掛進成長路線。

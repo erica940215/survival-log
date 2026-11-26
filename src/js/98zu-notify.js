@@ -130,9 +130,11 @@ function statCross() {
     m[k] = band;
   }
 }
+const _ntSeen = {};
 function ntToast(t, lv) {
+  const now = Date.now(); if (_ntSeen[t] && now - _ntSeen[t] < 15000) return; _ntSeen[t] = now;
   let w = document.querySelector('.nt-toastwrap'); if (!w) { w = document.createElement('div'); w.className = 'nt-toastwrap'; document.body.appendChild(w); }
-  const d = document.createElement('div'); d.className = 'nt-toast nt-' + (lv || 'y'); d.textContent = t; w.appendChild(d);
+  const d = document.createElement('div'); d.className = 'nt-toast nt-' + (lv || 'y'); d.textContent = t; w.appendChild(d); while (w.children.length > 3) w.firstChild.remove();
   setTimeout(() => { d.classList.add('out'); setTimeout(() => d.remove(), 400); }, 3200);
 }
 
