@@ -85,3 +85,15 @@ grScene = function (k, now) {
 // 房間裡的小機器人
 const _wxLayerAuto = wxLayer;
 wxLayer = function () { let s = _wxLayerAuto(); if (!hasG3()) return s; const n = Math.min(4, Math.ceil(AUTOS.filter(a => autoOn(a.k)).length / 3)); for (let i = 0; i < n; i++) s += '<span class="wx-bot" style="animation-delay:-' + (i * 3.5) + 's;top:' + (55 + i * 9) + '%">🤖</span>'; return s; };
+
+/* ===== 平衡：永久模式（非挑戰版）心態、生命每晚回復 ===== */
+const _nightBal = night;
+night = function (watch) {
+  const d0 = S && S.sv && S.sv.day; _nightBal(watch);
+  if (!S || !S.sv || S.phase !== 'survive' || S.sv.day === d0 || !isForever() || (S.mods && S.mods.fHard)) return;
+  const sv = S.sv, hl = hasG3() ? homeLv() : 1;
+  sv.mor = clamp(Math.max(35, sv.mor + 4 + hl)); sv.hp = clamp(sv.hp + 15);
+};
+// 心態低的時候提示怎麼補
+const _ntListBal = ntList;
+ntList = function () { const L = _ntListBal(); const i = L.findIndex(n => /^心態/.test(n.t)); if (i >= 0) L[i].sub = '吃料理、開燈、聽音樂台、摸狗或貓、辦桌都會回心態'; return L; };
