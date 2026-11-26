@@ -594,3 +594,14 @@ body.ls .fm-svg { border-color: #353d48; }
 .bz-ul span.on{opacity:1;box-shadow:0 0 0 1px #ecd27a55}.bz-ul i{display:block;font-style:normal;font-size:10px;color:#9fb4c4}
 .fm-box{position:relative}
 .pill.locked{opacity:.5}
+/* 藥箱 */
+.med-state{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+.med-state span{padding:4px 8px;border-radius:8px;font-size:12px}
+.med-state .bad{background:rgba(214,50,42,.2);color:#ffb3ad}.med-state .ok{background:rgba(120,190,120,.18);color:#bfe8bf}
+.med-state i{font-style:normal;opacity:.75;font-size:11px}
+.ep-cell.rec{box-shadow:0 0 0 2px #ecd27a}
+.ls-btn{position:relative}.ls-dot{position:absolute;top:6px;right:8px;width:9px;height:9px;border-radius:50%;background:#d6322a;box-shadow:0 0 6px #d6322a}
+.ls-btn.glow,.btn.glow{animation:medglow 1.6s ease-in-out infinite}
+@keyframes medglow{50%{box-shadow:0 0 0 2px #d6322a88,0 0 14px #d6322a66}}
+.verb-q{width:100%;box-sizing:border-box;margin:4px 0 8px;padding:9px 12px;border-radius:10px;border:1px solid #ffffff22;background:rgba(255,255,255,.06);color:inherit;font-size:14px}
+.ls-right{min-height:0;overflow:hidden}.ls-right .ls-btn{min-height:0!important;font-size:18px}
