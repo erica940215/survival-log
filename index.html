@@ -694,6 +694,7 @@ body.dark .cl-box,:root[data-theme=dark] .cl-box{background:rgba(255,255,255,.05
 .rt-q.tq{pointer-events:auto}
 .prep-chk em{display:block;font-style:normal;font-size:11px;color:#ecd27a;margin-left:22px}
 .wm-box .fm-svg,.fm-box .fm-svg{max-height:34vh;object-fit:contain}
+.prep-chk:not([open]) summary{animation:medglow 2s ease-in-out 3}
 </style>
 </head>
 <body>
@@ -9988,11 +9989,56 @@ render = function () {
 const BUY_AT = { '食物': '特價超市（10:32 搶購潮免費）、社區便利店', '水': '特價超市、社區便利店', '加固': '工具店（木板、鐵片）、裝修公司（大門）', '有發電': '裝修公司（發電機、太陽能板）', '藥品': '藥局', '有種子': '農貿市場' };
 const _prepChkNb = prepChk;
 prepChk = function () {
-  if (S && S.phase === 'play' && UI.prepChkOpen == null) UI.prepChkOpen = true;
+  if (S && S.phase === 'play' && UI.prepChkOpen == null) UI.prepChkOpen = window.innerHeight >= 560;
   _prepChkNb();
   const el = document.querySelector('.prep-chk'); if (!el) return;
   el.querySelectorAll('div.no').forEach(d => { const k = Object.keys(BUY_AT).find(x => d.textContent.includes(x)); if (k) d.insertAdjacentHTML('beforeend', '<em>→ ' + BUY_AT[k] + '</em>'); });
 };
+
+/* 6. 永久模式中級任務：做完新手任務後，引導到成長路線第 2、3 階段 */
+const FQ_BASIC = FQ.length;
+FQ.push(
+  { n: '廚師練到 Lv.2', ok: () => chefLv() >= 2, go: { open: ['microwave'] }, tip: '多煮幾道料理就會升級，升級後解鎖「食譜研發」' },
+  { n: '用食譜研發發現一道新菜', ok: () => Object.keys(J.labBook || {}).length > 0, go: { a: 'grGoX', v: 'lab' }, tip: '成長 → 廚房 → 食譜研發，看提示猜材料' },
+  { n: '種植練到 Lv.2', ok: () => lvOfK('farm') >= 2, go: { a: 'fmOpen', tab: 'field' }, tip: '收成會拿經驗，升級後解鎖「土壤肥力」' },
+  { n: '招待一位小店客人', ok: () => !!(S.sv.w.fm.bz && (S.sv.w.fm.bz.cust.some(c => c.done) || (S.sv.w.fm.gr && S.sv.w.fm.gr.reviews.length))), go: { a: 'bzGoX', v: 'shop' }, tip: '經營 → 小店，客人頭上是他想買的東西' },
+  { n: '同一道料理煮 5 次', ok: () => !!(S.sv.w.fm.gr && Object.values(S.sv.w.fm.gr.cookN).some(n => n >= 5)), go: { open: ['microwave'] }, tip: '挑一道最拿手的一直煮，會解鎖「招牌菜」' },
+  { n: '做出一道極品料理', ok: () => cdxHasExcDish(), go: { open: ['microwave'] }, tip: '廚師等級越高越容易極品，做出來就能「擺盤」' },
+  { n: '養殖練到 Lv.2', ok: () => lvOfK('ranch') >= 2, go: { wm: 'roof' }, tip: '每天撿蛋、養兔子、採蜂蜜都有經驗，升級後解鎖「魚池」' },
+  { n: '挖好魚池', ok: () => !!(S.sv.w.fm.gr && S.sv.w.fm.gr.pond), go: { a: 'grGoX', v: 'fish' }, tip: '成長 → 產業 → 魚池，魚苗在小店市集買' },
+  { n: '完成一項每週挑戰', ok: () => !!(S.sv.w.fm.gr && S.sv.w.fm.gr.wk && S.sv.w.fm.gr.wk.list.some(c => c.done)), go: { a: 'grGoX', v: 'weekly' }, tip: '第 7 天後解鎖，獎勵是稀有雜交種子' },
+  { n: '解鎖成長路線第 3 階段', ok: () => tierOpen(3), go: { a: 'grGoX', v: 'route' }, tip: '第 2 階段解鎖 4 項就會打開：陶藝、養蠶、夜市……' }
+);
+const _tidyQNb2 = tidyQuest;
+tidyQuest = function () {
+  const i = fqNext(); if (i == null || !isForever()) return _tidyQNb2();
+  const mid = i >= FQ_BASIC, k = mid ? i - FQ_BASIC + 1 : i + 1, n = mid ? FQ.length - FQ_BASIC : FQ_BASIC;
+  return '<div class="tq-1">🌱 永久模式 · 第 <b>' + S.sv.day + '</b> 天 · ' + (mid ? '中級' : '新手') + '任務 ' + k + '/' + n + '</div><div class="tq-2 fq" data-a="fqGo">🎯 ' + FQ[i].n + ' <span>›</span></div>';
+};
+// 新手任務全部完成時提示接下來的中級任務
+const _renderFq2 = render;
+let _fqBasicDone = null;
+render = function () { _renderFq2(); if (!S || S.phase !== 'survive' || !isForever()) return; const i = fqNext(), d = i == null || i >= FQ_BASIC; if (_fqBasicDone === false && d && typeof ntToast === 'function') ntToast('🎉 新手任務全部完成！接下來是中級任務，帶你解鎖更多玩法。', 'g'); _fqBasicDone = d; };
+
+/* 7. 一般模式新手保護：第一輪、或準備期幾乎沒準備，第一次屍潮（第 3 天）只剩 4 成強度 */
+const _startSurviveNb = startSurvive;
+startSurvive = function () {
+  _startSurviveNb();
+  const sv = S.sv; if (!sv || isForever()) return;
+  const food = Object.keys(FOOD).reduce((a, k) => a + sv_has(k) * (FOOD[k].sat || 0), 0) / 60;
+  const mats = (sv.st.board || 0) + (sv.st.metal || 0);
+  const first = !(J.runs && J.runs.length);
+  if (first || food < 5 || mats < 3) { sv.shield = first ? 'first' : 'weak'; slog('🛡️ 新手保護：' + (first ? '第一次玩' : '這次準備得不太夠') + '，第一次屍潮（第 3 天晚上）會比較弱。好好利用這幾天加固大門！', true); }
+};
+const _hordeMulShield = hordeMul;
+hordeMul = function () { const sv = S && S.sv; return _hordeMulShield() * (sv && sv.shield && sv.day <= 3 ? 0.4 : 1); };
+const _tidyQShield = tidyQuest;
+tidyQuest = function () { const h = _tidyQShield(), sv = S.sv; return sv.shield && sv.day <= 3 && !isForever() ? h + '<div class="tq-2">🛡️ 新手保護中：第 3 天屍潮只剩 4 成強度</div>' : h; };
+
+/* 8. 換畫面（標題 → 準備期 → 生存）時捲回最上面 */
+let _phaseNb = null;
+const _renderTop = render;
+render = function () { _renderTop(); const ph = S ? S.phase : 'title'; if (ph !== _phaseNb) { _phaseNb = ph; try { window.scrollTo(0, 0); } catch (e) {} } };
 
 // ---- 99-boot.js ----
 /* ================= 事件綁定 ================= */

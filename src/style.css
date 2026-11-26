@@ -684,3 +684,4 @@ body.dark .cl-box,:root[data-theme=dark] .cl-box{background:rgba(255,255,255,.05
 .rt-q.tq{pointer-events:auto}
 .prep-chk em{display:block;font-style:normal;font-size:11px;color:#ecd27a;margin-left:22px}
 .wm-box .fm-svg,.fm-box .fm-svg{max-height:34vh;object-fit:contain}
+.prep-chk:not([open]) summary{animation:medglow 2s ease-in-out 3}
