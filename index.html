@@ -615,6 +615,23 @@ body.ls .fm-svg { border-color: #353d48; }
 @keyframes medglow{50%{box-shadow:0 0 0 2px #d6322a88,0 0 14px #d6322a66}}
 .verb-q{width:100%;box-sizing:border-box;margin:4px 0 8px;padding:9px 12px;border-radius:10px;border:1px solid #ffffff22;background:rgba(255,255,255,.06);color:inherit;font-size:14px}
 .ls-right{min-height:0;overflow:hidden}.ls-right .ls-btn{min-height:0!important;font-size:18px}
+/* 成長 */
+.gr-chips{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 8px}
+.gr-chip{border:1px solid #ffffff22;background:rgba(255,255,255,.06);color:inherit;border-radius:16px;padding:4px 9px;font-size:12px;font-family:inherit;display:inline-flex;align-items:center;gap:3px}
+.gr-chip.on{background:#ecd27a;color:#1d2733;border-color:#ecd27a}
+.gr-chip img,.gr-chips .it-ic{width:16px;height:16px}
+.gr-tier{background:rgba(255,255,255,.04);border-radius:10px;padding:8px;margin-bottom:8px}.gr-tier.off{opacity:.5}
+.gr-th{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px}.gr-th span{color:#9fb4c4}
+.gr-nodes{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
+.gr-node{background:#232933;border:1px solid #3a4250;border-radius:9px;padding:6px 4px;color:inherit;font-family:inherit;text-align:center}
+.gr-node span{font-size:20px;display:block}.gr-node b{display:block;font-size:12px}.gr-node i{display:block;font-style:normal;font-size:10px;color:#9fb4c4}
+.gr-node.on{border-color:#ecd27a;background:#3a3420}.gr-node.on i{color:#ecd27a}
+.gr-node.ready{border-color:#6ac04a}
+.gr-sec{background:rgba(255,255,255,.04);border-radius:10px;margin-bottom:8px;padding:2px 8px 8px}
+.gr-sec.locked{opacity:.5}
+.gr-sh{display:flex;justify-content:space-between;align-items:center;font-weight:800;padding:8px 2px;cursor:pointer}.gr-sh span{font-weight:400;font-size:11px;color:#9fb4c4}
+.gr-scene{margin-bottom:6px}
+.gr-scene svg{max-height:140px;width:100%;display:block}
 </style>
 </head>
 <body>
@@ -8721,6 +8738,674 @@ render = function () {
   inp.value = q; inp.oninput = f; f();
 };
 
+// ---- 98zr-grow.js ----
+/* ================= 🌟 成長路線：循序漸進解鎖的進階玩法 =================
+   五個階段，前一階段開夠了才會出現下一階段。全部放在「🌟 成長」視窗。 */
+
+/* ===== 新物品 ===== */
+const GR_ITEMS = {
+  dark_dish: ['黑暗料理', 'food', 0.3], tomato_omelet: ['番茄歐姆蛋', 'food', 0.3], honey_yam: ['蜜地瓜', 'food', 0.3], ginger_fish: ['薑絲魚片', 'food', 0.3],
+  scallion_cake: ['蔥油餅', 'food', 0.2], taro_ball: ['芋圓', 'food', 0.2], corn_chowder: ['玉米濃湯', 'food', 0.4], rabbit_3cup: ['三杯兔', 'food', 0.4],
+  chili_fish: ['剁椒魚', 'food', 0.3], cheese_corn: ['起司焗玉米', 'food', 0.3], pumpkin_fried: ['南瓜炒飯', 'food', 0.4], shrimp_egg: ['蝦仁炒蛋', 'food', 0.3],
+  ruby: ['紅寶石番茄種子', 'farm', 0.05], ruby_p: ['紅寶石番茄', 'food', 0.2], gpump: ['巨無霸南瓜種子', 'farm', 0.05], gpump_p: ['巨無霸南瓜', 'food', 1.5],
+  pyam: ['紫心地瓜種子', 'farm', 0.05], pyam_p: ['紫心地瓜', 'food', 0.3], rcorn: ['彩虹玉米種子', 'farm', 0.05], rcorn_p: ['彩虹玉米', 'food', 0.3],
+  jcab: ['翡翠高麗菜種子', 'farm', 0.05], jcab_p: ['翡翠高麗菜', 'food', 0.5], gtom: ['黃金番茄種子', 'farm', 0.05], gtom_p: ['黃金番茄', 'food', 0.2],
+  fry: ['魚苗', 'farm', 0.1], shrimp: ['蝦子', 'food', 0.2], clay: ['黏土', 'mat', 1], bowl: ['陶碗', 'mat', 0.5], plate: ['陶盤', 'mat', 0.5],
+  jar: ['陶甕', 'mat', 2], fineplate: ['金邊瓷盤', 'mat', 0.5], mulb_l: ['桑葉', 'mat', 0.1], cocoon: ['蠶繭', 'mat', 0.05], cloth: ['絲布', 'mat', 0.3],
+  quilt: ['蠶絲被', 'mat', 2], shirt: ['絲綢襯衫', 'mat', 0.3]
+};
+for (const [k, [n, cat, w]] of Object.entries(GR_ITEMS)) ITEMS[k] = { n, cat, w, note: '' };
+Object.assign(FOOD, {
+  dark_dish: { sat: 10, mor: -3 }, tomato_omelet: { sat: 35, mor: 9, dish: true }, honey_yam: { sat: 35, mor: 12, dish: true }, ginger_fish: { sat: 40, mor: 10, dish: true, warm: true },
+  scallion_cake: { sat: 30, mor: 9, dish: true }, taro_ball: { sat: 25, mor: 15, dish: true }, corn_chowder: { sat: 45, mor: 12, dish: true, warm: true }, rabbit_3cup: { sat: 50, mor: 15, dish: true },
+  chili_fish: { sat: 45, mor: 13, dish: true }, cheese_corn: { sat: 40, mor: 14, dish: true }, pumpkin_fried: { sat: 55, mor: 12, dish: true }, shrimp_egg: { sat: 40, mor: 14, dish: true },
+  ruby_p: { sat: 15, mor: 8 }, gpump_p: { sat: 60, mor: 6 }, pyam_p: { sat: 40, mor: 6 }, rcorn_p: { sat: 40, mor: 8 }, jcab_p: { sat: 35, mor: 6 }, gtom_p: { sat: 18, mor: 12 }, shrimp: { sat: 15, mor: 4 }
+});
+Object.assign(SEED_OUT, { ruby: 'ruby_p', gpump: 'gpump_p', pyam: 'pyam_p', rcorn: 'rcorn_p', jcab: 'jcab_p', gtom: 'gtom_p' });
+Object.assign(CROP_F, { ruby_p: 1, gpump_p: 1.4, pyam_p: 1.1, rcorn_p: 1.1, jcab_p: 1.1, gtom_p: 1.2 });
+Object.assign(CROP_COL, { ruby_p: '#c8102e', gpump_p: '#f08a24', pyam_p: '#8a4ac0', rcorn_p: '#e04ab0', jcab_p: '#3ac08a', gtom_p: '#f0c020' });
+Object.assign(ITEM_EMO, { dark_dish: '🫠', tomato_omelet: '🍳', honey_yam: '🍠', ginger_fish: '🐟', scallion_cake: '🫓', taro_ball: '🍡', corn_chowder: '🥣', rabbit_3cup: '🍲', chili_fish: '🌶️', cheese_corn: '🌽', pumpkin_fried: '🍛', shrimp_egg: '🍤',
+  ruby: '🌱', ruby_p: '🍅', gpump: '🌱', gpump_p: '🎃', pyam: '🌱', pyam_p: '🍠', rcorn: '🌱', rcorn_p: '🌽', jcab: '🌱', jcab_p: '🥬', gtom: '🌱', gtom_p: '🟡',
+  fry: '🐠', shrimp: '🦐', clay: '🟤', bowl: '🥣', plate: '🍽️', jar: '🏺', fineplate: '🍽️', mulb_l: '🍃', cocoon: '🥚', cloth: '🧵', quilt: '🛌', shirt: '👔' });
+Object.assign(FRESH_LIFE, { shrimp: 2 });
+Object.assign(MARKET, { fry: [10, 1, 3], clay: [6, 1, 2] });
+Object.assign(LV_T, { pot: [0, 4, 10, 18, 30], nm: [0, 30, 80, 160, 300] });
+Object.assign(LV_N, { pot: ['', '玩土的', '陶藝學徒', '陶藝師', '窯燒大師', '人間國寶'], nm: ['', '路邊攤', '人氣攤', '排隊攤', '夜市招牌', '夜市傳說'] });
+
+/* ===== 狀態 ===== */
+function GR() {
+  const fm = F(); for (const k of ['pot', 'nm']) if (fm.xp[k] == null) fm.xp[k] = 0;
+  if (!fm.gr) fm.gr = { ul: {}, soil: 70, cookN: {}, plated: {}, hyb: null, crossbed: false, pond: false, fish: [], shrimp: false, hydro: false,
+    silk: { trees: 0, house: false, worms: 0, age: 0, loom: false }, reviews: [], nmDay: 0, staff: [], cands: [], candDay: -9,
+    furn: {}, deco: {}, line: {}, wk: null, master: null, contest: {}, stats: { exc: 0, orders: 0, coin: 0, cook: 0, harvest: 0, fish: 0, made: 0 }, lastBrew: null };
+  return fm.gr;
+}
+const grOn = k => !!(S.sv && S.sv.w && S.sv.w.fm && S.sv.w.fm.gr && S.sv.w.fm.gr.ul[k]);
+const addIt = (k, n) => { if (n > 0) sv_addFresh(k, n); };
+const season = d => Math.floor(((d || S.sv.day) - 1) / 10) % 4;
+const SEASON_N = ['春', '夏', '秋', '冬'], SEASON_IC = ['🌸', '☀️', '🍁', '❄️'];
+const SEASON_CROP = [['cabbage_p', 'scallion_p', 'straw_p', 'rape_p', 'jcab_p', 'tea_p'], ['corn_p', 'tomato_p', 'cane_p', 'chili_p', 'basil_p', 'ruby_p', 'gtom_p', 'rcorn_p'], ['pumpkin_p', 'taro_p', 'peanut_p', 'yam_p', 'gpump_p', 'pyam_p', 'wheat_p'], ['cabbage_p', 'sprout_p', 'scallion_p', 'yam_p', 'wheat_p']];
+const CROPS = () => [...new Set(Object.values(SEED_OUT))];
+
+/* ===== 解鎖路線 ===== */
+const anyLv5 = () => chefLv() >= 5 || ['farm', 'herb', 'proc', 'ranch', 'brew', 'bake', 'shop', 'pot'].some(k => LV_T[k] && lvOfK(k) >= 5);
+const cdxHasExcDish = () => Object.keys(DISHES).concat(Object.keys(LAB)).some(k => J.cdx && J.cdx[k] === 2);
+const GROW = [
+  // 第一階段：起步
+  { k: 'lab', t: 1, ic: '🧪', n: '食譜研發', g: 'kitchen', c: () => chefLv() >= 2, txt: '廚師 Lv.2' },
+  { k: 'soil', t: 1, ic: '🟫', n: '土壤肥力', g: 'field', c: () => lvOfK('farm') >= 2, txt: '種植 Lv.2' },
+  { k: 'season', t: 1, ic: '🌸', n: '四季作物', g: 'field', c: () => S.sv.day >= 5, txt: '撐到第 5 天' },
+  { k: 'review', t: 1, ic: '⭐', n: '客人評價', g: 'biz', c: () => bzOpenTab('shop'), txt: '小店開張' },
+  // 第二階段：成長
+  { k: 'sig', t: 2, ic: '👑', n: '招牌菜', g: 'kitchen', c: () => Object.values(GR().cookN).some(n => n >= 5), txt: '同一道料理煮 5 次' },
+  { k: 'plate', t: 2, ic: '🍽️', n: '擺盤', g: 'kitchen', c: () => cdxHasExcDish(), txt: '做出第一道極品料理' },
+  { k: 'hybrid', t: 2, ic: '🧬', n: '雜交作物', g: 'field', c: () => lvOfK('farm') >= 3, txt: '種植 Lv.3' },
+  { k: 'fish', t: 2, ic: '🐟', n: '魚池與水耕', g: 'ind', c: () => lvOfK('ranch') >= 2, txt: '養殖 Lv.2' },
+  { k: 'weekly', t: 2, ic: '🎯', n: '每週挑戰', g: 'goal', c: () => S.sv.day >= 7, txt: '撐到第 7 天' },
+  // 第三階段：專業
+  { k: 'pottery', t: 3, ic: '🏺', n: '陶藝窯', g: 'ind', c: () => BZ().kiln && lvOfK('bake') >= 2, txt: '蓋好磚窯、烘焙 Lv.2' },
+  { k: 'silk', t: 3, ic: '🐛', n: '養蠶織布', g: 'ind', c: () => lvOfK('farm') >= 3 && S.sv.day >= 15, txt: '種植 Lv.3、第 15 天' },
+  { k: 'night', t: 3, ic: '🏮', n: '夜市擺攤', g: 'biz', c: () => BZ().rep >= 30, txt: '聲望 30' },
+  { k: 'bigorder', t: 3, ic: '🔥', n: '限時大訂單', g: 'biz', c: () => BZ().rep >= 25, txt: '聲望 25' },
+  { k: 'furn', t: 3, ic: '🛋️', n: '家具升級', g: 'home', c: () => S.sv.day >= 15, txt: '撐到第 15 天' },
+  // 第四階段：老闆
+  { k: 'staff', t: 4, ic: '🧑‍🍳', n: '員工', g: 'biz', c: () => BZ().rep >= 40 || (S.sv.zoe && S.sv.zoe.state === 'saved') || (S.sv.mgr && S.sv.mgr.state === 'saved'), txt: '聲望 40，或救下一位倖存者' },
+  { k: 'deco', t: 4, ic: '🖼️', n: '裝潢主題', g: 'home', c: () => Object.values(GR().furn).reduce((a, b) => a + b - 1, 0) >= 3, txt: '家具升級 3 次' },
+  { k: 'line', t: 4, ic: '⚙️', n: '自動化產線', g: 'home', c: () => Object.keys(BZ().res).length >= 3, txt: '研究完成 3 項' },
+  // 第五階段：大師
+  { k: 'master', t: 5, ic: '🎓', n: '大師稱號', g: 'goal', c: () => anyLv5(), txt: '任一技能 Lv.5' },
+  { k: 'contest', t: 5, ic: '🏆', n: '品評會', g: 'goal', c: () => S.sv.day >= 30, txt: '撐到第 30 天' }
+];
+const TIER_N = ['', '起步', '成長', '專業', '老闆', '大師'], TIER_NEED = [0, 0, 2, 4, 4, 2];
+function tierOpen(t) { if (t === 1) return bizAllowed(); return tierOpen(t - 1) && GROW.filter(g => g.t === t - 1 && grOn(g.k)).length >= TIER_NEED[t]; }
+function growCheck() {
+  if (!S.sv || S.phase !== 'survive') return [];
+  const gr = GR(), out = [];
+  for (const g of GROW) if (!gr.ul[g.k] && tierOpen(g.t) && g.c()) { gr.ul[g.k] = S.sv.day; out.push('🌟 解鎖新玩法：' + g.ic + ' ' + g.n + '！'); }
+  return out;
+}
+
+/* ===== 1. 食譜研發 ===== */
+const LAB = {
+  tomato_omelet:    { ing: ['egg', 'tomato_p'], q: 2, hint: '最家常的紅黃配' },
+  honey_yam:     { ing: ['honey', 'yam_p'], q: 2, hint: '甜上加甜的根莖' },
+  ginger_fish:   { ing: ['fish', 'ginger_l'], q: 2, hint: '去腥要靠辛香葉' },
+  scallion_cake: { ing: ['flour', 'scallion_p'], q: 3, hint: '麵粉加綠綠的' },
+  corn_chowder:  { ing: ['corn_p', 'goat_milk'], q: 2, hint: '黃色的加白色的奶' },
+  cheese_corn:   { ing: ['cheese', 'corn_p'], q: 2, hint: '牽絲的玉米' },
+  chili_fish:    { ing: ['chili_p', 'fish'], q: 2, hint: '辣的魚' },
+  shrimp_egg:    { ing: ['egg', 'shrimp'], q: 2, hint: '池子裡的加雞下的' },
+  taro_ball:     { ing: ['sugar', 'taro_p', 'yam_p'], q: 4, hint: '三種材料：兩種根莖加甜的' },
+  rabbit_3cup:     { ing: ['basil_p', 'ginger_l', 'rabbit_m'], q: 2, hint: '三種材料：肉、香料、辛香葉' },
+  pumpkin_fried: { ing: ['egg', 'pumpkin_p', 'rice'], q: 3, hint: '三種材料：橘色的、白米、蛋' }
+};
+const LAB_POOL = () => [...new Set(CROPS().concat(['egg', 'honey', 'fish', 'shrimp', 'rabbit_m', 'goat_milk', 'cheese', 'flour', 'sugar', 'rice', 'ginger_l', 'duck_egg', 'mint_l']))].filter(k => ITEMS[k] && sv_has(k) > 0);
+function labBook() { if (!J.labBook) J.labBook = {}; return J.labBook; }
+function labQual(k, n) {
+  const lv = chefLv(), Q = BZ().qual[k] || (BZ().qual[k] = [0, 0]); let g = 0, e = 0;
+  for (let i = 0; i < n; i++) { const r = rnd(); if (r < 0.04 + 0.03 * lv + (RES('qlamp') ? 0.04 : 0)) e++; else if (r < 0.2 + 0.06 * lv) g++; }
+  Q[0] += g; Q[1] += e; [g, e] = grPromote(k, n - g - e, g, e); codexMark(k, e ? 2 : g ? 1 : 0); return [g, e];
+}
+Object.assign(SACT, {
+  labPick(k) { const s = UI.labSel || (UI.labSel = []); const i = s.indexOf(k); if (i >= 0) s.splice(i, 1); else if (s.length < 3) s.push(k); render(); },
+  labTry() {
+    const sv = S.sv, sel = (UI.labSel || []).slice().sort(); if (sel.length < 2) { slog('至少放兩種材料。'); render(); return; }
+    if (!canAct(1, 5)) { slog('時間或體力不夠。'); render(); return; }
+    if (!sel.every(k => sv_has(k) > 0)) return;
+    sel.forEach(k => sv_take(k, 1));
+    const hit = Object.entries(LAB).find(([, L]) => L.ing.slice().sort().join('+') === sel.join('+'));
+    sv.sta -= 5; UI.labFx = performance.now();
+    if (hit) {
+      const [k, L] = hit, nw = !labBook()[k]; labBook()[k] = true; saveJournal();
+      sv.st[k] = (sv.st[k] || 0) + L.q; const [g, e] = labQual(k, L.q); chefGain(k, 2); grCook(k);
+      slog((nw ? '🧪 研發成功！發現新菜「' + ITEMS[k].n + '」，記進食譜本。' : '又做了一次' + ITEMS[k].n + '。') + ' ×' + L.q + (e ? '，極品 ' + e : '') + (g ? '，優良 ' + g : ''), nw);
+      sfx(nw ? 'ach' : 'pop'); UI.labHit = k;
+    } else { sv.st.dark_dish = (sv.st.dark_dish || 0) + 1; slog('🫠 失敗了……鍋子裡冒出一團說不出顏色的東西（黑暗料理 ×1）。'); UI.labHit = 'dark_dish'; }
+    UI.labSel = []; passHours(1); render();
+  },
+  labCook(k) {
+    const L = LAB[k], sv = S.sv; if (!L || !labBook()[k] || !L.ing.every(m => sv_has(m) > 0)) return;
+    UI.labSel = L.ing.slice(); SACT.labTry();
+  }
+});
+
+/* ===== 2. 招牌菜（同一道煮 10 次） ===== */
+function grCook(k) { const gr = GR(); gr.cookN[k] = (gr.cookN[k] || 0) + 1; gr.stats.cook++; if (gr.cookN[k] === 10 && grOn('sig')) slog('👑 「' + ITEMS[k].n + '」成為你的招牌菜！品質更容易好，客人也會指名。', true); }
+const isSig = k => grOn('sig') && (GR().cookN[k] || 0) >= 10;
+const _cookxGr = SACT.cookx;
+SACT.cookx = function (k) { const had = S.sv ? sv_has(k) : 0; _cookxGr(k); if (S.sv && DISHES[k] && sv_has(k) > had) grCook(k); };
+// 品質加成：招牌菜、陶瓷餐具、廚神
+function grPromote(k, normal, g, e) {
+  const Q = BZ().qual[k] || (BZ().qual[k] = [0, 0]), gr = GR(); let p = 0;
+  if (FOOD[k] && FOOD[k].dish) {
+    if (isSig(k)) p += 0.2;
+    p += Math.min(8, (sv_has('bowl') + sv_has('plate') + sv_has('fineplate') * 2)) * 0.015;
+    if (decoDone('forest') && Object.values(SEED_OUT).includes(k)) p += 0.05;
+    if (gr.master === 'chef') p = 1;
+  }
+  if (Object.values(SEED_OUT).includes(k) && decoDone('forest')) p += 0.05;
+  let up = 0; for (let i = 0; i < normal; i++) if (rnd() < p) up++;
+  Q[0] += up; return [g + up, e];
+}
+const _qRollGr = qRoll;
+qRoll = function (k, n) { const [g, e] = _qRollGr(k, n); if (!S.sv || !S.sv.w || !S.sv.w.fm || !S.sv.w.fm.gr) return [g, e]; return grPromote(k, n - g - e, g, e); };
+const _wantGr = wantPool;
+wantPool = function () { const L = _wantGr(); if (S.sv && S.sv.w && S.sv.w.fm && S.sv.w.fm.gr) for (const [k, n] of Object.entries(GR().cookN)) if (n >= 10 && grOn('sig')) L.push(k, k, k); return L; };
+const _valGr = valOf;
+valOf = function (k) { return Math.round(_valGr(k) * (S.sv && S.sv.w && S.sv.w.fm && S.sv.w.fm.gr && isSig(k) ? 1.25 : 1)); };
+
+/* ===== 3. 擺盤 ===== */
+const PLATES = { none: ['原本的碗', 0], plate: ['陶盤', 15], fineplate: ['金邊瓷盤', 30] };
+const GARN = { none: ['不放', 0], basil_p: ['九層塔', 10], scallion_p: ['蔥花', 8], mint_l: ['薄荷葉', 12], chili_p: ['辣椒絲', 8] };
+Object.assign(SACT, {
+  plSet(v) { const [a, b] = v.split(':'); if (a === 'p') UI.plP = b; else if (a === 'g') UI.plG = b; else UI.plD = b; render(); },
+  plDo() {
+    const k = UI.plD, gr = GR(), pl = UI.plP || 'none', ga = UI.plG || 'none'; if (!k) return;
+    const free = qOf(k)[1] - (gr.plated[k] || 0); if (free <= 0) { slog('沒有還沒擺盤的極品' + ITEMS[k].n + '。'); render(); return; }
+    if (pl !== 'none' && sv_has(pl) <= 0) { slog('沒有' + PLATES[pl][0] + '。'); render(); return; }
+    if (ga !== 'none') { if (sv_has(ga) <= 0) { slog('沒有' + GARN[ga][0] + '。'); render(); return; } sv_take(ga, 1); }
+    const score = 40 + PLATES[pl][1] + GARN[ga][1] + Math.floor(rnd() * 25);
+    gr.plated[k] = (gr.plated[k] || 0) + 1; UI.plScore = score; UI.plFx = performance.now();
+    slog('🍽️ 擺盤完成：' + ITEMS[k].n + '（' + score + ' 分）' + (score >= 85 ? '，漂亮得像餐廳！' : '') + '賣出時價格 ×' + (1.3 + score / 200).toFixed(2) + '。'); sfx('pop'); render();
+  }
+});
+// 賣出／服務時若是擺盤過的極品 → 加價
+for (const a of ['bzSell', 'bzServe']) {
+  const f = SACT[a];
+  SACT[a] = function (v) {
+    const bz = BZ(), k = a === 'bzSell' ? v : (bz.cust[Number(v)] || {}).want, gr = GR(), c0 = bz.coin, q1 = k ? qOf(k)[1] : 0;
+    f(v);
+    if (k && (gr.plated[k] || 0) > 0 && qOf(k)[1] < q1) { gr.plated[k]--; const add = Math.round((bz.coin - c0) * 0.5); bz.coin += add; slog('擺盤的極品料理多賣了 ' + add + ' 瓶蓋。'); }
+    if (k && gr.plated[k] > qOf(k)[1]) gr.plated[k] = qOf(k)[1];
+  };
+}
+
+/* ===== 4. 土壤、季節（每晚收成後處理） ===== */
+Object.assign(SACT, {
+  soilFert() { const gr = GR(); if (sv_has('fert') <= 0) return; sv_take('fert', 1); gr.soil = Math.min(100, gr.soil + 25); slog('把肥料翻進土裡，肥力 +25。'); render(); },
+  soilRest() { const gr = GR(), sv = S.sv; if (!canAct(2, 10)) return; gr.soil = Math.min(100, gr.soil + 10); sv.sta -= 10; slog('鬆土、翻土、拌進落葉，肥力 +10。'); passHours(2); render(); }
+});
+
+/* ===== 5. 雜交作物 ===== */
+const HYB = {
+  'straw_p+tomato_p': 'ruby', 'corn_p+pumpkin_p': 'gpump', 'taro_p+yam_p': 'pyam', 'chili_p+corn_p': 'rcorn', 'cabbage_p+scallion_p': 'jcab', 'honey+tomato_p': 'gtom'
+};
+Object.assign(SACT, {
+  hyBuild() { const gr = GR(); if (gr.crossbed) return; if (!payN({ board: 4, fert: 1, pot: 2 })) { slog('雜交苗床要木板 4、肥料 1、花盆 2。'); render(); return; } gr.crossbed = true; slog('做好雜交苗床。'); sfx('fix'); render(); },
+  hySet(v) { const [i, k] = v.split(':'); const s = UI.hySel || (UI.hySel = []); s[Number(i)] = k; render(); },
+  hyGo() {
+    const gr = GR(), sv = S.sv, s = (UI.hySel || []).filter(Boolean); if (!gr.crossbed || gr.hyb || s.length < 2 || s[0] === s[1]) return;
+    if (!s.every(k => sv_has(k) >= 3)) { slog('兩種各要 3 個。'); render(); return; }
+    s.forEach(k => sv_take(k, 3)); const key = s.slice().sort().join('+');
+    gr.hyb = { a: s[0], b: s[1], out: HYB[key] || null, ready: sv.day + 3 };
+    slog('把' + ITEMS[s[0]].n + '和' + ITEMS[s[1]].n + '的花粉互相授粉，3 天後看結果。'); UI.hySel = []; render();
+  }
+});
+
+/* ===== 6. 魚池、蝦籠、水耕 ===== */
+Object.assign(SACT, {
+  fiBuild(k) {
+    const gr = GR(), C = { pond: { board: 6, plastic: 4, metal: 2 }, shrimp: { metal: 2, plastic: 2 }, hydro: { plastic: 4, metal: 2, pot: 2 } }[k];
+    if (!C || gr[k]) return; if (!payN(C)) { slog('材料不夠：' + needTxt(C).replace(/<[^>]+>/g, '')); render(); return; }
+    gr[k] = true; if (k === 'pond') { for (let i = 0; i < 3; i++) gr.fish.push({ age: 0 }); slog('魚池挖好了，放進 3 尾魚苗。'); } else slog('蓋好' + { shrimp: '蝦籠', hydro: '水耕架' }[k] + '。');
+    sfx('fix'); render();
+  },
+  fiFry() { const gr = GR(); if (!gr.pond || sv_has('fry') <= 0 || gr.fish.length >= 10) return; const n = Math.min(sv_has('fry'), 10 - gr.fish.length); sv_take('fry', n); for (let i = 0; i < n; i++) gr.fish.push({ age: 0 }); slog('放了 ' + n + ' 尾魚苗進池子。'); render(); },
+  fiCatch() {
+    const gr = GR(), sv = S.sv, big = gr.fish.filter(f => f.age >= 5); if (!big.length) return; if (!canAct(1, 5)) return;
+    gr.fish = gr.fish.filter(f => f.age < 5); addIt('fish', big.length); gr.stats.fish += big.length; const [g, e] = qRoll('fish', big.length); codexMark('fish', e ? 2 : g ? 1 : 0);
+    gainXp('ranch', big.length * 0.5); sv.sta -= 5; slog('🎣 撈起 ' + big.length + ' 尾肥美的吳郭魚' + (e ? '（極品 ' + e + '）' : '') + '。記得再放魚苗。'); passHours(1); render();
+  }
+});
+
+/* ===== 7. 陶藝 ===== */
+const POTS = { bowl: { lv: 1, clay: 2, d: '每個陶碗讓料理更容易優良' }, plate: { lv: 1, clay: 2, d: '擺盤用，也讓料理更容易優良' }, jar: { lv: 2, clay: 4, d: '裝潢、賣錢' }, fineplate: { lv: 3, clay: 3, glass: 1, d: '最高級的擺盤，料理加成 ×2' } };
+Object.assign(SACT, {
+  poDig() { const sv = S.sv; if (!canAct(1, 8)) { slog('時間或體力不夠。'); render(); return; } addIt('clay', 2 + (lvOfK('pot') >= 3 ? 1 : 0)); sv.sta -= 8; slog('在後巷的花圃挖到一些黏土。'); passHours(1); render(); },
+  poMake(k) {
+    const P = POTS[k], sv = S.sv; if (!P || lvOfK('pot') < P.lv || !BZ().kiln) return;
+    if (sv_has('clay') < P.clay || (P.glass && sv_has('glass') < P.glass) || sv_has('board') < 1) { slog('材料不夠（每窯還要 1 塊木板當柴）。'); render(); return; }
+    if (!canAct(1, 5)) return;
+    sv_take('clay', P.clay); if (P.glass) sv_take('glass', P.glass); sv_take('board', 1);
+    const n = rnd() < 0.15 ? 0 : (lvOfK('pot') >= 4 ? 2 : 1); sv.sta -= 5; gainXp('pot', P.lv + 1); UI.poFx = performance.now();
+    if (!n) slog('💥 窯裡傳來一聲脆響……破掉了。陶藝就是這樣。'); else { addIt(k, n); slog('🏺 出窯：' + ITEMS[k].n + ' ×' + n + '。'); sfx('pop'); }
+    passHours(1); render();
+  }
+});
+
+/* ===== 8. 養蠶織布 ===== */
+Object.assign(SACT, {
+  skTree() { const s = GR().silk; if (s.trees >= 4) return; if (!payN({ board: 1, fert: 1 })) { slog('種一棵桑樹要木板 1（支架）、肥料 1。'); render(); return; } s.trees++; slog('種下一棵桑樹（' + s.trees + '/4），每天長桑葉。'); render(); },
+  skHouse() { const s = GR().silk; if (s.house) return; if (!payN({ board: 4, plastic: 2 })) { slog('蠶房要木板 4、塑膠 2。'); render(); return; } s.house = true; s.worms = 20; s.age = 0; slog('蠶房好了，鄰居林老師送你一盒蠶卵，孵出 20 隻蠶寶寶。'); sfx('fix'); render(); },
+  skLoom() { const s = GR().silk; if (s.loom) return; if (!payN({ board: 4, metal: 2 })) { slog('織布機要木板 4、鐵片 2。'); render(); return; } s.loom = true; slog('組好一台老式織布機。'); sfx('fix'); render(); },
+  skWeave() { const sv = S.sv; if (!GR().silk.loom || sv_has('cocoon') < 3 || !canAct(1, 6)) return; sv_take('cocoon', 3); addIt('cloth', 1); sv.sta -= 6; gainXp('proc', 1); UI.skFx = performance.now(); slog('🧵 喀噠喀噠，蠶繭 3 個織成 1 匹絲布。'); passHours(1); render(); },
+  skSew(k) { const need = { quilt: 3, shirt: 2 }[k]; if (!need || sv_has('cloth') < need || !canAct(1, 4)) return; sv_take('cloth', need); addIt(k, 1); S.sv.sta -= 4; slog('縫好一件' + ITEMS[k].n + (k === 'quilt' ? '。冷天晚上蓋著，心態不會掉。' : '，很好賣。')); passHours(1); render(); }
+});
+
+/* ===== 9. 夜市 ===== */
+const isNM = () => S.sv.day % 7 === 0;
+Object.assign(SACT, {
+  nmPick(k) { const s = UI.nmSel || (UI.nmSel = []); const i = s.indexOf(k); if (i >= 0) s.splice(i, 1); else if (s.length < 4) s.push(k); render(); },
+  nmGo() {
+    const sv = S.sv, gr = GR(), bz = BZ(), sel = (UI.nmSel || []).filter(k => sv_has(k) > 0);
+    if (!isNM() || gr.nmDay === sv.day || !sel.length) return;
+    if (sv.hour < 16) { slog('夜市 16:00 才開。'); render(); return; }
+    if (!canAct(4, 15)) { slog('擺攤要 4 小時、體力 15。'); render(); return; }
+    const lv = lvOfK('nm'), crowd = 6 + lv * 4 + Math.round((revAvg() - 3) * 3) + staffBonus('nm');
+    let coin = 0, sold = 0; const by = {};
+    for (let i = 0; i < crowd; i++) { const k = sel[Math.floor(rnd() * sel.length)]; if (sv_has(k) <= 0) continue; const t = takeBest(k); const c = Math.round(valOf(k) * qMul[t] * 1.3 * (gr.master === 'shop' ? 1.3 : 1)); coin += c; sold++; by[k] = (by[k] || 0) + 1; }
+    bz.coin += coin; bz.rep += Math.ceil(sold / 4); gainXp('nm', sold * 2 + coin / 10); gr.stats.coin += coin; gr.nmDay = sv.day; sv.sta -= 15; UI.nmFx = performance.now();
+    slog('🏮 夜市擺攤！' + crowd + ' 位客人經過，賣出 ' + sold + ' 份（' + Object.entries(by).map(([k, n]) => ITEMS[k].n + '×' + n).join('、') + '），賺了 ' + coin + ' 瓶蓋、聲望 +' + Math.ceil(sold / 4) + '。', true); sfx('buy');
+    UI.nmSel = []; passHours(4); render();
+  }
+});
+
+/* ===== 10. 評價 ===== */
+const REV_TXT = { 5: ['太好吃了，明天還要來！', '老闆是天才吧', '末日裡吃到這個，我哭了', '五星，沒得挑'], 4: ['好吃，價格也實在', '很不錯，會再來', '份量剛好'], 3: ['還可以', '普普通通', '能填飽肚子'], 2: ['等了一天沒買到', '架上都空了', '有點失望'], 1: ['根本沒開門', '白跑一趟'] };
+function addRev(n, who) { const gr = GR(), L = REV_TXT[n]; gr.reviews.unshift({ n, who, t: L[Math.floor(rnd() * L.length)], d: S.sv.day }); gr.reviews = gr.reviews.slice(0, 12); }
+function revAvg() { const R = (S.sv.w.fm.gr || {}).reviews || []; return R.length ? R.reduce((a, r) => a + r.n, 0) / R.length : 3.5; }
+const _serveRev = SACT.bzServe;
+SACT.bzServe = function (i) { const bz = BZ(), c = bz.cust[Number(i)], was = c && c.done; _serveRev(i); if (c && !was && c.done && grOn('review')) addRev(Math.min(5, 3 + (c.t || 0) + (isSig(c.want) ? 1 : 0) - (rnd() < 0.2 ? 1 : 0)), c.n); };
+
+/* ===== 11. 員工 ===== */
+const STAFF_N = ['阿凱', '小美', '老周', '阿芬', '志明', '春嬌', '阿德', '小琪', '阿草', '大熊'];
+const JOBS = { shop: ['🏪', '顧店', '每天早上自動招呼客人'], farm: ['🌾', '種田', '肥力回復、種植經驗'], brew: ['🍶', '顧酒窖', '酒桶熟成變快'], nm: ['🏮', '夜市', '夜市客人變多'], ranch: ['🐔', '牧場', '每天多撿雞蛋'] };
+const staffBonus = job => GR().staff.filter(s => s.job === job).reduce((a, s) => a + s.s, 0);
+Object.assign(SACT, {
+  stHire(i) { const gr = GR(), bz = BZ(), c = gr.cands[Number(i)]; if (!c || gr.staff.length >= 3 || bz.coin < 30) return; bz.coin -= 30; gr.cands.splice(Number(i), 1); c.job = c.best; gr.staff.push(c); slog('👋 ' + c.n + '加入了！先安排他去「' + JOBS[c.job][1] + '」。日薪 ' + (3 + c.s * 2) + ' 瓶蓋。'); sfx('ach'); render(); },
+  stJob(v) { const [i, j] = v.split(':'), s = GR().staff[Number(i)]; if (s && JOBS[j]) { s.job = j; render(); } },
+  stFire(i) { const gr = GR(), s = gr.staff[Number(i)]; if (!s) return; gr.staff.splice(Number(i), 1); slog(s.n + '收拾東西離開了。'); render(); }
+});
+
+/* ===== 12. 家具升級 ===== */
+const FURN_FX = { bed: '每晚多回精力', bedroom: '每晚多回精力', toilet: '每天衛生 +', freezer: '冷凍的食物更耐放（每天心態 +）', microwave: '料理品質 +', bench: '做東西更省體力（每天心態 +）', workshop: '每天心態 +', lightbox: '收成 +10%／級', greenhouse: '收成 +10%／級', potrack: '收成 +10%／級', storage: '每天心態 +', shelf: '每天心態 +', gen: '每天心態 +', heater: '冷天心態 +' };
+const furnCost = lv => lv === 1 ? { board: 4, metal: 2 } : { board: 6, metal: 4, glass: 1 };
+const furnCoin = lv => lv === 1 ? 20 : 60;
+function placedKinds() { const sv = S.sv; return [...new Set(isoObjects().filter(o => sv.place[o.id] && FURN_FX[o.k]).map(o => o.k))]; }
+Object.assign(SACT, {
+  fuUp(k) { const gr = GR(), lv = gr.furn[k] || 1, bz = BZ(); if (lv >= 3) return; if (bz.coin < furnCoin(lv)) { slog('瓶蓋不夠。'); render(); return; } if (!payN(furnCost(lv))) { slog('材料不夠。'); render(); return; } bz.coin -= furnCoin(lv); gr.furn[k] = lv + 1; slog('✨ ' + ISO[k].n + '升到 ' + '★'.repeat(lv + 1) + '！' + FURN_FX[k] + '。'); sfx('ach'); render(); }
+});
+
+/* ===== 13. 裝潢主題 ===== */
+const DECO = {
+  retro:  { n: '復古台式', fx: '每天心態 +3', p: { tile: ['花磚地板', { clay: 4 }, 20], chair: ['紅色塑膠椅', { plastic: 3 }, 10], cooker: ['大同電鍋', { metal: 3 }, 30], cal: ['撕的日曆', { board: 1 }, 10] } },
+  zen:    { n: '日式和風', fx: '每天早上精力 +10', p: { tatami: ['榻榻米', { board: 4, cloth: 1 }, 20], lamp: ['和紙燈', { cloth: 1, candle: 1 }, 15], vase: ['陶甕擺飾', { jar: 1 }, 10], bonsai: ['盆景', { pot: 1, mint_l: 1 }, 15] } },
+  indust: { n: '工業風', fx: '小店每天多 1 位客人', p: { pipe: ['鐵管書架', { metal: 6 }, 30], bulb: ['愛迪生燈泡', { glass: 2, cell: 1 }, 20], wall: ['清水模牆', { clay: 3 }, 20], sofa: ['絲絨沙發', { cloth: 3 }, 40] } },
+  forest: { n: '森林系', fx: '作物、料理更容易優良（+5%）', p: { green: ['植物牆', { pot: 2, veg: 3 }, 20], table: ['原木桌', { board: 6 }, 20], candle: ['蜂蠟蠟燭', { candle: 2 }, 10], basket: ['桑枝籃', { mulb_l: 5 }, 10] } }
+};
+const decoDone = t => { const gr = S.sv && S.sv.w && S.sv.w.fm && S.sv.w.fm.gr; return !!gr && !!DECO[t] && Object.keys(DECO[t].p).every(p => gr.deco[t + '.' + p]); };
+Object.assign(SACT, {
+  deBuy(v) { const [t, p] = v.split('.'), P = DECO[t] && DECO[t].p[p], gr = GR(), bz = BZ(); if (!P || gr.deco[v]) return; if (bz.coin < P[2]) { slog('瓶蓋不夠。'); render(); return; } if (!payN(P[1])) { slog('材料不夠。'); render(); return; } bz.coin -= P[2]; gr.deco[v] = true; slog('🖼️ 擺上' + P[0] + '。' + (decoDone(t) ? '「' + DECO[t].n + '」整套湊齊了！' + DECO[t].fx + '。' : '')); sfx(decoDone(t) ? 'ach' : 'pop'); render(); }
+});
+
+/* ===== 14. 自動化產線 ===== */
+const LINE = {
+  mill:  { n: '自動磨坊', d: '每天把小麥磨成麵粉', c: { metal: 3, board: 2 }, coin: 30 },
+  dry:   { n: '加工輸送帶', d: '每天把多出來（超過 8 個）的作物做成乾貨', c: { metal: 4, plastic: 3 }, coin: 40 },
+  bake:  { n: '自動烤爐', d: '有麵粉、木板就每天烤一爐麵包', c: { metal: 4, glass: 1 }, coin: 50 },
+  brew:  { n: '自動釀酒', d: '酒桶空了就照上一次的配方再釀', c: { metal: 3, board: 3 }, coin: 50 },
+  ship:  { n: '包裝出貨機', d: '每天把超過 20 個的東西自動賣掉', c: { metal: 4, plastic: 4, cell: 1 }, coin: 60 }
+};
+Object.assign(SACT, {
+  liBuild(k) { const L = LINE[k], gr = GR(), bz = BZ(); if (!L || gr.line[k]) return; if (bz.coin < L.coin) { slog('瓶蓋不夠。'); render(); return; } if (!payN(L.c)) { slog('材料不夠。'); render(); return; } bz.coin -= L.coin; gr.line[k] = true; slog('⚙️ 裝好' + L.n + '：' + L.d + '。'); sfx('fix'); render(); }
+});
+const _brewLine = SACT.bzBrew;
+SACT.bzBrew = function (k) { const n = BZ().vats.length; _brewLine(k); if (BZ().vats.length > n) GR().lastBrew = k; };
+
+/* ===== 15. 每週挑戰 ===== */
+const WK_POOL = [
+  { k: 'exc', n: '做出 {g} 個極品', g: [3, 6, 10] }, { k: 'orders', n: '完成 {g} 張訂單', g: [3, 5, 8] }, { k: 'coin', n: '賺 {g} 瓶蓋', g: [150, 300, 600] },
+  { k: 'cook', n: '煮 {g} 次料理', g: [8, 15, 25] }, { k: 'harvest', n: '收成 {g} 個作物', g: [20, 40, 70] }, { k: 'made', n: '做出 {g} 件東西', g: [25, 50, 90] }, { k: 'fish', n: '撈 {g} 尾魚', g: [4, 8, 14] }
+];
+function wkNew() {
+  const gr = GR(), sv = S.sv, wk = Math.floor((sv.day - 1) / 7), lvl = Math.min(2, Math.floor(wk / 3));
+  const pool = WK_POOL.filter(p => p.k !== 'fish' || grOn('fish')).slice(); const list = [];
+  while (list.length < 3 && pool.length) { const p = pool.splice(Math.floor(rnd() * pool.length), 1)[0]; list.push({ k: p.k, n: p.n.replace('{g}', p.g[lvl]), goal: p.g[lvl], base: gr.stats[p.k] || 0, done: false }); }
+  gr.wk = { wk, list, until: wk * 7 + 7 };
+}
+const wkProg = c => Math.min(c.goal, (GR().stats[c.k] || 0) - c.base);
+function wkCheck() {
+  const gr = GR(), out = []; if (!gr.wk) return out;
+  for (const c of gr.wk.list) if (!c.done && wkProg(c) >= c.goal) {
+    c.done = true; const seeds = ['ruby', 'gpump', 'pyam', 'rcorn', 'jcab', 'gtom'], s = seeds[Math.floor(rnd() * seeds.length)];
+    S.sv.st[s] = (S.sv.st[s] || 0) + 2; BZ().coin += 40; out.push('🎯 每週挑戰完成：' + c.n + '！獎勵 ' + ITEMS[s].n + ' ×2、40 瓶蓋。');
+    if (gr.wk.list.every(x => x.done)) { BZ().coin += 100; S.sv.st.fineplate = (S.sv.st.fineplate || 0) + 1; out.push('🎯 本週三項全破！額外 100 瓶蓋、金邊瓷盤 ×1。'); }
+  }
+  return out;
+}
+// 統計：極品數、做出數
+const _cdxGr = codexMark;
+codexMark = function (k, q) { _cdxGr(k, q); if (S.sv && S.sv.w && S.sv.w.fm && S.sv.w.fm.gr) { const st = GR().stats; st.made++; if (q === 2) st.exc++; } };
+const _orderGr = SACT.bzOrder;
+SACT.bzOrder = function (id) { const o = BZ().orders.find(x => x.id === id), was = o && o.done; _orderGr(id); if (o && !was && o.done) GR().stats.orders++; };
+
+/* ===== 16. 大師稱號 ===== */
+const MASTERS = {
+  chef: ['料理之神', '料理至少都是優良', () => chefLv() >= 5], farm: ['神農', '收成多一半', () => lvOfK('farm') >= 5], brew: ['酒仙', '開桶時品質全部升一級', () => lvOfK('brew') >= 5],
+  bake: ['甜點之神', '每爐多 2 個', () => lvOfK('bake') >= 5], ranch: ['牧神', '雞蛋、鴨蛋、羊奶、蜂蜜 ×1.3', () => lvOfK('ranch') >= 5], shop: ['商業鬼才', '賣東西多賺 30%', () => lvOfK('shop') >= 5], proc: ['加工大師', '加工每批多 1 個', () => lvOfK('proc') >= 5]
+};
+Object.assign(SACT, { msPick(k) { const gr = GR(); if (gr.master || !MASTERS[k] || !MASTERS[k][2]()) return; gr.master = k; slog('🎓 你獲得了稱號「' + MASTERS[k][0] + '」！' + MASTERS[k][1] + '。', true); sfx('ach'); render(); } });
+const _tapMs = SACT.bzTap;
+SACT.bzTap = function (i) { const v = BZ().vats[Number(i)], q0 = v ? qOf(v.k).slice() : null, h0 = v ? sv_has(v.k) : 0; _tapMs(i); if (v && GR().master === 'brew' && sv_has(v.k) > h0) { const Q = BZ().qual[v.k], n = sv_has(v.k) - h0, g = Q[0] - q0[0], e = Q[1] - q0[1], nor = n - g - e; Q[1] += g; Q[0] += nor - g; } };
+const _bakeMs = SACT.bzBake;
+SACT.bzBake = function (k) { const h0 = S.sv ? sv_has(k) : 0; _bakeMs(k); if (S.sv && sv_has(k) > h0 && GR().master === 'bake') addIt(k, 2); };
+// 商業鬼才：所有經營賺的瓶蓋 +30%，順便記錄賺了多少（每週挑戰用）
+for (const a of ['bzSell', 'bzServe', 'bzOrder']) { const f = SACT[a]; SACT[a] = function (v) { const bz = BZ(), c0 = bz.coin; f(v); const d = bz.coin - c0; if (d > 0) { const gr = GR(); if (gr.master === 'shop') { const add = Math.round(d * 0.3); bz.coin += add; } gr.stats.coin += bz.coin - c0; } }; }
+
+/* ===== 17. 品評會 ===== */
+const ctId = () => Math.floor(S.sv.day / 30);
+const ctOpen = () => S.sv.day >= 30 && S.sv.day % 30 <= 2 && !GR().contest[ctId()];
+const CT_CAT = { crop: ['🥬 作物組', k => Object.values(SEED_OUT).includes(k)], dish: ['🍳 料理組', k => FOOD[k] && FOOD[k].dish], drink: ['🍶 飲品與加工組', k => !!(BREWS[k] || PROC[k] || BAKES[k])] };
+function ctScore(k) { const q = qOf(k), t = q[1] ? 2 : q[0] ? 1 : 0; return Math.round(valOf(k) * 2.5 + t * 25 + (isSig(k) ? 10 : 0) + ((GR().plated[k] || 0) ? 15 : 0) + rnd() * 20); }
+Object.assign(SACT, {
+  ctSet(v) { const [c, k] = v.split(':'); UI.ct = UI.ct || {}; UI.ct[c] = k; render(); },
+  ctGo() {
+    const gr = GR(), sel = UI.ct || {}, id = ctId(); if (!ctOpen()) return;
+    const res = []; let coin = 0;
+    for (const c of Object.keys(CT_CAT)) { const k = sel[c]; if (!k || sv_has(k) <= 0) continue; const me = ctScore(k), rivals = [0, 1, 2].map(() => Math.round(35 + id * 8 + rnd() * 45)); const place = 1 + rivals.filter(r => r > me).length;
+      takeBest(k); const medal = ['', '🥇', '🥈', '🥉', '🎗️'][place]; res.push(CT_CAT[c][0] + '：' + ITEMS[k].n + ' ' + me + ' 分 → ' + medal + (place === 1 ? '冠軍' : '第 ' + place + ' 名')); coin += [0, 150, 80, 40, 10][place];
+      if (place <= 3) { if (!J.trophies) J.trophies = []; J.trophies.push({ m: place, c, k, d: S.sv.day }); } }
+    if (!res.length) { slog('每一組至少選一樣東西參賽。'); render(); return; }
+    gr.contest[id] = res; BZ().coin += coin; BZ().rep += Math.round(coin / 20); saveJournal(); UI.ctFx = performance.now();
+    slog('🏆 第 ' + id + ' 屆品評會結果：' + res.join('；') + '。獎金 ' + coin + ' 瓶蓋！', true); sfx('ach'); render();
+  }
+});
+
+/* ===== 每晚：收成加成、魚、蠶、員工、產線、評價、解鎖 ===== */
+const _nightGr = night;
+night = function (watch) {
+  const ok = S && S.sv && S.phase === 'survive', d0 = ok && S.sv.day;
+  const snap = {}; if (ok) for (const k of CROPS().concat(['egg', 'duck_egg', 'goat_milk', 'honey'], Object.keys(PROC))) snap[k] = sv_has(k);
+  const unserved = ok && S.sv.w && S.sv.w.fm && S.sv.w.fm.bz ? S.sv.w.fm.bz.cust.filter(c => !c.done).length : 0;
+  _nightGr(watch);
+  if (!ok || !S.sv || S.phase !== 'survive' || S.sv.day === d0) return;
+  const ex = growNight(snap, unserved);
+  if (UI.morning && UI.morning.day === S.sv.day) UI.morning.extra = (UI.morning.extra || []).concat(ex); else ex.forEach(t => slog(t));
+};
+function growNight(snap, unserved) {
+  const sv = S.sv, gr = GR(), bz = BZ(), ex = [];
+  // 收成：土壤、季節、家具、神農
+  let harv = 0; const crops = {};
+  for (const k of CROPS()) { const d = sv_has(k) - (snap[k] || 0); if (d > 0) { crops[k] = d; harv += d; } }
+  gr.stats.harvest += harv;
+  if (harv) {
+    let bonus = 0, lost = 0; const fu = Math.max(gr.furn.lightbox || 1, gr.furn.greenhouse || 1, gr.furn.potrack || 1) - 1;
+    for (const [k, d] of Object.entries(crops)) {
+      let m = 0;
+      if (grOn('soil')) { if (gr.soil >= 80) m += 0.25; else if (gr.soil < 30) m -= 0.3; }
+      if (grOn('season') && SEASON_CROP[season()].includes(k)) m += 0.3;
+      m += fu * 0.1; if (gr.master === 'farm') m += 0.5;
+      const n = Math.floor(d * Math.abs(m) + rnd()); if (m > 0 && n > 0) { addIt(k, n); bonus += n; } else if (m < 0 && n > 0) { sv_take(k, Math.min(n, d)); lost += n; }
+      if (grOn('soil')) gr.soil += ['peanut_p', 'sprout_p'].includes(k) ? d * 1.5 : -d * 1.2;
+    }
+    gr.soil = Math.max(0, Math.min(100, gr.soil));
+    if (bonus) ex.push('🌾 ' + (grOn('season') ? SEASON_IC[season()] + '當季、' : '') + '好土加成，多收了 ' + bonus + ' 個作物。');
+    if (lost) ex.push('🟫 土太貧瘠，少收了 ' + lost + ' 個。該施肥了（肥力 ' + Math.round(gr.soil) + '）。');
+  }
+  // 牧神、加工大師
+  if (gr.master === 'ranch') for (const k of ['egg', 'duck_egg', 'goat_milk', 'honey']) { const d = sv_has(k) - (snap[k] || 0); if (d > 0) addIt(k, Math.round(d * 0.3 + rnd() * 0.5)); }
+  if (gr.master === 'proc') for (const k of Object.keys(PROC)) if (sv_has(k) > (snap[k] || 0)) addIt(k, 1);
+  // 季節更換
+  if (grOn('season') && (sv.day - 1) % 10 === 0) ex.push(SEASON_IC[season()] + ' 進入' + SEASON_N[season()] + '天了。當季作物：' + SEASON_CROP[season()].filter(k => ITEMS[k]).slice(0, 5).map(k => ITEMS[k].n).join('、') + '……');
+  // 雜交
+  if (gr.hyb && sv.day >= gr.hyb.ready) { const h = gr.hyb; gr.hyb = null; if (h.out) { const n = 2 + (rnd() < 0.3 ? 1 : 0); addIt(h.out, n); gainXp('farm', 3); ex.push('🧬 雜交成功！得到 ' + ITEMS[h.out].n + ' ×' + n + '，可以拿去種。'); } else { addIt(h.a.replace('_p', ''), 1); ex.push('🧬 這兩種合不來，只收回一包普通種子。（' + ITEMS[h.a].n + '＋' + ITEMS[h.b].n + '）'); } }
+  // 魚池
+  if (gr.pond && gr.fish.length) {
+    const need = Math.ceil(gr.fish.length / 3); let fed = RES('feeder') ? need : 0;
+    for (const g of ['corn_p', 'wheat_p', 'veg_dry', 'veg', 'cabbage_p', 'sprout_p']) while (fed < need && sv_has(g) > 0) { sv_take(g, 1); fed++; }
+    if (fed >= need) gr.fish.forEach(f => f.age++); else ex.push('🐟 魚飼料不夠，魚今天沒長大。');
+    if (gr.shrimp && gr.fish.length >= 3) { const n = 1 + (rnd() < 0.4 ? 1 : 0); addIt('shrimp', n); ex.push('🦐 蝦籠裡有 ' + n + ' 隻蝦。'); }
+    if (gr.hydro) { const n = 1 + Math.floor(gr.fish.length / 3); addIt('veg', n); ex.push('💧 水耕架長出 ' + n + ' 份青菜（魚池的水是肥料）。'); }
+    const big = gr.fish.filter(f => f.age >= 5).length; if (big) ex.push('🐟 池子裡有 ' + big + ' 尾魚可以撈了。');
+  }
+  // 蠶
+  const sk = gr.silk;
+  if (sk.trees) addIt('mulb_l', sk.trees * 2);
+  if (sk.house && sk.worms) { const need = Math.ceil(sk.worms / 10); if (sv_has('mulb_l') >= need) { sv_take('mulb_l', need); sk.age++; if (sk.age >= 6) { const n = Math.floor(sk.worms / 4); addIt('cocoon', n); sk.age = 0; ex.push('🐛 蠶寶寶結繭了！收 ' + n + ' 個蠶繭，飛出的蛾又產下新的卵。'); } } else ex.push('🐛 桑葉不夠，蠶寶寶餓著。'); }
+  // 蠶絲被、裝潢
+  if (sv_has('quilt') > 0 && inCold(sv.day)) { sv.mor = clamp(sv.mor + 4); ex.push('🛌 蓋著蠶絲被，寒夜也睡得暖。'); }
+  if (decoDone('retro')) sv.mor = clamp(sv.mor + 3);
+  if (decoDone('zen')) sv.sta = clamp(sv.sta + 10);
+  if (decoDone('indust') && bz.cust) { const c = CUSTOMERS[Math.floor(rnd() * CUSTOMERS.length)], pool = wantPool(); bz.cust.push({ ic: c[0], n: c[1], want: pool[Math.floor(rnd() * pool.length)] }); }
+  // 家具
+  for (const [k, lv] of Object.entries(gr.furn)) { if (lv < 2) continue; const u = lv - 1;
+    if (k === 'bed' || k === 'bedroom') sv.sta = clamp(sv.sta + 5 * u); else if (k === 'toilet') sv.hyg = clamp((sv.hyg || 0) + 5 * u); else if (k === 'heater') { if (inCold(sv.day)) sv.mor = clamp(sv.mor + 2 * u); } else if (!['lightbox', 'greenhouse', 'potrack', 'microwave'].includes(k)) sv.mor = clamp(sv.mor + u); }
+  // 評價：昨天沒招呼到的客人
+  if (grOn('review')) { if (unserved && rnd() < 0.4) addRev(rnd() < 0.6 ? 2 : 1, '沒買到的客人'); const a = revAvg(); if (bz.cust) { if (a >= 4.3) { const c = CUSTOMERS[Math.floor(rnd() * CUSTOMERS.length)], pool = wantPool(); bz.cust.push({ ic: c[0], n: c[1], want: pool[Math.floor(rnd() * pool.length)] }, { ic: '🧑‍💼', n: '看評價來的', want: pool[Math.floor(rnd() * pool.length)] }); ex.push('⭐ 評價很好（' + a.toFixed(1) + ' 星），多了 2 位客人。'); } else if (a < 2.8 && bz.cust.length > 1) { bz.cust.pop(); ex.push('⭐ 評價不好（' + a.toFixed(1) + ' 星），少了 1 位客人。'); } } }
+  // 員工
+  if (gr.staff.length) {
+    let wage = 0; for (const s of gr.staff) wage += 3 + s.s * 2;
+    if (bz.coin >= wage) { bz.coin -= wage; } else { const s = gr.staff.pop(); ex.push('💸 付不出薪水，' + s.n + '走了。'); }
+    for (const s of gr.staff) {
+      if (s.job === 'farm') { gr.soil = Math.min(100, gr.soil + 3 * s.s); gainXp('farm', s.s * 0.5); }
+      if (s.job === 'brew') bz.vats.forEach(v => { v.start -= s.s >= 2 ? 1 : 0.5; });
+      if (s.job === 'ranch' && W().roof && W().roof.hens) addIt('egg', s.s);
+      if (s.job === 'shop') { let n = 1 + s.s; bz.cust.forEach((c, i) => { if (n > 0 && !c.done && sv_has(c.want) > 0) { SACT.bzServe(i); n--; } }); }
+    }
+    ex.push('🧑‍🍳 員工上工：' + gr.staff.map(s => s.n + JOBS[s.job][0]).join('、') + '（薪水 ' + wage + ' 瓶蓋）。');
+  }
+  if (grOn('staff') && sv.day - gr.candDay >= 5) { gr.candDay = sv.day; gr.cands = [0, 1, 2].map(() => { const ks = Object.keys(JOBS); return { n: STAFF_N[Math.floor(rnd() * STAFF_N.length)], s: 1 + Math.floor(rnd() * 3), best: ks[Math.floor(rnd() * ks.length)] }; }); }
+  // 產線
+  const L = gr.line;
+  if (L.mill) { const n = Math.floor(sv_has('wheat_p') / 2); if (n) { sv_take('wheat_p', n * 2); addIt('flour', n * 2); ex.push('⚙️ 自動磨坊：麵粉 +' + n * 2 + '。'); } }
+  if (L.dry) { let t = 0; for (const k of CROPS()) { const over = sv_has(k) - 8; if (over >= 2) { const n = Math.floor(over / 2); sv_take(k, n * 2); const out = k === 'yam_p' ? 'yam_dry' : ['straw_p', 'ruby_p', 'gtom_p'].includes(k) ? 'fruit_dry' : 'veg_dry'; addIt(out, n); qRoll(out, n); t += n; } } if (t) ex.push('⚙️ 加工輸送帶：多的作物做成 ' + t + ' 份乾貨。'); }
+  if (L.bake && bz.kiln && sv_has('flour') >= 2 && sv_has('board') >= 1) { sv_take('flour', 2); sv_take('board', 1); addIt('bread', 4); qRoll('bread', 4); gainXp('bake', 1); ex.push('⚙️ 自動烤爐：出爐 4 個麵包。'); }
+  if (L.brew && gr.lastBrew) { const B = BREWS[gr.lastBrew]; let n = 0; while (bz.vats.length < vatMax() && Object.entries(B.need).every(([m, c]) => sv_has(m) >= c)) { for (const [m, c] of Object.entries(B.need)) sv_take(m, c); bz.vats.push({ k: gr.lastBrew, start: sv.day }); n++; } if (n) ex.push('⚙️ 自動釀酒：又釀了 ' + n + ' 桶' + ITEMS[gr.lastBrew].n + '。'); }
+  if (L.ship) { let c = 0; for (const k of Object.keys(ITEMS)) { if (['wu', 'water', 'board', 'metal', 'diesel', 'cell'].includes(k) || ITEMS[k].cat === 'equip') continue; const over = sv_has(k) - 20; if (over > 0) { for (let i = 0; i < over; i++) { const t = takeBest(k); c += Math.round(valOf(k) * qMul[t] * 0.8); } } } if (c) { bz.coin += c; gr.stats.coin += c; ex.push('⚙️ 包裝出貨機：把多的東西賣掉，+' + c + ' 瓶蓋。'); } }
+  // 大訂單
+  if (grOn('bigorder') && !bz.orders.some(o => o.big && !o.done && o.until >= sv.day) && rnd() < 0.3) {
+    const pool = Object.keys(DISHES).filter(k => !DISHES[k].fest).concat(Object.keys(labBook())).filter(k => FOOD[k] && chefLv() >= ((DISHES[k] || {}).lv || 1)), k = pool[Math.floor(rnd() * pool.length)], qty = 10 + Math.floor(rnd() * 3) * 5;
+    const who = ['🔥 社區食堂', '🔥 軍方補給站', '🔥 避難所', '🔥 婚禮外燴'][Math.floor(rnd() * 4)];
+    bz.orders.push({ id: 'big' + sv.day, who, k, qty, need: 0, until: sv.day + 3, coin: Math.round(valOf(k) * qty * 3), rep: 15, big: true });
+    ex.push(who + '下了大訂單：' + ITEMS[k].n + ' ×' + qty + '，3 天內交！');
+  }
+  // 每週挑戰
+  if (grOn('weekly')) { if (!gr.wk || Math.floor((sv.day - 1) / 7) !== gr.wk.wk) { gr.wk && ex.push('🎯 新的一週，挑戰換新了。'); wkNew(); } ex.push(...wkCheck()); }
+  if (grOn('night') && isNM()) ex.push('🏮 今天是夜市日！16:00 以後可以去擺攤。');
+  if (grOn('contest') && ctOpen()) ex.push('🏆 品評會開始報名了（3 天內）！');
+  ex.push(...growCheck());
+  return ex;
+}
+
+// ---- 98zs-growui.js ----
+/* ================= 🌟 成長視窗 UI ================= */
+const GR_TABS = [['route', '🗺️ 路線'], ['kitchen', '🧪 廚房'], ['field', '🌱 田園'], ['ind', '🐟 產業'], ['biz', '🏮 生意'], ['home', '🏡 家園'], ['goal', '🏆 目標']];
+const GR_INTRO = {
+  lab: ['把 2～3 種材料丟進鍋子試試看。', '配對了就發現新菜，永遠記在食譜本裡；失敗會變成黑暗料理。', '每道新菜都有提示，猜猜看要放什麼。'],
+  soil: ['田越種越貧瘠，肥力低於 30 會少收、高於 80 會多收。', '施肥、翻土可以補肥力。', '種花生、豆芽是「輪作」，收成時反而會養土。'],
+  season: ['每 10 天換一個季節：春、夏、秋、冬。', '種當季作物，收成多 30%。'],
+  review: ['招呼過的客人會留評價，品質越好星星越多。', '沒招呼到的客人會留負評。', '平均 4.3 星以上，隔天多 2 位客人；太低會少客人。'],
+  sig: ['同一道料理煮滿 10 次就變成招牌菜。', '招牌菜更容易優良、價格 ×1.25，客人也常指名要。'],
+  plate: ['極品料理可以擺盤：選盤子和裝飾。', '擺盤過的極品賣出時多賺 50%。', '陶盤、金邊瓷盤在陶藝窯做。'],
+  hybrid: ['先做雜交苗床，再選兩種作物各 3 個來授粉。', '3 天後看結果，組合對了會得到新品種種子。', '提示：顏色相近、季節相同的比較合得來。'],
+  fish: ['挖魚池，每天餵玉米、小麥或菜，5 天後就能撈魚。', '蝦籠和水耕架要魚池有魚才會產出。', '魚苗在小店市集買。'],
+  weekly: ['每週三個挑戰，自動計算進度。', '完成拿稀有的雜交種子；三項全破還有大獎。'],
+  pottery: ['挖黏土 → 用磚窯燒成碗、盤、甕。', '家裡的陶碗、陶盤越多，料理越容易優良。', '偶爾會燒壞，這就是陶藝。'],
+  silk: ['種桑樹 → 蓋蠶房 → 蠶寶寶吃桑葉 6 天結繭。', '蠶繭 3 個用織布機織成絲布。', '絲布可以縫蠶絲被（冬天保暖）或襯衫（很好賣）。'],
+  night: ['每 7 天一次夜市日，16:00 以後可以擺攤。', '選最多 4 樣帶去，人潮會依評價和攤位等級變多。'],
+  bigorder: ['偶爾有大單位下大訂單：一次要 10～20 份。', '3 天內交，報酬是平常的好幾倍。在訂單板交貨。'],
+  furn: ['家裡的家具可以升到 ★★★。', '床多回精力、馬桶補衛生、種植箱多收成……'],
+  staff: ['每 5 天會有新的應徵者，各有擅長。', '最多 3 位員工，每天付薪水，付不出來會走人。'],
+  deco: ['四種裝潢主題，每套 4 件。', '湊齊整套才有效果。'],
+  line: ['買機器讓工作自動完成，每天晚上自己跑。', '小麥自動磨粉、多的作物自動做乾貨、自動烤麵包、自動釀酒、自動出貨。'],
+  master: ['任一技能練到 Lv.5 就能選稱號。', '只能選一個，想清楚。'],
+  contest: ['每 30 天舉辦一次（開放 3 天）。', '作物、料理、飲品三組各送一樣，品質、擺盤、招牌都會加分。', '前三名的獎盃會永遠留在獎盃櫃。']
+};
+const GR_SCENE_BG = ['#cfe3b5', '#f2d38a', '#e6a65a', '#cfe0ee'];
+function grSVG(inner, h, bg) { return '<svg viewBox="0 0 330 ' + (h || 96) + '" class="fm-svg gr-svg"><rect width="330" height="' + (h || 96) + '" rx="8" fill="' + (bg || '#2a3340') + '"/>' + inner + '</svg>'; }
+const ic = (k, x, y, s) => svgIc(k, x, y, s || 22);
+function grScene(k, now) {
+  const gr = GR(), sv = S.sv, t = now / 1000;
+  if (k === 'lab') { const hot = UI.labFx && now - UI.labFx < 2500, sel = UI.labSel || []; let s = '<rect x="0" y="70" width="330" height="26" fill="#6a4a30"/><ellipse cx="165" cy="64" rx="48" ry="12" fill="#3a3a3a"/><path d="M117 64 q0 30 48 30 q48 0 48 -30z" fill="#555"/><ellipse cx="165" cy="64" rx="44" ry="9" fill="' + (hot ? '#f0b040' : '#8a7a5a') + '"/>';
+    sel.forEach((m, i) => { s += ic(m, 135 + i * 30, 30 + Math.sin(t * 3 + i) * 4, 24); });
+    for (let i = 0; i < 4; i++) { const p = ((t * 0.7) + i / 4) % 1; s += '<circle cx="' + (140 + i * 16 + Math.sin(p * 6) * 4) + '" cy="' + (58 - p * 40) + '" r="' + (3 + p * 5) + '" fill="#fff" opacity="' + (0.5 * (1 - p)).toFixed(2) + '"/>'; }
+    if (UI.labHit && hot) s += ic(UI.labHit, 270, 44, 36) + '<text x="270" y="18" text-anchor="middle" font-size="11" fill="#ecd27a">' + (UI.labHit === 'dark_dish' ? '失敗…' : '成功！') + '</text>';
+    return grSVG(s, 96, '#3a2e28'); }
+  if (k === 'plate') { const p = UI.plP || 'none', g = UI.plG || 'none', d = UI.plD, sc = UI.plScore; let s = '<rect width="330" height="96" fill="#efe6d4"/><ellipse cx="165" cy="52" rx="62" ry="34" fill="' + (p === 'fineplate' ? '#fff' : p === 'plate' ? '#c9895a' : '#ddd') + '" stroke="' + (p === 'fineplate' ? '#d4a83a' : '#999') + '" stroke-width="' + (p === 'fineplate' ? 4 : 1.5) + '"/><ellipse cx="165" cy="52" rx="44" ry="22" fill="none" stroke="#0001"/>' + (d ? ic(d, 165, 50, 40) : '<text x="165" y="56" text-anchor="middle" font-size="11" fill="#888">選一道極品料理</text>');
+    if (g !== 'none') for (let i = 0; i < 5; i++) s += ic(g, 120 + i * 22, 74 + (i % 2) * 4, 12);
+    if (sc && UI.plFx && now - UI.plFx < 4000) s += '<text x="290" y="40" text-anchor="middle" font-size="22" font-weight="900" fill="#d6322a">' + sc + '</text><text x="290" y="58" text-anchor="middle" font-size="10" fill="#7a5a3a">分</text>';
+    return grSVG(s, 96, '#efe6d4'); }
+  if (k === 'sig') { const top = Object.entries(gr.cookN).sort((a, b) => b[1] - a[1]).slice(0, 5); let s = ''; top.forEach(([d, n], i) => { const x = 35 + i * 65, sig = n >= 10; s += '<rect x="' + (x - 28) + '" y="10" width="56" height="76" rx="6" fill="' + (sig ? '#3a2e10' : '#2e3642') + '" stroke="' + (sig ? '#ecd27a' : '#455') + '"/>' + ic(d, x, 38, 30) + '<rect x="' + (x - 22) + '" y="64" width="44" height="6" rx="3" fill="#455"/><rect x="' + (x - 22) + '" y="64" width="' + Math.min(44, n * 4.4) + '" height="6" rx="3" fill="#ecd27a"/><text x="' + x + '" y="82" text-anchor="middle" font-size="9" fill="#ccc">' + Math.min(n, 10) + '/10</text>' + (sig ? '<text x="' + x + '" y="20" text-anchor="middle" font-size="12">👑</text>' : ''); }); if (!top.length) s += '<text x="165" y="52" text-anchor="middle" font-size="11" fill="#9ab">還沒煮過料理</text>'; return grSVG(s); }
+  if (k === 'soil') { const f = gr.soil, col = f >= 80 ? '#3a2a18' : f >= 30 ? '#6a4a2a' : '#a08a6a'; let s = '<rect y="0" width="330" height="34" fill="#bfe0f0"/><rect y="34" width="330" height="62" fill="' + col + '"/>'; for (let i = 0; i < 9; i++) s += '<path d="M' + (20 + i * 36) + ' 34 q-4 -14 0 -22 q6 10 0 22" fill="' + (f >= 30 ? '#4a9a3a' : '#9a9a4a') + '"/>'; const worms = Math.floor(f / 25); for (let i = 0; i < worms; i++) s += '<path d="M' + (40 + i * 70 + Math.sin(t + i) * 8) + ' ' + (60 + i % 2 * 14) + ' q6 -6 12 0 q6 6 12 0" stroke="#e08a8a" stroke-width="3" fill="none" stroke-linecap="round"/>'; s += '<rect x="230" y="70" width="90" height="14" rx="7" fill="#0005"/><rect x="230" y="70" width="' + (f * 0.9) + '" height="14" rx="7" fill="' + (f >= 80 ? '#6ac04a' : f >= 30 ? '#c0a040' : '#c05040') + '"/><text x="275" y="81" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">肥力 ' + Math.round(f) + '</text>'; return grSVG(s, 96, col); }
+  if (k === 'season') { const se = season(), lc = ['#f4a6c8', '#3a9a3a', '#e07a2a', '#e8f0f8'][se]; let s = '<rect width="330" height="96" fill="' + GR_SCENE_BG[se] + '"/><rect x="155" y="40" width="14" height="56" fill="#6a4a2a"/><circle cx="162" cy="34" r="34" fill="' + lc + '"/><circle cx="140" cy="46" r="20" fill="' + lc + '"/><circle cx="186" cy="46" r="20" fill="' + lc + '"/>';
+    for (let i = 0; i < 10; i++) { const p = ((t * 0.15) + i / 10) % 1, x = (i * 37 + p * 60) % 330; s += se === 3 ? '<circle cx="' + x + '" cy="' + (p * 96) + '" r="2.5" fill="#fff"/>' : se === 0 || se === 2 ? '<ellipse cx="' + x + '" cy="' + (p * 96) + '" rx="3" ry="2" fill="' + lc + '" transform="rotate(' + (p * 360) + ' ' + x + ' ' + (p * 96) + ')"/>' : ''; }
+    s += '<text x="20" y="28" font-size="22">' + SEASON_IC[se] + '</text><text x="50" y="27" font-size="14" font-weight="800" fill="#333">' + SEASON_N[se] + '天 · 還有 ' + (10 - (sv.day - 1) % 10) + ' 天</text>';
+    SEASON_CROP[se].filter(c => ITEMS[c]).slice(0, 5).forEach((c, i) => { s += ic(c, 230 + (i % 3) * 30, 60 + Math.floor(i / 3) * 26, 22); }); return grSVG(s, 96, GR_SCENE_BG[se]); }
+  if (k === 'hybrid') { const h = gr.hyb; let s = '<rect y="60" width="330" height="36" fill="#6a4a2a"/>' + (gr.crossbed ? '<rect x="80" y="50" width="170" height="18" rx="4" fill="#8a6a4a"/>' : '<text x="165" y="40" text-anchor="middle" font-size="11" fill="#ddd">先做雜交苗床</text>');
+    if (h) { s += ic(h.a, 115, 34, 28) + ic(h.b, 215, 34, 28); for (let i = 0; i < 6; i++) { const p = ((t * 0.5) + i / 6) % 1; s += '<circle cx="' + (125 + p * 80) + '" cy="' + (28 - Math.sin(p * 3.14) * 18) + '" r="2" fill="#f0e060"/>'; } s += '<text x="165" y="88" text-anchor="middle" font-size="10" fill="#fff">還要 ' + Math.max(0, h.ready - sv.day) + ' 天</text>'; }
+    else { const sel = UI.hySel || []; if (sel[0]) s += ic(sel[0], 115, 34, 28); if (sel[1]) s += ic(sel[1], 215, 34, 28); if (sel[0] || sel[1]) s += '<text x="165" y="40" text-anchor="middle" font-size="18" fill="#fff">✕</text>'; }
+    return grSVG(s, 96, '#9ac8e0'); }
+  if (k === 'fish') { let s = '<rect width="330" height="96" fill="#7ab86a"/>' + (gr.pond ? '<ellipse cx="120" cy="52" rx="105" ry="38" fill="#3a7ab0" stroke="#5a5a4a" stroke-width="5"/>' : '<text x="120" y="52" text-anchor="middle" font-size="11">（還沒挖魚池）</text>');
+    gr.fish.forEach((f, i) => { const a = t * 0.6 + i * 1.7, x = 120 + Math.cos(a) * (60 - i * 4), y = 52 + Math.sin(a * 1.3) * 22, sz = 6 + Math.min(f.age, 5) * 2; s += '<g transform="translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ') scale(' + (Math.sin(a) > 0 ? -1 : 1) + ' 1)"><ellipse rx="' + sz + '" ry="' + (sz * 0.5) + '" fill="' + (f.age >= 5 ? '#f0a040' : '#c8d8e0') + '"/><path d="M' + sz + ' 0 l' + sz * 0.6 + ' -' + sz * 0.4 + ' v' + sz * 0.8 + 'z" fill="' + (f.age >= 5 ? '#f0a040' : '#c8d8e0') + '"/></g>'; });
+    if (gr.shrimp) s += '<rect x="190" y="70" width="26" height="16" rx="3" fill="none" stroke="#aaa" stroke-width="1.5"/><text x="203" y="83" text-anchor="middle" font-size="11">🦐</text>';
+    if (gr.hydro) { s += '<rect x="245" y="14" width="74" height="74" fill="#ccc" opacity="0.8"/>'; for (let r = 0; r < 3; r++) { s += '<rect x="248" y="' + (30 + r * 22) + '" width="68" height="5" fill="#5a8ac0"/>'; for (let c = 0; c < 4; c++) s += '<path d="M' + (255 + c * 17) + ' ' + (30 + r * 22) + ' q-5 -12 0 -14 q5 2 0 14" fill="#4ac04a"/>'; } }
+    return grSVG(s, 96, '#7ab86a'); }
+  if (k === 'pottery') { const spin = t * 6; let s = '<rect width="330" height="96" fill="#d8c4a8"/><ellipse cx="90" cy="76" rx="50" ry="10" fill="#6a5a4a"/><g transform="translate(90 60)"><path d="M-18 14 q-6 -20 4 -34 h28 q10 14 4 34z" fill="#b07a52"/>' + [0, 1, 2].map(i => '<line x1="' + (Math.sin(spin + i * 2) * 14) + '" y1="-18" x2="' + (Math.sin(spin + i * 2) * 16) + '" y2="12" stroke="#8a5a3a" stroke-width="1"/>').join('') + '</g>';
+    s += '<rect x="170" y="20" width="150" height="5" fill="#6a4a2a"/><rect x="170" y="56" width="150" height="5" fill="#6a4a2a"/>'; let x = 182; for (const p of ['bowl', 'plate', 'jar', 'fineplate']) { const n = Math.min(3, sv_has(p)); for (let i = 0; i < n; i++) { s += ic(p, x, p === 'jar' ? 40 : 46, 20); x += 22; } }
+    if (UI.poFx && now - UI.poFx < 2000) s += '<circle cx="90" cy="40" r="' + ((now - UI.poFx) / 40) + '" fill="#f08a3a" opacity="' + (1 - (now - UI.poFx) / 2000).toFixed(2) + '"/>';
+    return grSVG(s, 96, '#d8c4a8'); }
+  if (k === 'silk') { const sk = gr.silk; let s = '<rect width="330" height="96" fill="#e8efd8"/>'; for (let i = 0; i < sk.trees; i++) s += '<rect x="' + (20 + i * 26) + '" y="44" width="6" height="40" fill="#6a4a2a"/><circle cx="' + (23 + i * 26) + '" cy="38" r="14" fill="#4a9a3a"/>';
+    if (sk.house) { s += '<rect x="130" y="30" width="100" height="56" fill="#f4ead8" stroke="#a08a6a"/>'; for (let i = 0; i < Math.min(12, sk.worms / 2); i++) { const x = 140 + (i % 6) * 15, y = 46 + Math.floor(i / 6) * 22, w = Math.sin(t * 4 + i) * 2; s += '<path d="M' + x + ' ' + y + ' q3 ' + (-3 + w) + ' 6 0 q3 ' + (3 - w) + ' 6 0" stroke="#f8f8f0" stroke-width="4" stroke-linecap="round" fill="none"/>'; } s += '<rect x="130" y="80" width="' + (100 * sk.age / 6) + '" height="6" fill="#ecd27a"/>'; }
+    if (sk.loom) { const sh = Math.sin(t * 3) * 25; s += '<rect x="250" y="30" width="70" height="50" fill="none" stroke="#6a4a2a" stroke-width="3"/>'; for (let i = 0; i < 8; i++) s += '<line x1="' + (256 + i * 8) + '" y1="32" x2="' + (256 + i * 8) + '" y2="78" stroke="#d8c8f0"/>'; s += '<rect x="' + (278 + sh) + '" y="52" width="14" height="6" rx="2" fill="#8a5a3a"/>'; }
+    return grSVG(s, 96, '#e8efd8'); }
+  if (k === 'night') { let s = '<rect width="330" height="96" fill="#1a1530"/>'; for (let i = 0; i < 9; i++) s += '<line x1="' + (i * 40) + '" y1="8" x2="' + (i * 40 + 40) + '" y2="8" stroke="#555"/><ellipse cx="' + (20 + i * 40) + '" cy="16" rx="8" ry="10" fill="#d6322a" opacity="' + (0.75 + Math.sin(t * 2 + i) * 0.25).toFixed(2) + '"/><ellipse cx="' + (20 + i * 40) + '" cy="16" rx="12" ry="14" fill="#f0a040" opacity="0.15"/>';
+    s += '<rect x="110" y="50" width="110" height="34" fill="#a0522d"/><rect x="104" y="40" width="122" height="10" fill="#f0e0b0"/><text x="165" y="48" text-anchor="middle" font-size="8" font-weight="800" fill="#a0322a">' + LV_N.nm[lvOfK('nm')] + '</text>';
+    (UI.nmSel || []).forEach((k, i) => { s += ic(k, 128 + i * 24, 62, 18); });
+    const hot = UI.nmFx && now - UI.nmFx < 5000; const crowd = hot ? 10 : isNM() ? 5 : 1; for (let i = 0; i < crowd; i++) { const x = (i * 47 + t * (i % 2 ? 20 : -20)) % 360 - 15; s += '<text x="' + x.toFixed(0) + '" y="92" font-size="16">' + ['🧑', '👩', '🧒', '👴', '👧', '🧔'][i % 6] + '</text>'; }
+    return grSVG(s, 96, '#1a1530'); }
+  if (k === 'review') { const R = gr.reviews.slice(0, 3); let s = ''; R.forEach((r, i) => { const x = 8 + i * 108; s += '<rect x="' + x + '" y="10" width="102" height="76" rx="6" fill="#fdf8ec"/><text x="' + (x + 8) + '" y="28" font-size="11" fill="#e0a020">' + '★'.repeat(r.n) + '<tspan fill="#ccc">' + '★'.repeat(5 - r.n) + '</tspan></text><foreignObject x="' + (x + 6) + '" y="32" width="92" height="40"><div xmlns="http://www.w3.org/1999/xhtml" style="font-size:10px;color:#3a2a1a;line-height:1.3">' + r.t + '</div></foreignObject><text x="' + (x + 8) + '" y="80" font-size="8.5" fill="#999">— ' + r.who + '</text>'; }); if (!R.length) s += '<text x="165" y="52" text-anchor="middle" font-size="11" fill="#9ab">還沒有評價</text>'; s += '<text x="322" y="92" text-anchor="end" font-size="10" fill="#ecd27a">平均 ' + revAvg().toFixed(1) + ' ★</text>'; return grSVG(s); }
+  if (k === 'staff') { let s = ''; gr.staff.forEach((st, i) => { const x = 55 + i * 110, b = Math.abs(Math.sin(t * 3 + i)) * 4; s += '<rect x="' + (x - 48) + '" y="8" width="96" height="80" rx="8" fill="#2e3642"/><text x="' + x + '" y="' + (44 - b) + '" text-anchor="middle" font-size="26">🧑‍🔧</text><text x="' + (x + 24) + '" y="34" font-size="16">' + JOBS[st.job][0] + '</text><text x="' + x + '" y="66" text-anchor="middle" font-size="11" fill="#fff">' + st.n + '</text><text x="' + x + '" y="80" text-anchor="middle" font-size="10" fill="#ecd27a">' + '★'.repeat(st.s) + '</text>'; }); if (!gr.staff.length) s += '<text x="165" y="52" text-anchor="middle" font-size="11" fill="#9ab">還沒有員工</text>'; return grSVG(s); }
+  if (k === 'furn') { const ks = placedKinds().slice(0, 6); let s = ''; ks.forEach((f, i) => { const x = 30 + i * 54, lv = gr.furn[f] || 1, img = typeof SPR === 'object' && SPR['obj_' + f]; s += (lv >= 3 ? '<circle cx="' + x + '" cy="44" r="' + (24 + Math.sin(t * 3) * 2) + '" fill="#ecd27a" opacity="0.25"/>' : '') + (img ? '<image href="' + img + '" x="' + (x - 22) + '" y="20" width="44" height="44"/>' : '<text x="' + x + '" y="52" text-anchor="middle" font-size="26">' + (OBJ_IC[f] || '📦') + '</text>') + '<text x="' + x + '" y="80" text-anchor="middle" font-size="11" fill="#ecd27a">' + '★'.repeat(lv) + '</text>'; }); return grSVG(s); }
+  if (k === 'deco') { let s = '<rect x="10" y="8" width="310" height="80" fill="#e8dcc8"/><rect x="10" y="60" width="310" height="28" fill="#c8a880"/>'; let x = 24; for (const [tk, T] of Object.entries(DECO)) for (const p of Object.keys(T.p)) if (gr.deco[tk + '.' + p]) { s += '<text x="' + x + '" y="' + (50 + (x % 3) * 8) + '" font-size="18">' + { retro: '🪑', zen: '🏮', indust: '💡', forest: '🪴' }[tk] + '</text>'; x += 20; } if (x === 24) s += '<text x="165" y="44" text-anchor="middle" font-size="11" fill="#7a6a5a">空蕩蕩的房間</text>'; return grSVG(s, 96, '#e8dcc8'); }
+  if (k === 'line') { const L = gr.line, ks = Object.keys(LINE); let s = '<rect x="0" y="54" width="330" height="14" fill="#444"/>'; for (let i = 0; i < 22; i++) s += '<line x1="' + ((i * 16 + t * 30) % 340 - 5) + '" y1="54" x2="' + ((i * 16 + t * 30) % 340 - 9) + '" y2="68" stroke="#666" stroke-width="2"/>';
+    ks.forEach((k, i) => { const x = 33 + i * 66, on = L[k]; s += '<rect x="' + (x - 24) + '" y="14" width="48" height="40" rx="4" fill="' + (on ? '#5a6a7a' : '#2a3038') + '" stroke="' + (on ? '#ecd27a' : '#444') + '"/><text x="' + x + '" y="40" text-anchor="middle" font-size="16" opacity="' + (on ? 1 : 0.3) + '">' + { mill: '🌾', dry: '🍠', bake: '🍞', brew: '🍶', ship: '📦' }[k] + '</text><text x="' + x + '" y="84" text-anchor="middle" font-size="8.5" fill="' + (on ? '#ecd27a' : '#667') + '">' + LINE[k].n + '</text>'; });
+    if (Object.keys(L).length) for (let i = 0; i < 5; i++) { const p = ((t * 0.12) + i / 5) % 1; s += ic(['wheat_p', 'flour', 'veg_dry', 'bread', 'rice_wine'][i], p * 330, 56, 14); }
+    return grSVG(s); }
+  if (k === 'weekly') { const W = gr.wk; let s = '<rect x="10" y="8" width="310" height="80" rx="6" fill="#fdf8ec"/>'; if (W) W.list.forEach((c, i) => { const y = 26 + i * 22, p = wkProg(c) / c.goal; s += '<text x="22" y="' + (y + 4) + '" font-size="11" fill="#3a2a1a">' + (c.done ? '✅' : '⬜') + ' ' + c.n + '</text><rect x="210" y="' + (y - 6) + '" width="100" height="10" rx="5" fill="#e0d4c0"/><rect x="210" y="' + (y - 6) + '" width="' + (100 * p) + '" height="10" rx="5" fill="' + (c.done ? '#6ac04a' : '#e0a020') + '"/>'; }); return grSVG(s); }
+  if (k === 'master') { let s = ''; Object.entries(MASTERS).forEach(([mk, M], i) => { const x = 25 + i * 47, on = gr.master === mk, can = M[2](); s += '<circle cx="' + x + '" cy="40" r="' + (on ? 20 + Math.sin(t * 3) : 18) + '" fill="' + (on ? '#ecd27a' : can ? '#3e5a70' : '#2a3038') + '"/><text x="' + x + '" y="46" text-anchor="middle" font-size="16">' + { chef: '👨‍🍳', farm: '🌾', brew: '🍶', bake: '🍞', ranch: '🐄', shop: '💰', proc: '⚗️' }[mk] + '</text><text x="' + x + '" y="78" text-anchor="middle" font-size="8.5" fill="' + (on ? '#ecd27a' : '#9ab') + '">' + M[0] + '</text>'; }); return grSVG(s); }
+  if (k === 'contest') { const T = (J.trophies || []).slice(-8); let s = '<rect x="10" y="62" width="310" height="8" fill="#6a4a2a"/><rect x="10" y="30" width="310" height="6" fill="#6a4a2a"/>'; T.forEach((tr, i) => { s += '<text x="' + (28 + i * 38) + '" y="58" text-anchor="middle" font-size="22">' + ['', '🏆', '🥈', '🥉'][tr.m] + '</text>'; }); if (!T.length) s += '<text x="165" y="54" text-anchor="middle" font-size="11" fill="#9ab">獎盃櫃還是空的</text>'; s += '<text x="165" y="88" text-anchor="middle" font-size="10" fill="#ecd27a">' + (ctOpen() ? '🏆 品評會報名中！' : '下一屆：第 ' + (Math.floor(sv.day / 30) + 1) * 30 + ' 天') + '</text>'; return grSVG(s); }
+  return '';
+}
+const row = (title, meta, btn) => '<div class="wm-row"><div><b>' + title + '</b><div class="meta">' + meta + '</div></div>' + (btn || '') + '</div>';
+const bt = (a, v, t, ok, ghost) => '<button class="btn' + (ghost ? ' ghost' : '') + '" data-a="' + a + '"' + (v != null ? ' data-v="' + v + '"' : '') + (ok ? '' : ' disabled') + '>' + t + '</button>';
+const chip = (a, v, t, on) => '<button class="gr-chip' + (on ? ' on' : '') + '" data-a="' + a + '" data-v="' + v + '">' + t + '</button>';
+function grBody(k) {
+  const gr = GR(), sv = S.sv, bz = BZ(); let h = '';
+  if (k === 'lab') {
+    const pool = LAB_POOL(), sel = UI.labSel || [];
+    h += '<div class="gr-chips">' + pool.map(m => chip('labPick', m, itemIc(m) + ITEMS[m].n.replace(/（.*）/, '') + ' ' + sv_has(m), sel.includes(m))).join('') + '</div>';
+    h += bt('labTry', null, '🧪 下鍋試試（' + sel.length + '/3 · 1 小時）', sel.length >= 2) + '<div class="cat">📖 食譜本（' + Object.keys(labBook()).length + '/' + Object.keys(LAB).length + '）</div>';
+    for (const [d, L] of Object.entries(LAB)) h += labBook()[d] ? row(itemIc(d) + ITEMS[d].n + ' ×' + L.q, L.ing.map(m => ITEMS[m].n).join(' + ') + ' · 煮過 ' + (gr.cookN[d] || 0) + ' 次' + (isSig(d) ? ' 👑' : ''), bt('labCook', d, '煮', L.ing.every(m => sv_has(m) > 0))) : row('❓ ？？？', '提示：' + L.hint);
+  }
+  if (k === 'sig') { const ks = Object.entries(gr.cookN).sort((a, b) => b[1] - a[1]); h += ks.length ? ks.slice(0, 10).map(([d, n]) => row(itemIc(d) + ITEMS[d].n + (n >= 10 ? ' 👑' : ''), n >= 10 ? '招牌菜：品質加成、售價 ×1.25、客人指名' : '再煮 ' + (10 - n) + ' 次變成招牌菜')).join('') : '<p class="meta">還沒煮過料理。</p>'; }
+  if (k === 'plate') {
+    const ds = Object.keys(FOOD).filter(d => FOOD[d].dish && qOf(d)[1] - (gr.plated[d] || 0) > 0);
+    h += '<div class="cat">1. 選料理（沒擺盤的極品）</div><div class="gr-chips">' + (ds.length ? ds.map(d => chip('plSet', 'd:' + d, itemIc(d) + ITEMS[d].n + ' ' + (qOf(d)[1] - (gr.plated[d] || 0)), UI.plD === d)).join('') : '<span class="meta">沒有極品料理</span>') + '</div>';
+    h += '<div class="cat">2. 選盤子</div><div class="gr-chips">' + Object.entries(PLATES).map(([p, P]) => chip('plSet', 'p:' + p, P[0] + (p !== 'none' ? ' ' + sv_has(p) : '') + ' +' + P[1], (UI.plP || 'none') === p)).join('') + '</div>';
+    h += '<div class="cat">3. 選裝飾</div><div class="gr-chips">' + Object.entries(GARN).map(([g, G]) => chip('plSet', 'g:' + g, G[0] + (g !== 'none' ? ' ' + sv_has(g) : '') + ' +' + G[1], (UI.plG || 'none') === g)).join('') + '</div>' + bt('plDo', null, '🍽️ 擺盤', !!UI.plD && ds.includes(UI.plD));
+  }
+  if (k === 'soil') h += row('肥力 ' + Math.round(gr.soil) + '/100', gr.soil >= 80 ? '肥沃：收成 +25%' : gr.soil < 30 ? '貧瘠：收成 -30%' : '普通', '') + row('施肥', '肥料 1 → 肥力 +25 · 有 ' + sv_has('fert'), bt('soilFert', null, '施肥', sv_has('fert') > 0)) + row('翻土', '2 小時、體力 10 → 肥力 +10', bt('soilRest', null, '翻土', canAct(2, 10))) + '<p class="meta">花生、豆芽收成時會養土（輪作）。員工種田也會補肥力。</p>';
+  if (k === 'season') h += '<p class="meta">當季作物收成 +30%。每 10 天換季，按季節輪著種最划算。</p>' + [0, 1, 2, 3].map(s => row(SEASON_IC[s] + ' ' + SEASON_N[s] + (s === season() ? '（現在）' : ''), SEASON_CROP[s].filter(c => ITEMS[c]).map(c => ITEMS[c].n).join('、'))).join('');
+  if (k === 'hybrid') {
+    if (!gr.crossbed) h += row('做雜交苗床', needTxt({ board: 4, fert: 1, pot: 2 }), bt('hyBuild', null, '做', true));
+    else if (gr.hyb) h += row('授粉中：' + ITEMS[gr.hyb.a].n + ' ✕ ' + ITEMS[gr.hyb.b].n, '還要 ' + Math.max(0, gr.hyb.ready - sv.day) + ' 天');
+    else { const ok = CROPS().concat(['honey']).filter(c => ITEMS[c] && sv_has(c) >= 3), s = UI.hySel || [];
+      h += '<div class="cat">父本（各要 3 個）</div><div class="gr-chips">' + ok.map(c => chip('hySet', '0:' + c, itemIc(c) + ITEMS[c].n, s[0] === c)).join('') + '</div><div class="cat">母本</div><div class="gr-chips">' + ok.map(c => chip('hySet', '1:' + c, itemIc(c) + ITEMS[c].n, s[1] === c)).join('') + '</div>' + bt('hyGo', null, '🧬 授粉（3 天）', s[0] && s[1] && s[0] !== s[1]); }
+    h += '<div class="cat">已知的新品種</div>' + Object.values(HYB).map(o => row(itemIc(o) + (J.cdx && J.cdx[SEED_OUT[o]] != null || sv_has(o) ? ITEMS[o].n : '？？？'), J.cdx && J.cdx[SEED_OUT[o]] != null ? '種出來是 ' + ITEMS[SEED_OUT[o]].n : '還沒試出來')).join('');
+  }
+  if (k === 'fish') {
+    if (!gr.pond) h += row('挖魚池', needTxt({ board: 6, plastic: 4, metal: 2 }) + ' · 送 3 尾魚苗', bt('fiBuild', 'pond', '挖', true));
+    else { const big = gr.fish.filter(f => f.age >= 5).length; h += row('🐟 魚 ' + gr.fish.length + '/10', '可以撈 ' + big + ' 尾 · 每 3 尾每天吃 1 份玉米／小麥／菜', bt('fiCatch', null, '撈魚', big > 0)) + row('放魚苗', '有 ' + sv_has('fry') + ' 尾（小店市集買）', bt('fiFry', null, '放', sv_has('fry') > 0 && gr.fish.length < 10, true));
+      if (!gr.shrimp) h += row('蝦籠', needTxt({ metal: 2, plastic: 2 }) + ' · 池裡 3 尾魚以上，每天抓到蝦', bt('fiBuild', 'shrimp', '做', true));
+      if (!gr.hydro) h += row('水耕架', needTxt({ plastic: 4, metal: 2, pot: 2 }) + ' · 每天長青菜，魚越多長越多', bt('fiBuild', 'hydro', '做', true)); }
+  }
+  if (k === 'pottery') { h += lvBar('pot') + row('挖黏土', '1 小時、體力 8 · 有 ' + sv_has('clay'), bt('poDig', null, '挖', canAct(1, 8))); for (const [p, P] of Object.entries(POTS)) h += row(itemIc(p) + ITEMS[p].n + ' · 有 ' + sv_has(p), lvOfK('pot') < P.lv ? '🔒 陶藝 Lv.' + P.lv : '黏土 ' + P.clay + (P.glass ? '、玻璃 ' + P.glass : '') + '、木板 1 · ' + P.d, bt('poMake', p, '燒', lvOfK('pot') >= P.lv && sv_has('clay') >= P.clay)); }
+  if (k === 'silk') { const s = gr.silk; h += row('🌳 桑樹 ' + s.trees + '/4', '每棵每天 2 片桑葉 · 有 ' + sv_has('mulb_l') + ' 片', s.trees < 4 ? bt('skTree', null, '種一棵', true) : '');
+    h += s.house ? row('🐛 蠶寶寶 ' + s.worms + ' 隻', '第 ' + s.age + '/6 天結繭 · 每 10 隻每天吃 1 片', '') : row('蠶房', needTxt({ board: 4, plastic: 2 }), bt('skHouse', null, '蓋', true));
+    h += s.loom ? row('🧵 織布', '蠶繭 3 → 絲布 1 · 有蠶繭 ' + sv_has('cocoon') + '、絲布 ' + sv_has('cloth'), bt('skWeave', null, '織', sv_has('cocoon') >= 3)) + row(itemIc('quilt') + '蠶絲被', '絲布 3 · 冷天每晚心態 +4', bt('skSew', 'quilt', '縫', sv_has('cloth') >= 3)) + row(itemIc('shirt') + '絲綢襯衫', '絲布 2 · 很好賣', bt('skSew', 'shirt', '縫', sv_has('cloth') >= 2)) : row('織布機', needTxt({ board: 4, metal: 2 }), bt('skLoom', null, '做', true)); }
+  if (k === 'review') h += gr.reviews.length ? gr.reviews.map(r => row('<span style="color:#e0a020">' + '★'.repeat(r.n) + '</span> ' + r.who, '「' + r.t + '」· 第 ' + r.d + ' 天')).join('') : '<p class="meta">招呼客人後就會有評價。</p>';
+  if (k === 'night') { const open = isNM(), done = gr.nmDay === sv.day; h += lvBar('nm') + '<p class="meta">' + (open ? (done ? '今天已經擺過攤了。' : '今天是夜市日！16:00 以後出攤（4 小時、體力 15）。') : '下次夜市：第 ' + (Math.floor(sv.day / 7) + 1) * 7 + ' 天。') + '</p>';
+    const foods = Object.keys(ITEMS).filter(m => sv_has(m) > 0 && (FOOD[m] || ['shirt', 'jar', 'candle', 'quilt'].includes(m)) && m !== 'dark_dish'), sel = UI.nmSel || [];
+    h += '<div class="cat">帶去賣的（最多 4 樣）</div><div class="gr-chips">' + foods.map(m => chip('nmPick', m, itemIc(m) + ITEMS[m].n + ' ' + sv_has(m), sel.includes(m))).join('') + '</div>' + bt('nmGo', null, '🏮 出攤', open && !done && sel.length > 0 && sv.hour >= 16); }
+  if (k === 'bigorder') { const o = bz.orders.filter(x => x.big); h += o.length ? o.map(x => row(x.who + '：' + ITEMS[x.k].n + ' ×' + x.qty + (x.done ? ' ✅' : ''), x.done ? '完成' : '有 ' + sv_has(x.k) + ' · 剩 ' + Math.max(0, x.until - sv.day + 1) + ' 天 · 🪙 ' + x.coin + ' ⭐ ' + x.rep, x.done ? '' : bt('bzOrder', x.id, '交貨', canFill(x)))).join('') : '<p class="meta">還沒有大訂單，每天早上有機會出現。</p>'; }
+  if (k === 'staff') { h += gr.staff.map((s, i) => row(s.n + ' ' + '★'.repeat(s.s) + ' · ' + JOBS[s.job][0] + JOBS[s.job][1], '日薪 ' + (3 + s.s * 2) + ' · ' + JOBS[s.job][2] + '<div class="gr-chips">' + Object.entries(JOBS).map(([j, J0]) => chip('stJob', i + ':' + j, J0[0] + J0[1], s.job === j)).join('') + '</div>', bt('stFire', i, '解雇', true, true))).join('');
+    h += '<div class="cat">應徵者（每 5 天換一批）</div>' + (gr.cands.length ? gr.cands.map((c, i) => row(c.n + ' ' + '★'.repeat(c.s), '擅長' + JOBS[c.best][1] + ' · 簽約金 30 · 日薪 ' + (3 + c.s * 2), bt('stHire', i, '雇用', gr.staff.length < 3 && bz.coin >= 30))).join('') : '<p class="meta">明天早上會有人來應徵。</p>'); }
+  if (k === 'furn') { const ks = placedKinds(); h += ks.length ? ks.map(f => { const lv = gr.furn[f] || 1; return row((OBJ_IC[f] || '') + ' ' + ISO[f].n + ' <span style="color:#ecd27a">' + '★'.repeat(lv) + '</span>', FURN_FX[f] + (lv < 3 ? ' · 升級：' + needTxt(furnCost(lv)) + '、🪙 ' + furnCoin(lv) : ' · 已滿級'), lv < 3 ? bt('fuUp', f, '升級', bz.coin >= furnCoin(lv)) : ''); }).join('') : '<p class="meta">家裡還沒有可以升級的家具。</p>'; }
+  if (k === 'deco') for (const [t, T] of Object.entries(DECO)) { h += '<div class="cat">' + T.n + (decoDone(t) ? ' ✅ ' : ' · ') + T.fx + '</div>'; for (const [p, P] of Object.entries(T.p)) h += row((gr.deco[t + '.' + p] ? '✅ ' : '') + P[0], gr.deco[t + '.' + p] ? '已擺上' : needTxt(P[1]) + '、🪙 ' + P[2], gr.deco[t + '.' + p] ? '' : bt('deBuy', t + '.' + p, '擺', bz.coin >= P[2])); }
+  if (k === 'line') for (const [l, L] of Object.entries(LINE)) h += row((gr.line[l] ? '✅ ' : '') + L.n, L.d + (gr.line[l] ? '' : ' · ' + needTxt(L.c) + '、🪙 ' + L.coin), gr.line[l] ? '' : bt('liBuild', l, '裝', bz.coin >= L.coin));
+  if (k === 'weekly') { if (!gr.wk) wkNew(); h += gr.wk.list.map(c => row((c.done ? '✅ ' : '') + c.n, wkProg(c) + '/' + c.goal + ' · 獎勵：稀有種子 ×2、40 瓶蓋')).join('') + '<p class="meta">第 ' + (gr.wk.wk + 1) + ' 週 · 還剩 ' + (gr.wk.until - sv.day + 1) + ' 天 · 三項全破送 100 瓶蓋和金邊瓷盤</p>'; }
+  if (k === 'master') h += gr.master ? '<p>你的稱號：<b style="color:#ecd27a">' + MASTERS[gr.master][0] + '</b> — ' + MASTERS[gr.master][1] + '</p>' : Object.entries(MASTERS).map(([m, M]) => row(M[0], M[1] + (M[2]() ? '' : ' · 🔒 這項技能要 Lv.5'), bt('msPick', m, '選這個', M[2]()))).join('');
+  if (k === 'contest') { if (ctOpen()) { h += '<p class="meta">三組各選一樣，品質、擺盤、招牌菜都會加分。送出後東西會交給評審。</p>'; for (const [c, C] of Object.entries(CT_CAT)) { const its = Object.keys(ITEMS).filter(m => sv_has(m) > 0 && C[1](m)).sort((a, b) => (qOf(b)[1] * 2 + qOf(b)[0]) - (qOf(a)[1] * 2 + qOf(a)[0])).slice(0, 10); h += '<div class="cat">' + C[0] + '</div><div class="gr-chips">' + (its.length ? its.map(m => chip('ctSet', c + ':' + m, itemIc(m) + ITEMS[m].n + (qOf(m)[1] ? ' ★★' : qOf(m)[0] ? ' ★' : ''), (UI.ct || {})[c] === m)).join('') : '<span class="meta">沒有可以參賽的</span>') + '</div>'; } h += bt('ctGo', null, '🏆 送出參賽', true); }
+    else h += '<p class="meta">' + (gr.contest[ctId()] ? '這一屆已經參加過了：' + gr.contest[ctId()].join('；') : '下一屆在第 ' + (Math.floor(sv.day / 30) + 1) * 30 + ' 天。') + '</p>';
+    h += '<div class="cat">獎盃櫃（跨輪保留）</div>' + ((J.trophies || []).length ? (J.trophies || []).slice(-10).reverse().map(tr => row(['', '🏆 冠軍', '🥈 亞軍', '🥉 季軍'][tr.m] + ' · ' + CT_CAT[tr.c][0], ITEMS[tr.k].n + ' · 第 ' + tr.d + ' 天')).join('') : '<p class="meta">還沒有獎盃。</p>'); }
+  return h;
+}
+function growModal() {
+  const gr = GR(), tab = UI.grTab || 'route', now = performance.now();
+  let h = '<div class="bz-top"><span>' + SEASON_IC[season()] + ' ' + SEASON_N[season()] + '天</span><span>🪙 ' + BZ().coin + '</span><span>⭐ ' + BZ().rep + '</span><span>已解鎖 ' + Object.keys(gr.ul).length + '/' + GROW.length + '</span></div>';
+  h += '<div class="fm-tabs bz-tabs">' + GR_TABS.map(([k, t]) => { const has = k === 'route' || GROW.some(g => g.g === k && grOn(g.k)); return '<button class="' + (k === tab ? 'on' : has ? '' : 'locked') + '" data-a="grTab" data-v="' + k + '">' + (has ? '' : '🔒 ') + t + '</button>'; }).join('') + '</div>';
+  if (tab === 'route') {
+    for (let t = 1; t <= 5; t++) { const open = tierOpen(t), gs = GROW.filter(g => g.t === t), got = gs.filter(g => grOn(g.k)).length;
+      h += '<div class="gr-tier' + (open ? '' : ' off') + '"><div class="gr-th"><b>第 ' + t + ' 階段 · ' + TIER_N[t] + '</b><span>' + got + '/' + gs.length + (open ? '' : ' · 🔒 ' + (t === 1 ? '經營中心開放後' : '上一階段解鎖 ' + TIER_NEED[t] + ' 項')) + '</span></div><div class="gr-nodes">' +
+        gs.map(g => { const on = grOn(g.k), ok = open && g.c(); return '<button class="gr-node' + (on ? ' on' : ok ? ' ready' : '') + '" data-a="grGo" data-v="' + g.k + '"><span>' + (on || open ? g.ic : '❔') + '</span><b>' + (on || open ? g.n : '？？？') + '</b><i>' + (on ? '已解鎖' : open ? g.txt : '') + '</i></button>'; }).join('') + '</div></div>'; }
+  } else {
+    for (const g of GROW.filter(x => x.g === tab)) {
+      if (!grOn(g.k)) { h += '<div class="gr-sec locked"><div class="gr-sh">' + g.ic + ' ' + g.n + '<span>🔒 ' + (tierOpen(g.t) ? g.txt : '先解鎖第 ' + (g.t - 1) + ' 階段') + '</span></div></div>'; continue; }
+      const open = UI.grOpen === g.k || (UI.grOpen == null && GROW.filter(x => x.g === tab && grOn(x.k))[0] === g);
+      h += '<div class="gr-sec' + (open ? ' open' : '') + '"><div class="gr-sh" data-a="grSec" data-v="' + g.k + '">' + g.ic + ' ' + g.n + '<span>' + (open ? '▾' : '▸') + '</span></div>' + (open ? '<div id="gr-scene-' + g.k + '" class="gr-scene">' + grScene(g.k, now) + '</div>' + grBody(g.k) + '<button class="btn ghost bz-help" data-a="grHelp" data-v="' + g.k + '">❓ 怎麼玩</button>' : '') + '</div>';
+    }
+  }
+  const seen = J.grSeen || (J.grSeen = {}), show = UI.grIntro || (tab !== 'route' && UI.grOpenK && grOn(UI.grOpenK) && !seen[UI.grOpenK] ? UI.grOpenK : !seen.welcome ? 'welcome' : null);
+  if (show) { const g = GROW.find(x => x.k === show), L = show === 'welcome' ? ['這裡是長期目標：越玩越多新玩法。', '共五個階段，每階段解鎖夠多項，下一階段才會出現。', '「🗺️ 路線」看得到每項的解鎖條件，達成後早上會通知。'] : GR_INTRO[show];
+    h += '<div class="bz-intro"><div class="bz-ibox"><b>' + (g ? g.ic + ' ' + g.n : '🌟 成長路線') + '</b><ol>' + L.map(x => '<li>' + x + '</li>').join('') + '</ol><button class="btn" data-a="grIntroOk" data-v="' + show + '">知道了</button></div></div>'; }
+  return h;
+}
+Object.assign(SACT, {
+  grOpenHub() { if (!bizAllowed()) return SACT.bzWhy(); UI.wm = 'grow'; UI.rtSel = null; UI.verbs = false; render(); },
+  grTab(v) { UI.grTab = v; UI.grOpen = null; const f = GROW.find(g => g.g === v && grOn(g.k)); UI.grOpenK = f && f.k; render(); },
+  grSec(k) { UI.grOpen = UI.grOpen === k ? '' : k; UI.grOpenK = k; render(); },
+  grGo(k) { const g = GROW.find(x => x.k === k); if (!g || !grOn(k)) { if (g) slog('🔒 ' + g.n + '：' + (tierOpen(g.t) ? g.txt : '先解鎖第 ' + (g.t - 1) + ' 階段') + '。'); render(); return; } UI.grTab = g.g; UI.grOpen = k; UI.grOpenK = k; render(); },
+  grIntroOk(k) { (J.grSeen || (J.grSeen = {}))[k] = true; UI.grIntro = null; saveJournal(); render(); },
+  grHelp(k) { UI.grIntro = k; render(); }
+});
+const _wmHTMLGr = wmHTML;
+wmHTML = function () {
+  if (UI.wm !== 'grow') return _wmHTMLGr();
+  if (!bizAllowed()) { UI.wm = null; return _wmHTMLGr(); }
+  return '<div class="rt-modal" data-a="wmClose"><div class="rt-mbox wm-box fm-box" data-a="noop"><div class="rt-mh"><div><b>🌟 成長</b></div><button class="btn ghost" data-a="wmClose" style="margin-left:auto">關閉</button></div>' + growModal() + '</div></div>';
+};
+function grTick(now) { requestAnimationFrame(grTick); if (UI.wm !== 'grow' || !S || !S.sv) return; document.querySelectorAll('[id^=gr-scene-]').forEach(el => { el.innerHTML = grScene(el.id.slice(9), now); }); }
+requestAnimationFrame(grTick);
+// 入口：經營旁邊的按鈕、我想要、建議
+const _rtPanelGr = rtPanel;
+rtPanel = function () { return _rtPanelGr().replace('<button class="pill" data-a="bzOpen">🏪 經營</button>', '<button class="pill" data-a="bzOpen">🏪 經營</button><button class="pill" data-a="grOpenHub">🌟 成長</button>'); };
+VERBS.splice(8, 0, { k: 'grow', ic: '🌟', n: '成長（研發、魚池、陶藝、夜市、員工…）', kw: '成長 解鎖 研發 食譜 新菜 擺盤 土壤 肥力 季節 雜交 魚 蝦 水耕 陶 碗 盤 蠶 布 夜市 擺攤 評價 員工 家具 升級 裝潢 自動 產線 挑戰 稱號 大師 比賽 品評 獎盃' });
+const _verbGr = SACT.verb;
+SACT.verb = function (k) { if (k === 'grow') { UI.verbs = false; return SACT.grOpenHub(); } return _verbGr(k); };
+const _sugGr = suggestRaw;
+suggestRaw = function () {
+  const L = _sugGr(); if (!S.sv || !S.sv.w || !S.sv.w.fm || !S.sv.w.fm.gr || !bizAllowed()) return L;
+  const gr = GR(), sv = S.sv;
+  if (grOn('night') && isNM() && gr.nmDay !== sv.day && sv.hour >= 16 && sv.hour <= 18) L.push({ pri: 58, ic: '🏮', label: '去夜市擺攤', why: '今天是夜市日', gr: 'night' });
+  if (grOn('contest') && ctOpen()) L.push({ pri: 64, ic: '🏆', label: '報名品評會', why: '3 天內報名', gr: 'contest' });
+  if (gr.pond && gr.fish.some(f => f.age >= 5)) L.push({ pri: 36, ic: '🐟', label: '撈魚', why: '魚長大了', gr: 'fish' });
+  const fresh = GROW.find(g => gr.ul[g.k] === sv.day && !(J.grSeen || {})[g.k]); if (fresh) L.push({ pri: 60, ic: fresh.ic, label: '看看新玩法', why: fresh.n + '解鎖了', gr: fresh.k });
+  return L.sort((a, b) => b.pri - a.pri).slice(0, 3);
+};
+const _sugDoGr = SACT.sugDo;
+SACT.sugDo = function (i) { const s = suggest()[Number(i)]; if (s && s.gr) { UI.wm = 'grow'; SACT.grGo(s.gr); return; } return _sugDoGr(i); };
+// 家具星星：房間裡升級過的家具上方顯示
+const _lifeLayerGr = lifeLayer;
+lifeLayer = function (now) {
+  let s = _lifeLayerGr(now); const sv = S.sv; if (!sv || !sv.w || !sv.w.fm || !sv.w.fm.gr) return s;
+  const fu = sv.w.fm.gr.furn, f = (UI.iso && UI.iso.floor) || '1F', P = isoProj(f);
+  for (const o of isoObjects()) { const lv = fu[o.k] || 1, p = sv.place[o.id]; if (lv < 2 || !p || p.f !== f) continue; const c = objCenter(o.id); if (!c) continue; const q = P(c.x + 0.4, c.y - (ISO[o.k].d || 1) / 2, 0); s += '<text pointer-events="none" x="' + q[0].toFixed(1) + '" y="' + (q[1] - 2).toFixed(1) + '" font-size="8" fill="#ecd27a" stroke="#1d2733" stroke-width="2" paint-order="stroke">' + '★'.repeat(lv) + '</text>'; }
+  return s;
+};
+// 一開始就檢查一次解鎖（讀檔、永久模式開局）
+const _renderGrChk = render;
+render = function () { if (S && S.sv && S.phase === 'survive' && S.sv.w && S.sv.w.fm && bizAllowed() && !UI.__grChk) { UI.__grChk = true; const o = growCheck(); o.forEach(t => slog(t)); UI.__grChk = false; } _renderGrChk(); };
+
 // ---- 99-boot.js ----
 /* ================= 事件綁定 ================= */
 $app.addEventListener('click', e => {
@@ -8759,7 +9444,7 @@ if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude
 else start((window.claude && window.claude.hot && window.claude.hot.data) || {});
 
 // 給測試用
-window.__slog = { get S() { return S; }, ACT, get SACT() { return SACT; }, hordeType, HORDES, hordeOn: d => hordeOn(d), ITEMS, render: () => render(), get UI() { return UI; }, get UIS() { return UIS; } };
+window.__slog = { get S() { return S; }, ACT, get SACT() { return SACT; }, hordeType, HORDES, hordeOn: d => hordeOn(d), ITEMS, render: () => render(), get UI() { return UI; }, get UIS() { return UIS; }, get J() { return J; } };
 })();
 </script>
 </body>
