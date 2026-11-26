@@ -593,3 +593,4 @@ body.ls .fm-svg { border-color: #353d48; }
 .bz-ul span{background:rgba(255,255,255,.05);border-radius:6px;padding:3px 6px;font-size:11px;opacity:.6}
 .bz-ul span.on{opacity:1;box-shadow:0 0 0 1px #ecd27a55}.bz-ul i{display:block;font-style:normal;font-size:10px;color:#9fb4c4}
 .fm-box{position:relative}
+.pill.locked{opacity:.5}

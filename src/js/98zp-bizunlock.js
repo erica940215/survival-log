@@ -50,14 +50,35 @@ bizNight = function () {
 // 第一次進主畫面時提示有經營中心
 const _sugBizU = suggestRaw;
 suggestRaw = function () { const L = _sugBizU(); if (S.sv && !bzSeen().welcome && S.sv.day >= 1) { L.push({ pri: 40, ic: '🏪', label: '看看經營中心', why: '接訂單、開小店賺瓶蓋', bz: true }); return L.sort((a, b) => b.pri - a.pri).slice(0, 3); } return L; };
-/* 先只在永久模式開放經營中心 */
+/* 永久模式隨時可用；一般生存要「每天吃喝都夠」才開放 */
+function bizNeeds() {
+  const sv = S.sv, food = Object.keys(FOOD).reduce((a, k) => a + sv_has(k) * (FOOD[k].sat || 0), 0), wu = sv.st.wu || 0;
+  return [
+    ['存糧夠吃 3 天', food >= 180, Math.round(food / 60 * 10) / 10 + ' 天'],
+    ['存水夠喝 3 天', sv.day <= 5 || wu >= 9, sv.day <= 5 ? '自來水還沒停' : wu + ' 份'],
+    ['身體沒有危險', sv.hp >= 40 && sv.sat >= 30 && sv.hyd >= 30, '生命 ' + Math.round(sv.hp) + '、飽足 ' + Math.round(sv.sat) + '、水分 ' + Math.round(sv.hyd)],
+    ['今晚沒有屍潮', !(typeof hordeOn === 'function' && hordeOn()), '']
+  ];
+}
+function bizAllowed() { return isForever() || bizNeeds().every(n => n[1]); }
 const _rtPanelOnlyF = rtPanel;
-rtPanel = function () { const h = _rtPanelOnlyF(); return isForever() ? h : h.replace('<button class="pill" data-a="bzOpen">🏪 經營</button>', ''); };
+rtPanel = function () { const h = _rtPanelOnlyF(); return bizAllowed() ? h : h.replace('<button class="pill" data-a="bzOpen">🏪 經營</button>', '<button class="pill locked" data-a="bzWhy">🔒 經營</button>'); };
 const _bzOpenOnlyF = SACT.bzOpen;
-SACT.bzOpen = function () { if (!isForever()) return; return _bzOpenOnlyF(); };
+SACT.bzOpen = function () { if (!bizAllowed()) return SACT.bzWhy(); return _bzOpenOnlyF(); };
+SACT.bzWhy = function () { UI.wm = 'bzwhy'; render(); };
+SACT.bzWhyClose = function () { UI.wm = null; render(); };
+const _wmHTMLWhy = wmHTML;
+wmHTML = function () {
+  if (UI.wm === 'biz' && !bizAllowed()) { UI.wm = null; slog('生活又不穩了，經營中心先暫停。'); }
+  if (UI.wm !== 'bzwhy') return _wmHTMLWhy();
+  return '<div class="bz-intro" data-a="bzWhyClose"><div class="bz-ibox" data-a="noop"><b>🔒 經營中心還沒開</b><p class="meta">先把生活顧好，每天吃喝都夠了，才有餘力做生意。</p><div class="bz-ul" style="grid-template-columns:1fr">' + bizNeeds().map(n => '<span class="' + (n[1] ? 'on' : '') + '">' + (n[1] ? '✅ ' : '⬜ ') + n[0] + '<i>' + n[2] + '</i></span>').join('') + '</div><button class="btn" data-a="bzWhyClose">知道了</button></div></div>';
+};
 const _sugOnlyF = suggestRaw;
-suggestRaw = function () { const L = _sugOnlyF(); return isForever() ? L : L.filter(s => !s.bz); };
+suggestRaw = function () { const L = _sugOnlyF(); return bizAllowed() ? L : L.filter(s => !s.bz); };
 const _bizNightOnlyF = bizNight;
-bizNight = function () { return isForever() ? _bizNightOnlyF() : []; };
-const _verbsHide = typeof verbsHTML === 'function' ? verbsHTML : null;
-if (_verbsHide) verbsHTML = function () { const h = _verbsHide(); return isForever() ? h : h.replace(/<button[^>]*data-v="biz"[^>]*>[\s\S]*?<\/button>/, ''); };
+bizNight = function () {
+  const ok = bizAllowed(), bz = BZ(), ex = ok ? _bizNightOnlyF() : [];
+  if (ok && !bz.opened) { bz.opened = true; if (!isForever()) ex.push('🏪 生活穩定下來了！經營中心開放，可以接訂單、開小店。'); }
+  if (!ok && bz.opened && !isForever()) { bz.cust = []; ex.push('存糧或水不夠了，今天店先不開。'); }
+  return ex;
+};
