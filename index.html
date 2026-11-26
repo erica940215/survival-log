@@ -10129,36 +10129,14 @@ kitchenHTML = function () {
   const g = G3(), N = STOVES[g.stove + 1];
   const head = '<div class="g3-stove">' + STOVES[g.stove].ic + ' <b>' + STOVES[g.stove].n + '</b>' + (N ? '<span class="meta">下一級：' + N.n + ' · ' + needTxt(N.c) + '、🪙 ' + N.coin + '</span><button class="btn ghost" data-a="stUp">升級</button>' : '<span class="meta">已經是最高級廚具</span>') + '</div>';
   const lock = Object.keys(DISHES).filter(k => DISHES[k].stove && stoveLv() < DISHES[k].stove).map(k => ITEMS[k].n + '（' + STOVES[DISHES[k].stove].n + '）');
-  return head + h + (lock.length ? '<p class="meta">🔒 換更好的廚具才能做：' + lock.join('、') + '</p>' : '') + '<div class="row-btns"><button class="btn ghost" data-a="heatTog">火候小遊戲：' + (UIS.heatGame !== false ? '開' : '關') + '</button></div>';
+  return head + h + (lock.length ? '<p class="meta">🔒 換更好的廚具才能做：' + lock.join('、') + '</p>' : '');
 };
 
-/* ===== 3. 火候小遊戲＋新鮮食材加成 ===== */
-SACT.heatTog = function () { UIS.heatGame = UIS.heatGame === false; saveUI(); render(); };
-const _mCookG3 = SACT.mCook;
-SACT.mCook = function (k) {
-  if (UIS.heatGame !== false && DISHES[k] && dishOk(k) && !UI.heatSkip) { UI.heat = { k, t0: performance.now(), sel: UI.rtSel }; render(); return; }
-  UI.heatSkip = false; return _mCookG3(k);
-};
-SACT.heatHit = function () {
-  const H = UI.heat; if (!H) return; const pos = heatPos(performance.now() - H.t0), d = Math.abs(pos - 0.5);
-  UI.heatBonus = { k: H.k, p: d < 0.06 ? 0.6 : d < 0.14 ? 0.3 : d < 0.25 ? 0.1 : 0 };
-  slog(d < 0.06 ? '🔥 火候完美！' : d < 0.14 ? '火候不錯。' : d < 0.25 ? '火候普通。' : '火太大／太小了……');
-  UI.heat = null; UI.rtSel = H.sel; UI.heatSkip = true; SACT.mCook(H.k);
-};
-SACT.heatCancel = function () { UI.heat = null; render(); };
-const heatPos = t => (Math.sin(t / 380) + 1) / 2;
-function heatHTML() {
-  const H = UI.heat; if (!H) return '';
-  return '<div class="rt-modal"><div class="rt-mbox heat-box" data-a="noop"><b>🔥 抓火候：' + ITEMS[H.k].n + '</b><p class="meta">指針跑到中間綠色時按「下鍋！」，越準越容易做出優良、極品。</p><div class="heat-bar"><i class="heat-ok"></i><i class="heat-good"></i><span id="heat-ptr"></span></div><div class="row-btns"><button class="btn red" data-a="heatHit">下鍋！</button><button class="btn ghost" data-a="heatCancel">取消</button></div></div></div>';
-}
-function heatTick() { requestAnimationFrame(heatTick); const H = UI.heat, el = document.getElementById('heat-ptr'); if (H && el) el.style.left = (heatPos(performance.now() - H.t0) * 100).toFixed(1) + '%'; }
-requestAnimationFrame(heatTick);
-const _renderHeat = render;
-render = function () { _renderHeat(); if (UI.heat && S && S.phase === 'survive') $app.insertAdjacentHTML('beforeend', heatHTML()); };
+/* ===== 3. 新鮮食材加成 ===== */
 const _qRollG3 = qRoll;
 qRoll = function (k, n) {
   const [g, e] = _qRollG3(k, n); if (!hasG3() || !FOOD[k] || !FOOD[k].dish) return [g, e];
-  let p = (stoveLv() - 1) * 0.03; const H = UI.heatBonus; if (H && H.k === k) { p += H.p; UI.heatBonus = null; }
+  let p = (stoveLv() - 1) * 0.03;
   const D = DISHES[k]; if (D && (S.sv.fresh || []).some(f => D.need[f.k] && f.life >= (FRESH_LIFE[f.k] || 9) - 1)) p += 0.15;
   const Q = BZ().qual[k]; let up = 0, ex = 0; for (let i = 0; i < n - g - e; i++) { const r = rnd(); if (r < p * 0.3) ex++; else if (r < p) up++; }
   Q[0] += up; Q[1] += ex; return [g + up, e + ex];
@@ -10210,7 +10188,7 @@ const BADGES = [
   ['🌾', '作物收藏家', () => CROPS().every(k => J.cdx && J.cdx[k] != null)], ['🍳', '料理大全', () => Object.keys(DISHES).filter(k => !DISHES[k].fest).every(k => J.cdx && J.cdx[k] != null)],
   ['📖', '食譜研究家', () => Object.keys(LAB).every(k => (J.labBook || {})[k])], ['✨', '極品之手', () => Object.values(J.cdx || {}).filter(q => q === 2).length >= 30],
   ['🏆', '冠軍', () => (J.trophies || []).some(t => t.m === 1)], ['🎃', '巨人農夫', () => ['giant_pumpkin', 'giant_cabbage', 'giant_tomato', 'giant_corn'].every(k => J.cdx && J.cdx[k] != null)],
-  ['🐛', '植物醫生', () => hasG3() && Object.keys(G3().pests).length >= 4], ['💝', '人氣老闆', () => hasG3() && REGS.every((r, i) => (G3().regs[i] || 0) >= 5)]
+  ['💝', '人氣老闆', () => hasG3() && REGS.every((r, i) => (G3().regs[i] || 0) >= 5)]
 ];
 Object.assign(SACT, {
   f2Buy() { const g = G3(), bz = BZ(); if (g.farm2 || !isForever()) return; if (bz.coin < 400) { slog('要 400 瓶蓋。'); render(); return; } if (!payN({ board: 20, metal: 8 })) { slog('要木板 20、鐵片 8 整理隔壁。'); render(); return; } bz.coin -= 400; g.farm2 = true; slog('🏡 買下隔壁的空屋，整理成第二塊農地！多 8 個種植位，每天自己長一些作物。', true); sfx('ach'); render(); }
@@ -10258,7 +10236,6 @@ night = function (watch) {
     if (GIANT[k]) for (let i = 0; i < d; i++) if (rnd() < 0.03) { sv_take(k, 1); addIt(GIANT[k], 1); codexMark(GIANT[k], 1); ex.push('🎉 長出一顆' + ITEMS[GIANT[k]].n + '！快拿去品評會。'); }
   }
   if (zb) ex.push('🌡️ 溫室調成' + ZONES[g.zone][0] + '，多收 ' + zb + ' 個。'); if (pb) ex.push('🐝 蜜蜂幫忙授粉，花果類多收 ' + pb + ' 個。');
-  for (const p of sv.plants || []) if (p.pest && !p.ptype) { const ks = Object.keys(PESTS); p.ptype = ks[Math.floor(rnd() * ks.length)]; const nw = !g.pests[p.ptype]; g.pests[p.ptype] = 1; ex.push('🔍 ' + ITEMS[p.k].n + '上的是' + PESTS[p.ptype][0] + '：' + PESTS[p.ptype][1] + '。處理：' + PESTS[p.ptype][2] + (nw ? '（記進病蟲害圖鑑）' : '')); }
   if (bz.cust && bizAllowed()) {
     const pool = wantPool(), extra = (g.shopUp.sign ? 1 : 0) + (g.shopUp.neon ? 2 : 0);
     for (let i = 0; i < extra; i++) { const c = CUSTOMERS[Math.floor(rnd() * CUSTOMERS.length)]; bz.cust.push({ ic: c[0], n: c[1], want: pool[Math.floor(rnd() * pool.length)] }); }
@@ -10284,7 +10261,7 @@ Object.assign(SACT, {
     while (freeSlots() > 0 && guard-- > 0) { const A = plantAdvice(), p = A.have[0]; if (!p) break; const s = paSeed(p), f0 = freeSlots(); if (!canAct(1, 5)) break; SACT.plant(s); if (freeSlots() >= f0) break; n++; }
     slog(n ? '🌱 一口氣種了 ' + n + ' 次。' : '沒辦法再種了（沒種子、沒空位或沒體力）。'); render();
   },
-  batchCook(k) { let n = 0; while (n < 5 && dishOk(k)) { const h0 = sv_has(k); UI.heatSkip = true; SACT.cookx(k); if (sv_has(k) <= h0) break; n++; } UI.heatSkip = false; slog(n ? '🍳 連續煮了 ' + n + ' 次' + ITEMS[k].n + '。' : '材料、時間或體力不夠。'); render(); },
+  batchCook(k) { let n = 0; while (n < 5 && dishOk(k)) { const h0 = sv_has(k); SACT.cookx(k); if (sv_has(k) <= h0) break; n++; } slog(n ? '🍳 連續煮了 ' + n + ' 次' + ITEMS[k].n + '。' : '材料、時間或體力不夠。'); render(); },
   batchDeliver() {
     const bz = BZ(); let o = 0, c = 0;
     for (const x of bz.orders.slice()) if (!x.done && x.until >= S.sv.day && canFill(x)) { SACT.bzOrder(x.id); o++; }
@@ -10321,7 +10298,6 @@ rtPanel = function () { return _rtPanelG3().replace('<div class="wm-chips">', '<
 GROW.push(
   { k: 'stove', t: 2, ic: '🔥', n: '廚具升級', g: 'kitchen', c: () => chefLv() >= 3, txt: '廚師 Lv.3' },
   { k: 'zone', t: 2, ic: '🌡️', n: '溫室溫控與授粉', g: 'field', c: () => lvOfK('farm') >= 2 && S.sv.day >= 6, txt: '種植 Lv.2、第 6 天' },
-  { k: 'pest', t: 1, ic: '🐛', n: '病蟲害圖鑑', g: 'field', c: () => (S.sv.plants || []).some(p => p.pest) || Object.keys((S.sv.w.fm.gr.g3 || {}).pests || {}).length > 0, txt: '第一次遇到蟲害' },
   { k: 'shopup', t: 2, ic: '🪧', n: '店面升級與熟客', g: 'biz', c: () => lvOfK('shop') >= 2, txt: '小店 Lv.2' },
   { k: 'deliv', t: 3, ic: '🛵', n: '外送與套餐', g: 'biz', c: () => BZ().rep >= 20, txt: '聲望 20' },
   { k: 'stats', t: 1, ic: '📈', n: '統計圖表', g: 'goal', c: () => S.sv.day >= 4, txt: '撐到第 4 天' },
@@ -10329,9 +10305,8 @@ GROW.push(
   { k: 'farm2', t: 4, ic: '🏡', n: '第二塊農地', g: 'home', c: () => isForever() && lvOfK('farm') >= 4, txt: '永久模式、種植 Lv.4' }
 );
 Object.assign(GR_INTRO, {
-  stove: ['廚具一路升級：微波爐 → 瓦斯爐 → 炭烤爐 → 中式快炒爐。', '每級料理更容易優良，還會解鎖新菜。', '煮料理時有「抓火候」小遊戲，抓得準品質更好（廚房可以關掉）。'],
+  stove: ['廚具一路升級：微波爐 → 瓦斯爐 → 炭烤爐 → 中式快炒爐。', '每級料理更容易優良，還會解鎖新菜。'],
   zone: ['把溫室調成涼爽、溫暖或潮濕，適合的作物多收 20%。', '蜂箱越多，花果類（番茄、草莓、南瓜…）產量越高。'],
-  pest: ['蟲害有四種，看症狀用對方法。', '遇過的都會記在圖鑑裡。'],
   shopup: ['用瓶蓋和材料升級店面：招牌、內用座位、冷藏櫃、霓虹燈。', '熟客會常常來，買到他喜歡的東西好感度加倍，熟了會送禮。'],
   deliv: ['套餐：主菜＋湯＋飲料一起賣，價格 ×1.4。', '外送：把料理送到避難所，隔天結帳，價格 ×1.8；有員工就派員工去。', '當季食材做的料理價格 ×1.3。'],
   stats: ['每天的收成、營收、極品、煮菜次數都會記錄成圖表。', '永久模式每 120 天是一年，年底會結算年度評價。'],
@@ -10347,7 +10322,7 @@ const _grBodyG3 = grBody;
 grBody = function (k) {
   if (!['stove', 'zone', 'pest', 'shopup', 'deliv', 'stats', 'badge', 'farm2'].includes(k)) return _grBodyG3(k);
   const g = G3(), sv = S.sv, bz = BZ(); let h = '';
-  if (k === 'stove') { h += STOVES.slice(1).map((s, i) => row(s.ic + ' ' + s.n + (g.stove === i + 1 ? ' ✅ 現在' : g.stove > i + 1 ? ' ✅' : ''), s.d || '基本款', g.stove === i && STOVES[i + 1] ? bt('stUp', null, '升級（' + needTxt(s.c).replace(/<[^>]+>/g, '') + '、🪙' + s.coin + '）', bz.coin >= s.coin) : '')).join('') + row('🔥 火候小遊戲', UIS.heatGame !== false ? '開著：煮料理時要抓時機' : '關著', bt('heatTog', null, UIS.heatGame !== false ? '關掉' : '打開', true, true)); }
+  if (k === 'stove') { h += STOVES.slice(1).map((s, i) => row(s.ic + ' ' + s.n + (g.stove === i + 1 ? ' ✅ 現在' : g.stove > i + 1 ? ' ✅' : ''), s.d || '基本款', g.stove === i && STOVES[i + 1] ? bt('stUp', null, '升級（' + needTxt(s.c).replace(/<[^>]+>/g, '') + '、🪙' + s.coin + '）', bz.coin >= s.coin) : '')).join(''); }
   if (k === 'zone') { h += '<div class="gr-chips">' + Object.entries(ZONES).map(([z, Z]) => chip('zoneSet', z, Z[0], g.zone === z)).join('') + '</div>' + (g.zone !== 'none' ? '<p class="meta">適合：' + ZONES[g.zone][1].filter(c => ITEMS[c]).map(c => ITEMS[c].n).join('、') + '（收成 +20%）</p>' : '') + row('🐝 授粉', '蜂箱 ' + ((F().hives || 0) + (W().roof && W().roof.hive ? 1 : 0)) + ' 個 · 每個讓花果類多 8%：' + FLOWER.filter(c => ITEMS[c]).map(c => ITEMS[c].n).slice(0, 6).join('、')); }
   if (k === 'pest') h += Object.entries(PESTS).map(([p, P]) => g.pests[p] ? row(P[0], '症狀：' + P[1] + ' · 處理：' + P[2]) : row('❓ ？？？', '還沒遇過')).join('');
   if (k === 'shopup') { h += Object.entries(SHOPUP).map(([u, U]) => row((g.shopUp[u] ? '✅ ' : '') + U[0], U[1] + (g.shopUp[u] ? '' : ' · ' + needTxt(U[2]) + '、🪙 ' + U[3]), g.shopUp[u] ? '' : bt('suBuy', u, '升級', bz.coin >= U[3]))).join('') + '<div class="cat">💝 熟客</div>' + REGS.map((R, i) => { const a = g.regs[i] || 0; return row(R.ic + ' ' + R.n, R.t + ' · 好感 ' + '❤️'.repeat(Math.min(6, Math.ceil(a / 2))) + (a ? '' : '（還沒來過）') + (a >= 12 ? ' · 摯友' : a >= 5 ? ' · 熟了' : '')); }).join(''); }
