@@ -721,3 +721,4 @@ body.dark .cl-box,:root[data-theme=dark] .cl-box{background:rgba(255,255,255,.05
 .au-sw.on{background:#6ac04a}.au-sw.on i{left:23px}
 .wx-bot{position:absolute;font-size:13px;animation:wxbot 14s linear infinite}
 @keyframes wxbot{0%{left:15%}50%{left:78%}100%{left:15%}}
+.wx-lux{position:absolute;bottom:14%;font-size:18px;filter:drop-shadow(0 1px 2px #000a)}

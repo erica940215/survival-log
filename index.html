@@ -731,6 +731,7 @@ body.dark .cl-box,:root[data-theme=dark] .cl-box{background:rgba(255,255,255,.05
 .au-sw.on{background:#6ac04a}.au-sw.on i{left:23px}
 .wx-bot{position:absolute;font-size:13px;animation:wxbot 14s linear infinite}
 @keyframes wxbot{0%{left:15%}50%{left:78%}100%{left:15%}}
+.wx-lux{position:absolute;bottom:14%;font-size:18px;filter:drop-shadow(0 1px 2px #000a)}
 </style>
 </head>
 <body>
@@ -10644,7 +10645,7 @@ function runAutos() {
   if (autoOn('fert') && grOn('soil') && GR().soil < 60 && sv_has('fert') > 0) { sv_take('fert', 1); GR().soil = Math.min(100, GR().soil + 25); say(A('fert'), '施肥（肥力 ' + Math.round(GR().soil) + '）'); }
   if (autoOn('plant')) { let n = 0, guard = 30; while (freeSlots() > 0 && guard-- > 0) { const P = plantAdvice(), p = P.have[0]; if (!p) break; const s = paSeed(p), sl = slots(), free = freeSlots(); if (!(sv.st[s] > 0)) break; sv.st[s]--; if (!sv.st[s]) delete sv.st[s]; for (let i = 0; i < Math.min(2, free); i++) { const cnt = t => sv.plants.filter(x => x.slot === t).length; sv.plants.push({ k: p, slot: cnt('light') < sl.light ? 'light' : cnt('green') < sl.green ? 'green' : 'pot', age: 0 }); n++; } } if (n) say(A('plant'), '種了 ' + n + ' 株'); }
   if (autoOn('herb') && fm.herbBeds) { let n = 0; for (const h of Object.keys(HERBS)) while (sv_has(h) > 0 && fm.herbs.length < fm.herbBeds * 3) { quiet(() => SACT.hbPlant(h)); n++; if (n > 9) break; } if (n) say(A('herb'), '補種 ' + n + ' 株草藥'); }
-  if (autoOn('cook')) { let n = 0; const max = chefLv() - 1; const made = {};
+  if (autoOn('cook')) { let n = 0; const max = (chefLv() - 1) * (typeof hasLux === 'function' && hasLux('kitchen2') ? 2 : 1); const made = {};
     for (const [k, D] of Object.entries(DISHES)) { if (n >= max) break; if (D.fest || chefLv() < D.lv || (D.stove && stoveLv() < D.stove)) continue; if (!Object.entries(D.need).every(([m, c]) => (m === 'wu' ? (sv.st.wu || 0) + (sv.day <= 5 ? 99 : 0) : sv_has(m)) >= c)) continue;
       for (const [m, c] of Object.entries(D.need)) { if (m === 'wu') { if (sv.day > 5) sv.st.wu -= c; } else sv_take(m, c); } const q = D.q + (stoveLv() >= 3 ? 1 : 0); addIt(k, q); qRoll(k, q); chefGain(k, 1); grCook(k); made[ITEMS[k].n] = q; n++; }
     if (n) say(A('cook'), '煮了 ' + Object.entries(made).map(([a, b]) => a + '×' + b).join('、')); }
@@ -10703,6 +10704,79 @@ night = function (watch) {
 // 心態低的時候提示怎麼補
 const _ntListBal = ntList;
 ntList = function () { const L = _ntListBal(); const i = L.findIndex(n => /^心態/.test(n.t)); if (i >= 0) L[i].sub = '吃料理、開燈、聽音樂台、摸狗或貓、辦桌都會回心態'; return L; };
+
+/* ===== 🛍️ 高級商城：讓瓶蓋有地方花 ===== */
+const LUX = {
+  seeds:   { cat: '消耗', ic: '🧬', n: '稀有種子包', d: '隨機 3 包雜交種子', coin: 150, rep: true },
+  train:   { cat: '消耗', ic: '🎓', n: '員工培訓', d: '一位員工星等 +1（最多 5 星）', coin: 300, rep: true },
+  chand:   { cat: '豪華擺設', ic: '💎', n: '水晶吊燈', d: '每天心態 +2、家園 +15', coin: 800, home: 15, mor: 2 },
+  marble:  { cat: '豪華擺設', ic: '🍽️', n: '大理石餐桌', d: '辦桌紅包 +50%、家園 +20', coin: 1200, home: 20, mor: 1 },
+  piano:   { cat: '豪華擺設', ic: '🎹', n: '三角鋼琴', d: '每天心態 +4、家園 +30', coin: 2000, home: 30, mor: 4 },
+  garden:  { cat: '豪華擺設', ic: '🎋', n: '日式庭園', d: '每天心態 +3、動物心情 +5、家園 +40', coin: 3000, home: 40, mor: 3 },
+  fountain:{ cat: '豪華擺設', ic: '⛲', n: '頂樓噴水池', d: '每天心態 +5、作物 +5%、家園 +60', coin: 5000, home: 60, mor: 5 },
+  cellar:  { cat: '擴建', ic: '🍷', n: '地下酒窖', d: '酒桶位 +4', coin: 1500, home: 20 },
+  green2:  { cat: '擴建', ic: '🏡', n: '玻璃溫室擴建', d: '種植位 +8', coin: 1000, home: 15 },
+  kitchen2:{ cat: '擴建', ic: '👨‍🍳', n: '第二廚房', d: '自動廚房每天多煮一倍', coin: 2500, home: 25 },
+  freezer2:{ cat: '擴建', ic: '❄️', n: '冷凍倉庫', d: '新鮮食物壞得慢一半', coin: 1800, home: 20 },
+  ghen:    { cat: '稀有動物', ic: '🐓', n: '金雞', d: '每天多下 2 顆蛋，偶爾是極品', coin: 1200, home: 10 },
+  gcow:    { cat: '稀有動物', ic: '🐂', n: '和牛', d: '每天多 2 瓶極品牛奶（要有牛棚）', coin: 2400, home: 15 },
+  statue:  { cat: '終極目標', ic: '🗽', n: '末日之王雕像', d: '立在頂樓，所有收入 +10%、家園 +150', coin: 20000, home: 150, mor: 5 }
+};
+const LUXG = () => { const g = G4(); if (!g.lux) g.lux = {}; return g.lux; };
+const hasLux = k => hasG3() && !!LUXG()[k];
+SACT.luBuy = function (k) {
+  const L = LUX[k], bz = BZ(), lx = LUXG(); if (!L || (!L.rep && lx[k])) return; if (bz.coin < L.coin) { slog('瓶蓋不夠。'); render(); return; }
+  if (k === 'train') { const s = GR().staff.filter(x => x.s < 5).sort((a, b) => a.s - b.s)[0]; if (!s) { slog('沒有可以培訓的員工。'); render(); return; } bz.coin -= L.coin; s.s++; slog('🎓 ' + s.n + '培訓完成，升到 ' + '★'.repeat(s.s) + '。'); render(); return; }
+  if (k === 'gcow' && !G4().barn) { slog('要先蓋牛棚。'); render(); return; }
+  bz.coin -= L.coin;
+  if (k === 'seeds') { const H = ['ruby', 'gpump', 'pyam', 'rcorn', 'jcab', 'gtom']; const got = [0, 1, 2].map(() => H[Math.floor(rnd() * H.length)]); got.forEach(s => addIt(s, 1)); slog('🧬 打開種子包：' + got.map(s => ITEMS[s].n).join('、') + '。'); render(); return; }
+  lx[k] = S.sv.day; if (k === 'cellar') BZ().vatN += 4;
+  slog('🛍️ 買下' + L.ic + ' ' + L.n + '！' + L.d + '。', true); sfx('ach'); render();
+};
+SACT.luDonate = function (v) { const n = Number(v), bz = BZ(); if (bz.coin < n) return; bz.coin -= n; const r = Math.round(n / 40); bz.rep += r; S.sv.mor = clamp(S.sv.mor + Math.min(20, n / 50)); slog('❤️ 捐了 ' + n + ' 瓶蓋給避難所，大家都很感謝你（聲望 +' + r + '）。'); render(); };
+const _homeScoreLux = homeScore;
+homeScore = function () { let s = _homeScoreLux(); if (hasG3()) for (const k of Object.keys(LUXG())) s += (LUX[k] && LUX[k].home) || 0; return s; };
+const _slotsLux = slots;
+slots = function () { const s = _slotsLux(); if (hasLux('green2')) s.green += 8; return s; };
+const _nightLux = night;
+night = function (watch) {
+  const ok = S && S.sv && S.phase === 'survive' && hasG3(), d0 = ok && S.sv.day, c0 = ok && S.sv.w.fm.bz ? BZ().coin : 0, sn = {};
+  if (ok) for (const k of CROPS()) sn[k] = sv_has(k);
+  _nightLux(watch);
+  if (!ok || !S.sv || S.phase !== 'survive' || S.sv.day === d0) return;
+  const sv = S.sv, lx = LUXG(), ex = []; let mor = 0;
+  for (const k of Object.keys(lx)) mor += (LUX[k] && LUX[k].mor) || 0; if (mor) sv.mor = clamp(sv.mor + mor);
+  if (lx.garden) G4().mood = Math.min(100, G4().mood + 5);
+  if (lx.fountain) for (const k of CROPS()) { const d = sv_has(k) - (sn[k] || 0); if (d > 0 && rnd() < d * 0.05) addIt(k, 1); }
+  if (lx.freezer2) for (const f of sv.fresh || []) f.life += 0.5;
+  if (lx.ghen && W().roof && W().roof.hens) { addIt('egg', 2); if (rnd() < 0.3) { const Q = BZ().qual.egg || (BZ().qual.egg = [0, 0]); Q[1]++; } }
+  if (lx.gcow && G4().barn) { addIt('cow_milk', 2); const Q = BZ().qual.cow_milk || (BZ().qual.cow_milk = [0, 0]); Q[1] += 2; }
+  if (lx.statue) { const d = BZ().coin - c0; if (d > 0) { const add = Math.round(d * 0.1); BZ().coin += add; ex.push('🗽 雕像帶來的名氣，多賺了 ' + add + ' 瓶蓋。'); } }
+  if (UI.morning && UI.morning.day === sv.day) UI.morning.extra = (UI.morning.extra || []).concat(ex); else ex.forEach(t => slog(t));
+};
+const _feastLux = SACT.feast;
+SACT.feast = function () { const bz = BZ(), c0 = bz.coin; _feastLux(); if (hasLux('marble') && bz.coin > c0) bz.coin += Math.round((bz.coin - c0) * 0.5); };
+GROW.push({ k: 'mall', t: 2, ic: '🛍️', n: '高級商城', g: 'biz', c: () => BZ().coin >= 800 || homeLv() >= 3, txt: '存到 800 瓶蓋，或家園 Lv.3' });
+GR_INTRO.mall = ['錢多了就來這裡花：豪華擺設、擴建、稀有動物。', '擺設會讓心態每天回升、家園等級變高。', '終極目標是 20000 瓶蓋的「末日之王雕像」。'];
+const _grBodyLux = grBody;
+grBody = function (k) {
+  if (k !== 'mall') return _grBodyLux(k);
+  const lx = LUXG(), bz = BZ(); let h = '<p class="meta">🪙 ' + bz.coin + '</p>'; let cat = '';
+  for (const [key, L] of Object.entries(LUX)) { if (L.cat !== cat) { cat = L.cat; h += '<div class="cat">' + cat + '</div>'; } const own = !L.rep && lx[key]; h += row(L.ic + ' ' + L.n + (own ? ' ✅' : ''), L.d + (own ? '' : ' · 🪙 ' + L.coin), own ? '' : bt('luBuy', key, '買', bz.coin >= L.coin)); }
+  h += '<div class="cat">❤️ 捐給避難所</div><div class="gr-chips">' + [100, 500, 2000].map(n => '<button class="gr-chip" data-a="luDonate" data-v="' + n + '"' + (bz.coin >= n ? '' : ' disabled') + '>捐 ' + n + '（聲望 +' + Math.round(n / 40) + '）</button>').join('') + '</div>';
+  return h;
+};
+const _grSceneLux = grScene;
+grScene = function (k, now) {
+  if (k !== 'mall') return _grSceneLux(k, now);
+  const lx = LUXG(), t = now / 1000; let s = '<rect width="330" height="96" fill="#2a2238"/><rect y="78" width="330" height="18" fill="#3a3048"/>';
+  Object.keys(LUX).filter(x => lx[x]).forEach((x, i) => { s += '<text x="' + (20 + i * 30) + '" y="' + (70 - Math.abs(Math.sin(t * 2 + i)) * 3).toFixed(0) + '" font-size="22">' + LUX[x].ic + '</text>'; });
+  if (!Object.keys(lx).length) s += '<text x="165" y="50" text-anchor="middle" font-size="11" fill="#c8b8e0">還沒有買任何東西</text>';
+  s += '<text x="320" y="18" text-anchor="end" font-size="11" fill="#ecd27a">🪙 ' + BZ().coin + '</text>'; return grSVG(s);
+};
+// 房間裡也擺出來
+const _wxLayerLux = wxLayer;
+wxLayer = function () { let s = _wxLayerLux(); if (!hasG3()) return s; const lx = LUXG(); const show = ['chand', 'piano', 'garden', 'fountain', 'statue'].filter(k => lx[k]); show.forEach((k, i) => { s += '<span class="wx-lux" style="right:' + (4 + i * 8) + '%">' + LUX[k].ic + '</span>'; }); return s; };
 
 // ---- 99-boot.js ----
 /* ================= 事件綁定 ================= */
