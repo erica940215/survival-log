@@ -178,3 +178,6 @@ node build.js
 
 ## 🔔 提醒系統（98zu-notify.js）
 通知中心（鈴鐺，紅黃綠三級、點了直接去處理、可關分類）、經營／成長／農場按鈕紅點、狀態掉破 30／20 小提示、早報「今日待辦」、睡前檢查（可關）、出門前檢查、準備期出發清單。
+
+## ☁️ 雲端存檔（98zv-cloud.js）
+Supabase 專案 utopia-game 的 public.survival_saves 表（slot 1~3，存 SLOG1 存檔碼）。頁面透過 Claude 的 Supabase 連接器（execute_sql）存取；RLS 開啟、anon 無權限。標題畫面可上傳／下載，遊戲中每天早上與每 5 分鐘自動上傳。

@@ -663,3 +663,13 @@ body.ls .nt-bell{right:182px;top:6px}
 .prep-chk summary{cursor:pointer;font-weight:800;color:#ecd27a}
 .prep-chk div{margin:4px 0}.prep-chk .no{color:#ffb3ad}.prep-chk i{font-style:normal;color:#9fb4c4;margin-left:6px;font-size:11px}
 .prep-chk .nt-y{color:#ecd27a;font-size:12px}
+/* 雲端存檔 */
+.cl-box{max-width:560px;margin:14px auto;padding:12px 14px;border:1.5px solid #c9b896;border-radius:12px;background:rgba(255,255,255,.55);color:#2a2a2a;text-align:left}
+body.dark .cl-box,:root[data-theme=dark] .cl-box{background:rgba(255,255,255,.05);color:inherit}
+.cl-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.cl-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px dashed #c9b89688;flex-wrap:wrap}
+.cl-row .meta{display:block}.cl-btns{display:flex;gap:6px}
+.cl-new{display:inline-block;font-size:11px;background:#e0a020;color:#1d2733;border-radius:6px;padding:1px 6px;margin-top:2px}
+.cl-confirm{background:rgba(214,50,42,.1);border-radius:8px;padding:8px;font-size:13px}
+.cl-msg.err{color:#c0392b}
+.cl-pill.err{border-color:#d6322a}
