@@ -722,3 +722,4 @@ body.dark .cl-box,:root[data-theme=dark] .cl-box{background:rgba(255,255,255,.05
 .wx-bot{position:absolute;font-size:13px;animation:wxbot 14s linear infinite}
 @keyframes wxbot{0%{left:15%}50%{left:78%}100%{left:15%}}
 .wx-lux{position:absolute;bottom:14%;font-size:18px;filter:drop-shadow(0 1px 2px #000a)}
+.ct-bar{height:8px;border-radius:4px;background:rgba(255,255,255,.1);margin:2px 0 8px;overflow:hidden}.ct-bar i{display:block;height:100%;background:linear-gradient(90deg,#6ac04a,#ecd27a)}

@@ -21,7 +21,8 @@ const LVN = { ranch: '養殖', farm: '種植', herb: '草藥', chef: '廚師', p
 const lvNow = s => s === 'chef' ? chefLv() : s === 'home' ? homeLv() : lvOfK(s);
 const autoOpen = A => lvNow(A.lv[0]) >= A.lv[1];
 const AU = () => { const g = G4(); if (!g.auto) g.auto = {}; return g.auto; };
-const autoOn = k => { const A = AUTOS.find(x => x.k === k); return !!A && autoOpen(A) && AU()[k] !== false; };
+let AUTO_FORCE = null;
+const autoOn = k => { const A = AUTOS.find(x => x.k === k); if (AUTO_FORCE) return AUTO_FORCE === k; return !!A && autoOpen(A) && AU()[k] !== false; };
 Object.assign(SACT, { auTog(k) { const a = AU(); a[k] = a[k] === false; render(); }, auAll(v) { const a = AU(); for (const A of AUTOS) a[A.k] = v === 'on'; render(); } });
 function quiet(fn) { const s0 = slog, r0 = render; slog = () => {}; render = () => {}; try { return fn(); } catch (e) { return 0; } finally { slog = s0; render = r0; } }
 
